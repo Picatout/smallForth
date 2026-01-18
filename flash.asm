@@ -179,33 +179,6 @@ UPDATVP:
 	call EEPVP 
 	jp EESTORE
 	
-.if NUCLEO_8S20X
-;----------------------------------
-; fetch integer at address over 65535
-;  FAR@   ( ud -- n )
-;----------------------------------
-    .word LINK 
-LINK=.
-    .byte 4
-    .ascii "FAR@"
-FARAT:
-    call FPSTOR
-	jp EE_READ 
-
-
-;-------------------------------------
-; fetch C at address over 65535 
-; FARC@ ( ud -- c)
-;-------------------------------------
-    .word LINK
-    LINK=.
-    .byte 5 
-    .ascii "FARC@" 
-FARCAT:
-    call FPSTOR
-	jp EE_CREAD  
-.endif ; NUCLEO_8S20X 
-
 ;----------------------------------
 ; UNLOCK EEPROM/OPT for writing/erasing
 ; wait endlessly for FLASH_IAPSR_DUL bit.
@@ -216,8 +189,8 @@ LINK=.
     .byte 6 
     .ascii "UNLKEE"
 UNLKEE:
-	mov FLASH_CR2,#0 
-	mov FLASH_NCR2,#0xFF 
+;	mov FLASH_CR2,#0 
+;	mov FLASH_NCR2,#0xFF 
 	mov FLASH_DUKR,#FLASH_DUKR_KEY1
     mov FLASH_DUKR,#FLASH_DUKR_KEY2
 	btjf FLASH_IAPSR,#FLASH_IAPSR_DUL,.
@@ -233,8 +206,8 @@ LINK=.
     .byte 6 
     .ascii "UNLKFL"    
 UNLKFL:
-	mov FLASH_CR2,#0 
-	mov FLASH_NCR2,#0xFF 
+;	mov FLASH_CR2,#0 
+;	mov FLASH_NCR2,#0xFF 
 	mov FLASH_PUKR,#FLASH_PUKR_KEY1
 	mov FLASH_PUKR,#FLASH_PUKR_KEY2
 	btjf FLASH_IAPSR,#FLASH_IAPSR_PUL,.
@@ -433,7 +406,7 @@ EECSTORE:
 	cpl (OPT,sp)
 	; OPTION WRITE require this UNLOCK 
     bset FLASH_CR2,#FLASH_CR2_OPT
-    bres FLASH_NCR2,#FLASH_CR2_OPT 
+;    bres FLASH_NCR2,#FLASH_CR2_OPT 
 2$: 
 	call WR_BYTE 	
 	tnz (OPT,sp)
@@ -528,7 +501,7 @@ proceed_erase:
 ; this routine is to be copied to PAD 
 row_erase_proc:
 	mov FLASH_CR2,#(1<<FLASH_CR2_ERASE) 
-	mov FLASH_NCR2,#~(1<<FLASH_CR2_ERASE)
+;	mov FLASH_NCR2,#~(1<<FLASH_CR2_ERASE)
 	clr a 
 	clrw y 
 	ldf ([FPTR],y),a
@@ -557,7 +530,7 @@ copy_buffer:
 	push #BLOCK_SIZE  
 ;enable block programming 
 	bset FLASH_CR2,#FLASH_CR2_PRG 
-	bres FLASH_NCR2,#FLASH_CR2_PRG
+;	bres FLASH_NCR2,#FLASH_CR2_PRG
 	clrw y
 1$:	ld a,(x)
 	ldf ([FPTR],y),a

@@ -14,12 +14,8 @@
 ;;
 ;;     You should have received a copy of the GNU General Public License
 ;;     along with stm8_tinyForth.  If not, see <http:;;www.gnu.org/licenses/>.
-;;;;
+;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; to enable _TP macro 
-; set to 1 
-DEBUG=0
 
 ; select end of line character
 EOL_CR=1
@@ -38,8 +34,27 @@ CASE_SENSE = 0
 ; by system at EEPROM base.
 EEPROM_RES = 16 
 
+    .include "inc/macros.inc" 
 
+STM8L151K6=1 
+.IF STM8L151K6 
+	UART_PCKEN=CLK_PCKENR1_USART1
+	UART_BRR1=USART1_BRR1 
+	UART_BRR2=USART1_BRR2 
+	UART_SR=USART1_SR 
+	UART_CR1=USART1_CR1 
+	UART_CR2=USART1_CR2 
+	UART_DR=USART1_DR 
+	UART_CR2_TEN=USART_CR2_TEN
+	UART_CR2_REN=USART_CR2_REN 
+	UART_CR2_RIEN=USART_CR2_RIEN
+	UART_SR_RXNE=USART_SR_RXNE 
+	UART_SR_TXE=USART_SR_TXE
+	UART_SR_TC=USART_SR_TC 
 
-	.include "inc/stm8l151.inc"
-	.include "stm8l151-vec.asm
+	BLOCK_SIZE=128    
+	.include "inc/stm8l151k6.inc"
+	.include "stm8l151k6-vec.asm"
+.ENDIF 
+
 	

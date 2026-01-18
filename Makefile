@@ -10,8 +10,8 @@ CFLAGS=-mstm8 -lstm8  -Iinc
 # sources files 
 MAIN_FILE=tinyForth.asm
 INC=inc/
-INCLUDES=$(INC)config.inc $(INC)ascii.inc $(INC)stm8l151.inc 
-BUILD=build/$(BOARD)/
+INCLUDES=$(INC)config.inc $(INC)ascii.inc $(INC)stm8l151k6.inc 
+BUILD=build/$(MCU)/
 OBJECTS=$(BUILD)$(SRC:.asm=.rel)
 SYMBOLS=$(OBJECTS:.rel=.sym)
 LISTS=$(OBJECTS:.rel=.lst)
@@ -19,7 +19,7 @@ FLASH=stm8flash
 
 .PHONY: all
 
-all: clean $(NAME).rel $(NAME).ihx  clear_eevars eforth  
+all: clean $(NAME).rel $(NAME).ihx  clear_eevars tinyForth 
 
 $(NAME).rel: $(MAIN_FILE) $(INCLUDES)
 	@echo
@@ -50,27 +50,14 @@ clear_eevars:
 	@echo "**********************"
 	@echo "erase EEPROM variables"
 	@echo "**********************"
-	$(FLASH) -c $(PROGRAMMER) -p $(BOARD) -u -s eeprom -b 16 -w zero.bin  
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s eeprom -b 16 -w zero.bin  
 
 .PHONY: erase 
 erase: clear_eevars 
-	@echo ""doorbell: $(MAIN_FILE) $(SRC) $(INCLUDE)
-	@echo ""
-	@echo "**********************************"
-	@echo " build and flash doorbell project"
-	@echo "**********************************"
-	-rm build/*
-	$(SDAS) -g -l -o $(BUILD)$(NAME).rel $(MAIN_FILE)
-	$(SDAS) -g -l -o $(BUILD)doorbell.rel $(ASM)
-	$(SDCC) $(CFLAGS) -Wl-u -o $(BUILD)$(NAME).ihx  $(BUILD)$(NAME).rel $(BUILD)doorbell.rel  
-	$(FLASH) -c $(PROGRAMMER) -p $(BOARD) -w $(BUILD)$(NAME).ihx
-
-
-
 	@echo "************************"
 	@echo "  reset all flash types "
 	@echo "************************"
-	$(FLASH) -c $(PROGRAMMER) -p $(BOARD) -u -s flash -b 131072 -w zero.bin   	
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s flash -b 65536 -w zero.bin   	
 
 build:
 	mkdir build
@@ -80,7 +67,7 @@ flash: clear_eevars $(LIB)
 	@echo "***************"
 	@echo "flash program "
 	@echo "***************"
-	$(FLASH) -c $(PROGRAMMER) -p $(BOARD) -w $(BUILD)$(NAME).ihx 
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -w $(BUILD)$(NAME).ihx 
 
 compile: $(MAIN_FILE)  $(SRC) $(INCLUDES)
 	@echo ""
@@ -100,6 +87,6 @@ read_eevars:
 	@echo "******************************"
 	@echo " read eeprom system variables"
 	@echo "******************************"
-	$(FLASH) -c $(PROGRAMMER) -p $(BOARD) -s eeprom -b 16 -r eevars.bin
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s eeprom -b 16 -r eevars.bin
 	@hexdump -C eevars.bin 
 	@rm eevars.bin 

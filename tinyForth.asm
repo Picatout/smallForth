@@ -25,10 +25,9 @@
 ;--------------------------------------------------------------
 	.module TINYFORTH
          .optsdcc -mstm8
-	.nlist
-        .include "inc/macros.inc" 
+;	.nlist
         .include "inc/config.inc"
-	.list
+;	.list
 	.page
 
 ;===============================================================
@@ -105,17 +104,10 @@
 ;	Assembler constants
 ;*********************************************************
 RAMBASE =	0x0000	   ;ram base
-.if NUCLEO_8S20X 
-STACK   =	0x17FF 	;system (return) stack empty 
-DATSTK  =	0x1680	;data stack  empty
-TBUFFBASE =     0x1680  ; flash read/write transaction buffer address  
-TIBBASE =       0X1700  ; transaction input buffer addr.
-.else ; DISCOVERY
 STACK   =	0x7FF 	;system (return) stack empty 
 DATSTK  =	0x680	;data stack  empty
 TBUFFBASE =     0x680  ; flash read/write transaction buffer address  
 TIBBASE =       0X700  ; transaction input buffer addr.
-.endif
 
 ; floatting point state bits in UFPSW 
 ZBIT=0 ; zero bit flag
@@ -205,13 +197,6 @@ IRET_CODE =   0x80    ; IRET opcode
 ADDWX   =     0x1C    ; opcode for ADDW X,#word  
 JPIMM   =     0xCC    ; JP addr opcode 
 
-        .macro _ledon
-            bset LED_PORT,#LED_BIT
-        .endm
-
-        .macro _ledoff
-            bres LED_PORT,#LED_BIT
-        .endm
 
 ;**********************************************************
         .area DATA (ABS)
@@ -307,69 +292,33 @@ ORIG:
         LDW     RP0,X
         LDW     X,#DATSTK ;initialize data stack
         LDW     SP0,X
-.if NUCLEO_8S20X|DISCOVERY         
-; initialize USER LED on board 
-; added by Picatout 
-        bset LED_CR1,#LED_BIT
-        bset LED_CR2,#LED_BIT
-        bset LED_DDR,#LED_BIT
-.endif 
-        _ledoff
+
+
 ; initialize clock to HSI
 ; no divisor 16Mhz 
 ; Added by Picatout 
 clock_init:
         clr CLK_CKDIVR
-	bset CLK_SWCR,#CLK_SWCR_SWEN
-.if NUCLEO_8S20X|DOORBELL
-	mov CLK_SWR,#CLK_SWR_HSI ; 16 Mhz internal 
-.else ; DISCOVERY as 16Mhz crystal
-	mov CLK_SWR,#CLK_SWR_HSE
-.endif 
-	ld a,CLK_SWR
-1$:	cp a,CLK_CMSR
-	jrne 1$
         
 ; initialize UART, 115200 8N1
-.if NUCLEO_8S20X|DISCOVERY
 uart_init:
 ;	bset CLK_PCKENR1,#UART_PCKEN
 	; configure tx pin
-	bset UART_PORT_DDR,#UART_TX_PIN ; tx pin
-	bset UART_PORT_CR1,#UART_TX_PIN ; push-pull output
-	bset UART_PORT_CR2,#UART_TX_PIN ; fast output
+;	bset UART_PORT_DDR,#UART_TX_PIN ; tx pin
+;	bset UART_PORT_CR1,#UART_TX_PIN ; push-pull output
+;	bset UART_PORT_CR2,#UART_TX_PIN ; fast output
 ; baud rate 115200 Fmaster=16Mhz  16000000/115200=139=0x8b
-; baud rate 115200 Fmaster=8Mhz  8000000/115200=69=0x45
-; 1) check clock source, HSI at 16Mhz or HSE at 8Mhz  
-	ld a,#CLK_SWR_HSI
-	cp a,CLK_CMSR 
-	jreq 2$ 
-1$: ; 8 Mhz 	
-	mov UART_BRR2,#0x05 ; must be loaded first
-	mov UART_BRR1,#0x4
-	jra 3$
-2$: ; 16 Mhz 	
 	mov UART_BRR2,#0x0b ; must be loaded first
 	mov UART_BRR1,#0x08
-3$:
         clr UART_DR
 	mov UART_CR2,#((1<<UART_CR2_TEN)|(1<<UART_CR2_REN)|(1<<UART_CR2_RIEN));
-	bset UART_CR2,#UART_CR2_SBK
-        btjf UART_SR,#UART_SR_TC,.
-.endif 
+
 ; initialize timer4, used for millisecond interrupt  
 	mov TIM4_PSCR,#7 ; prescale 128  
 	mov TIM4_ARR,#125 ; set for 1msec.
 	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
 	bset TIM4_IER,#TIM4_IER_UIE 
-; set TIM4 interrupt priority to highest
-        ld a,#~(IPR_MASK<<6)
-        and a,ITC_SPR6
-        or a,#(IPR3<<6)
-        ld ITC_SPR6,a 
-        rim
         jp  COLD   ;default=MN1
-
 
         LINK = 0  ; used by _HEADER macro 
 
@@ -2760,9 +2709,6 @@ NO_ADJ:
     LD (1,X),A 
     RET 
 
-.ifeq  WANT_DOUBLE  
-; this code included only if WANT_DOUBLE=0
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; skip digits,stop at first non digit.
 ; count skipped digits 
@@ -2950,21 +2896,11 @@ NUMQ3:
         LDW (X),Y     ; n -1 R: base 
         JRA      NUMQ9
 NUMQ6:  
-.if WANT_FLOAT24 
-; float24 installed try floating point number  
-        JP    FLOATQ  ; a n a+ cnt- skip R: base sign   
-.else ; error unknown token 
-        _RDROP ; remove sign from rstack 
-        ADDW  X,#3*CELLL ; drop a+ cnt skip S: a n  R: base  
-        CLRW Y  
-        LDW (X),Y  ;  a 0 R: base 
-.endif 
 ; restore BASE 
 NUMQ9: 
         CALL     RFROM
         CALL     BASE
         JP       STORE
-.endif ; WANT_DOUBLE   
 
 ;; Basic I/O
 
@@ -4102,18 +4038,6 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL    QDUP  
         CALL     QBRAN
         .word      ABOR1
-.if WANT_DOUBLE 
-        _DOLIT  -1
-        CALL    EQUAL
-        _QBRAN DLITER
-        JP  LITER 
-.endif 
-.if WANT_FLOAT24 
-        _DOLIT -1 
-        CALL EQUAL 
-        _QBRAN FLITER
-        JP  LITER  
-.endif 
         _DROP 
         JP     LITER
 
@@ -4651,36 +4575,16 @@ PRINT_VERSION:
         _HEADER HI,2,"HI"
         CALL     CR
         CALL     DOTQP   
-        .byte      10
-        .ascii     "stm8eForth"
+        .byte      9
+        .ascii     "tinyForth"
 	_DOLIT VER 
         _DOLIT EXT 
         CALL PRINT_VERSION
-.if WANT_DOUBLE 
-        CALL DBLVER 
-.endif 
-.if WANT_FLOAT|WANT_FLOAT24
-        CALL FVER 
-.endif         
         CALL PRINT_LICENSE
         CALL COPYRIGHT
         CALL    DOTQP
-.if NUCLEO_8S208RB         
-        .byte 18
-        .ascii  " on NUCLEO-8S208RB"
-.endif
-.if NUCLEO_8S207K8 
-        .byte 18 
-        .ascii  " on NUCLEO-8S207K8" 
-.endif 
-.if DISCOVERY
-        .byte 19
-        .ascii  " on STM8S-DISCOVERY"
-.endif
-.if DOORBELL
         .byte 16
-        .ascii  " on stm8s105k6b6"
-.endif
+        .ascii  " on stm8s151k6t6"
         JP     CR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4761,18 +4665,6 @@ COLD1:  CALL     DOLIT
 .if WANT_SCALING_CONST 
         .include "const_ratio.asm"
 .endif
-.if WANT_CONST_TABLE 
-        .include "ctable.asm"
-.endif
-.if WANT_DOUBLE 
-        .include "double.asm"
-.endif 
-.if WANT_FLOAT 
-        .include "float.asm"
-.endif 
-.if WANT_FLOAT24 
-        .include "float24.asm"
-.endif 
 
 ;===============================================================
 
