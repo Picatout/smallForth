@@ -78,6 +78,7 @@ compile: $(MAIN_FILE)  $(SRC) $(INCLUDES)
 	$(SDAS) -g -l -o $(BUILD)$(NAME).rel $(MAIN_FILE)
 	$(SDCC) $(CFLAGS) -Wl-u -o $(BUILD)$(NAME).ihx  $(BUILD)$(NAME).rel
 	objcopy -Iihex -Obinary  $(BUILD)$(NAME).ihx $(BUILD)$(NAME).bin 
+	ls -l $(BUILD)$(NAME).bin
 
 tinyForth: compile flash 
 	
@@ -90,3 +91,7 @@ read_eevars:
 	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -s eeprom -b 16 -r eevars.bin
 	@hexdump -C eevars.bin 
 	@rm eevars.bin 
+
+reset:
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -R 
+

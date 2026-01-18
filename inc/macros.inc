@@ -24,13 +24,13 @@
 ;   General usage macros.   
 ;
 ;--------------------------------------
-    
+
     ; reserve space on rstack
     ; for local variabls
     .macro _VARS n 
     sub sp,#n 
     .endm 
-    
+
     ; discard space reserved 
     ; for local vars on rstack 
     .macro _DROP_VARS n 
@@ -126,3 +126,80 @@
    CALL DOTS 
    .endif  
    .endm 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+    ; software reset 
+    .macro _swreset
+    mov WWDG_CR,#0X80
+    .endm 
+
+    ; increment zero page variable 
+    .macro _incz v 
+    .byte 0x3c, v 
+    .endm 
+
+    ; decrement zero page variable 
+    .macro _decz v 
+    .byte 0x3a,v 
+    .endm 
+
+    ; clear zero page variable 
+    .macro _clrz v 
+    .byte 0x3f, v 
+    .endm 
+
+    ; load A zero page variable 
+    .macro _ldaz v 
+    .byte 0xb6,v 
+    .endm 
+
+    ; store A zero page variable 
+    .macro _straz v 
+    .byte 0xb7,v 
+    .endm 
+
+    ; tnz zero page variable 
+    .macro _tnz v 
+    .byte 0x3d,v 
+    .endm 
+
+    ; load x from variable in zero page 
+    .macro _ldxz v 
+    .byte 0xbe,v 
+    .endm 
+
+    ; load y from variable in zero page 
+    .macro _ldyz v 
+    .byte 0x90,0xbe,v 
+    .endm 
+
+    ; store x in zero page variable 
+    .macro _strxz v 
+    .byte 0xbf,v 
+    .endm 
+
+    ; store y in zero page variable 
+    .macro _stryz v 
+    .byte 0x90,0xbf,v 
+    .endm 
+
+    ;  increment 16 bits variable
+    ;  use 10 bytes  
+    .macro _incwz  v 
+        _incz v+1   ; 1 cy, 2 bytes 
+        jrne .+4  ; 1|2 cy, 2 bytes 
+        _incz v     ; 1 cy, 2 bytes  
+    .endm ; 3 cy 
+
+    ; xor op with zero page variable 
+    .macro _xorz v 
+    .byte 0xb8,v 
+    .endm 
+    
+    ; move memory to memory in 0 page 
+    .macro _movzz a1, a2 
+    .byte 0x45,a2,a1 
+    .endm 
+

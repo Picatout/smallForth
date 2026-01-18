@@ -157,8 +157,9 @@ PTR16 = FPTR+1          ; middle byte of farptr
 PTR8 = FPTR+2           ; least byte of farptr 
 SEEDX = PTR8+2          ; PRNG seed X 
 SEEDY = SEEDX+2         ; PRNG seed Y 
-RX_CHAR = SEEDY+2       ; last char received from UART 
-CHAR_RDY = RX_CHAR+1    ; boolean flag TRUE if char received 
+RX_QUEUE = SEEDY+2       ; last char received from UART 
+RX_HEAD = RX_QUEUE+RX_QUEUE_SIZE ;  
+RX_TAIL = RX_HEAD+1 
 
 ; EEPROM persistant data  
 APP_LAST = EEPROM_BASE ; Application last word pointer  
@@ -169,9 +170,9 @@ APP_VP = APP_CP+2      ; free data space pointer
 
 ;***********************************************
 ;; Version control
-
-VER     =     4         ;major release version
-EXT     =     1         ;minor extension
+;***********************************************
+VER     =  1         ;major release version
+MINOR   =  0         ;minor revision
 
 ;; Constants
 
@@ -233,7 +234,7 @@ Timer4Handler:
         ldw CNTDWN,x 
 1$:         
         iret 
-
+.if 0
 UartRxHandler:
         btjf UART_SR,#UART_SR_RXNE,1$
         LD A,UART_DR 
@@ -248,19 +249,46 @@ reset_mcu:
         LD A, #0x80
         LD WWDG_CR,A ; WWDG_CR used to reset mcu
         JRA . 
+.else 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Uart1 intterrupt handler 
+;;; on receive character 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;--------------------------
+; UART receive character
+; in a FIFO buffer 
+; CTRL+C (ASCII 3)
+; reboot MCU  
+;--------------------------
+UartRxHandler: ; console receive char 
+        btjf UART_SR,#UART_SR_RXNE,5$ 
+	ld a,UART_DR 
+	cp a,#CTRL_X  
+	jrne 2$
+	_swreset 	
+2$:
+	push a 
+	ld a,#RX_QUEUE
+	add a,RX_TAIL 
+	clrw x 
+	ld xl,a 
+	pop a 
+	ld (x),a 
+	ld a,RX_TAIL 
+	inc a 
+	and a,#RX_QUEUE_SIZE-1
+	ld RX_TAIL,a 
+5$:	iret 
+.endif 
 
-
-;; Main entry points and COLD start data
-main:
+;; power up entry points and COLD start data
+reset:
 ; clear all RAM
-	ldw X,#RAMBASE
+	ldw X,#RAM_END
 clear_ram0:
 	clr (X)
-	incw X
-	cpw X,#RAM_END
-	jrule clear_ram0
-        ldw x,#RPP
-        ldw sp,x
+	decw x 
+        jrne clear_ram0 
 ; set SEEDX and SEEDY to 1 
         inc SEEDX+1 
         inc SEEDY+1          
@@ -286,27 +314,21 @@ UZERO:
 UEND:   .word      0
 
 ORIG:   
-; initialize SP
+; initialize stacks 
         LDW     X,#STACK  ;initialize return stack
         LDW     SP,X
         LDW     RP0,X
         LDW     X,#DATSTK ;initialize data stack
         LDW     SP0,X
 
-
 ; initialize clock to HSI
 ; no divisor 16Mhz 
-; Added by Picatout 
 clock_init:
         clr CLK_CKDIVR
         
 ; initialize UART, 115200 8N1
 uart_init:
-;	bset CLK_PCKENR1,#UART_PCKEN
-	; configure tx pin
-;	bset UART_PORT_DDR,#UART_TX_PIN ; tx pin
-;	bset UART_PORT_CR1,#UART_TX_PIN ; push-pull output
-;	bset UART_PORT_CR2,#UART_TX_PIN ; fast output
+	bset CLK_PCKENR1,#UART_PCKEN
 ; baud rate 115200 Fmaster=16Mhz  16000000/115200=139=0x8b
 	mov UART_BRR2,#0x0b ; must be loaded first
 	mov UART_BRR1,#0x08
@@ -318,6 +340,7 @@ uart_init:
 	mov TIM4_ARR,#125 ; set for 1msec.
 	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
 	bset TIM4_IER,#TIM4_IER_UIE 
+        rim 
         jp  COLD   ;default=MN1
 
         LINK = 0  ; used by _HEADER macro 
@@ -345,47 +368,6 @@ uart_init:
         _HEADER DI,2,"DI"
         sim 
         ret 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; set interrupt priority level 
-; SET-ISP ( n1 n2 -- )
-; n1 level {1..3}
-; n2 vector {0..29}
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER SETISP,7,"SET-ISP"
-        ldw y,x 
-        ldw y,(y)
-        ld a,#4 ; 4 slot per register 
-;  quotient select register, remainder select slot in register.        
-        div y,a ; register=ITC_SPR1[Y], lshift=2*A 
-        and a,#3 
-        sll a ; 2*SLOT  lshift 
-        addw y,#ITC_SPR1 
-        ldw (x),y  ; ( level reg -- )
-        clrw y 
-        ld yl,a 
-        subw x,#CELLL 
-        ldw (x),y  ; ( level reg lshift -- )
-        ldw y,x 
-        ldw y,(2,y) 
-        ld a,(y)   ; reg_value
-        subw x,#CELLL 
-        ldw (x),y ; ( level reg lshift rval -- )
-        call OVER ; ( level reg lshift rval lshift -- )
-        call DOLIT 
-        .word 3
-        call SWAPP  ; ( level reg lshift rval 3 lshift )
-        call LSHIFT ; creat slot mask 
-        call INVER  ; ( level reg lshift rval mask )
-        call ANDD ; ( level reg lshift slot_masked )
-        call TOR  ; ( level reg lshift -- R: slot_masked )
-        call ROT  ; ( reg lshift level )
-        call SWAPP ; ( reg level lshift )
-        call LSHIFT  ; ( reg slot_level -- )
-        call RFROM ; ( reg slot_level masked_val )
-        call ORR   ; ( reg updated_rval )
-        call SWAPP 
-        jp CSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; sélectionne l'application 
@@ -653,7 +635,11 @@ FREEVAR4: ; not variable
         _HEADER reboot,6,"REBOOT"
         CALL CR
         BTJF UART_SR,#UART_SR_TC,.
+.if 0
         jp reset_mcu
+.else 
+        _swreset
+.endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; compile to flash memory 
@@ -681,97 +667,13 @@ FREEVAR4: ; not variable
         ldw UTFLASH,y 
         ret 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; BAUD RATE constants table
-; values to put in BRR1 & BRR2 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-baudrate: 
-	.byte 0xa0,0x1b ; 2400
-	.byte 0xd0,0x5  ; 4800 
-	.byte 0x68,0x3  ; 9600
-	.byte 0x34,0x1  ; 19200
-	.byte 0x11,0x6  ; 57600
-	.byte 0x8,0xb   ; 115200
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; BAUD RATE CONSTANTS names 
-; 2400 baud  ( -- n )
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER B2K4,4,"B2K4"
-	subw x,#CELLL 
-        clrw y
-        ldw (x),y
-	ret
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; 4800 baud	
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER B4K8,4,"B4K8"
-        subw x,#CELLL 
-        ldw y,#2 
-        ldw (x),y
-        ret 
-
-;;;;;;;;;;;;;;;;;;;;
-; 9600 baud
-;;;;;;;;;;;;;;;;;;;;
-        _HEADER B9K6,4,"B9K6"
-        subw x,#CELLL 
-        ldw y,#4 
-        ldw (x),y 
-        ret 
-;;;;;;;;;;;;;;
-; 19200 baud
-;;;;;;;;;;;;;;
-        _HEADER B19K2,5,"B19K2"
-        subw x,#CELLL
-        ldw y,#6 
-        ldw (x),y 
-        ret 
-;;;;;;;;;;;;;;
-; 57600 baud  
-;;;;;;;;;;;;;;
-        _HEADER B57K6,5,"B57K6"
-        subw x,#CELLL 
-        ldw y,#8 
-        ldw (x),y 
-        ret 
-;;;;;;;;;;;;;;
-; 115200 baud 
-;;;;;;;;;;;;;;
-        _HEADER B115K2,6,"B115K2"
-	subw x,#CELLL 
-        ldw y,#10 
-        ldw (x),y 
-        ret 
-
-;;;;;;;;;;;;;;;;;;;;;;;	
-;; set UART2 BAUD rate
-;	BAUD ( u -- )
-;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER BAUD,4,"BAUD"
-	subw x,#CELLL
-        ldw y,#baudrate 
-        ldw (x),y 
-        call PLUS
-        ldw y,x  
-        ldw y,(y)
-        ld a,(y)
-        push a 
-        incw y 
-        ld a,(y)
-        ld UART_BRR2,a 
-        pop a
-        ld UART_BRR1,a 
-        addw x,#CELLL 
-        ret 
-
 ;; Device dependent I/O
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ?RX     ( -- c T | F )
 ;         Return input character and true, or only false.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER QKEY,4,"?KEY"
+.if 0
         TNZ CHAR_RDY 
         JRNE  INCH 
 	SUBW	X,#CELLL
@@ -789,7 +691,33 @@ INCH:
         CLR     CHAR_RDY 
         RIM 
         RET 
-
+.else 
+; ?KEY 
+        ld a,RX_HEAD 
+        cp a,RX_TAIL
+        jrne INCH 
+	subw x,#CELLL 
+        clr (x)
+        clr (1,x)
+	ret 
+INCH:	  
+        SUBW X,#2*CELLL 
+        clrw y 
+        add a,#RX_QUEUE
+        ld yl,a
+	ld a,(y)
+        ld yl,a 
+        ldw (2,x),y
+        ldw y,#0xffff
+        ldw (x),y
+	inc RX_HEAD  
+	ld a,#RX_QUEUE_SIZE-1 
+	and a,RX_HEAD   
+	_straz RX_HEAD   
+	ld a,(x)
+	popw x 
+    ret 
+.endif 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TX!     ( c -- )
@@ -803,6 +731,7 @@ OUTPUT: BTJF UART_SR,#UART_SR_TXE,OUTPUT  ;loop until tx empty
         LD    UART_DR,A   ;send A
         RET
 
+.if 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       FC-XON  ( -- )
 ;       send XON character 
@@ -826,6 +755,7 @@ OUTPUT: BTJF UART_SR,#UART_SR_TXE,OUTPUT  ;loop until tx empty
         ld (1,x),a 
         call EMIT 
         ret
+.endif 
 
 ;; The kernel
 
@@ -2910,6 +2840,7 @@ NUMQ9:
 ;       input character.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER KEY,3,"KEY"
+.if 0
 0$:     TNZ CHAR_RDY 
         JREQ 0$         
         SIM 
@@ -2920,6 +2851,23 @@ NUMQ9:
         CLR CHAR_RDY 
         RIM 
         RET  
+.else 
+0$:     ld a,RX_HEAD 
+        cp a,RX_TAIL 
+        jreq 0$ 
+        subw x,#CELLL
+        clrw y 
+        add a,#RX_QUEUE 
+        ld yl,a 
+        ld a,(y)
+        ld yl,a 
+        ldw (x),y 
+        inc RX_HEAD 
+        ld a,RX_HEAD 
+        and a,#RX_QUEUE_SIZE-1 
+        ld RX_HEAD,a 
+        ret 
+.endif 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NUF?    ( -- t )
@@ -4533,8 +4481,8 @@ WORS2:  RET
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 COPYRIGHT:
     CALL DOTQP 
-    .byte 45 
-    .ascii "Copyright Jacques Deschenes, 2021, 2022,2023\n"
+    .byte 50 
+    .ascii "Copyright Jacques Deschenes, 2021, 2022,2023,2026\n"
     RET 
 
 
@@ -4575,10 +4523,10 @@ PRINT_VERSION:
         _HEADER HI,2,"HI"
         CALL     CR
         CALL     DOTQP   
-        .byte      9
-        .ascii     "tinyForth"
+        .byte      11,27
+        .ascii     "ctinyForth"
 	_DOLIT VER 
-        _DOLIT EXT 
+        _DOLIT MINOR 
         CALL PRINT_VERSION
         CALL PRINT_LICENSE
         CALL COPYRIGHT
