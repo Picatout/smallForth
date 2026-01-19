@@ -10,7 +10,7 @@ CFLAGS=-mstm8 -lstm8  -Iinc
 # sources files 
 MAIN_FILE=tinyForth.asm
 INC=inc/
-INCLUDES=$(INC)config.inc $(INC)ascii.inc $(INC)stm8l151k6.inc 
+INCLUDES=$(INC)config.inc $(INC)stm8l151k6.inc 
 BUILD=build/$(MCU)/
 OBJECTS=$(BUILD)$(SRC:.asm=.rel)
 SYMBOLS=$(OBJECTS:.rel=.sym)

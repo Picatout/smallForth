@@ -25,92 +25,79 @@
 
 
 ;--------------------------------
-; initialize FPTR 
-; FP!  ( ud -- )
+; initialize PTRH 
+; P!  ( u -- )
 ;---------------------------------
     .word LINK 
     LINK=.
-    .byte 3 
-    .ascii "FP!"
-FPSTOR:
+    .byte 2 
+    .ascii "P!"
+PTRSTOR:
     ldw y,x
     ldw y,(y)
-    ld a,yl 
-    ld FPTR,a 
-    addw x,#CELLL 
-    ldw y,x 
-    ldw y,(y)
-    ldw PTR16,y
+    _stryz PTRH 
     addw x,#CELLL 
     ret 
 
 ;-----------------------------------
 ; return EEPROM base address 
 ; as a double 
-;  EEPROM  ( -- ud )
+;  EEPROM  ( -- u )
 ;-----------------------------------
     .word LINK 
-LINK=.
+	LINK=.
     .byte 6 
     .ascii "EEPROM"
 EEPROM: 
     ldw y,#EEPROM_BASE
-    subw x,#2*CELLL 
-    ldw (2,x),y 
-    clrw y 
+    subw x,#CELLL 
     ldw (x),y 
     ret
 
 ;---------------------------------
-; return APP_LAST pointer as double
-; EEP-LAST ( -- ud )
+; return APP_LAST pointer
+; EEP-LAST ( -- u )
 ;---------------------------------
 	.word LINK 
 	LINK=.
 	.byte 8 
 	.ascii "EEP-LAST"
 EEPLAST:
-	subw x,#2*CELLL 
+	subw x,#CELLL 
 	ldw y,#APP_LAST 
-	ldw (2,x),y 
-	clrw y 
 	ldw (x),y 
 	ret 
 
 ;----------------------------------
-; return APP_RUN pointer as double	
-; EEP-RUN ( -- ud )
+; return APP_RUN pointer
+; EEP-RUN ( -- u )
 ;-----------------------------------
 	.word LINK 
 	LINK=.
 	.byte 7
 	.ascii "EEP-RUN"
 EEPRUN:
-	subw x,#2*CELLL 
+	subw x,#CELLL 
 	ldw y,#APP_RUN 
-	ldw (2,x),y 
-	clrw y 
 	ldw (x),y 
 	ret 
 
 ;------------------------------------
-; return APP_CP pointer as double 
-; EEP-CP ( -- ud )
+; return APP_CP pointer 
+; EEP-CP ( -- u )
 ;------------------------------------
 	.word LINK
 	LINK=.
 	.byte 6 
 	.ascii "EEP-CP"
 EEPCP:
-	subw x,#2*CELLL 
+	subw x,#CELLL 
 	ldw y,#APP_CP  
-	ldw (2,x),y 
-	clrw y 
 	ldw (x),y 
 	ret 
 
 ;------------------------------------
-; return APP_VP pointer as double 
+; return APP_VP pointer 
 ; EEP-VP ( -- ud )
 ;-------------------------------------
 	.word LINK
@@ -118,10 +105,8 @@ EEPCP:
 	.byte 6
 	.ascii "EEP-VP"
 EEPVP:
-	subw x,#2*CELLL 
+	subw x,#CELLL 
 	ldw y,#APP_VP  
-	ldw (2,x),y 
-	clrw y 
 	ldw (x),y 
 	ret 
 
@@ -215,7 +200,7 @@ UNLKFL:
 
 ;-----------------------------
 ; UNLOCK FLASH or EEPROM 
-; according to FPTR address 
+; according to PTRH address 
 ;  UNLOCK ( -- )
 ;-----------------------------
 	.word LINK 
@@ -224,9 +209,9 @@ UNLKFL:
 	.ascii "UNLOCK"
 UNLOCK:
 ; put addr[15:0] in Y, for bounds check.
-	ldw y,PTR16   ; Y=addr15:0
+	ldw y,PTRH   ; Y=addr15:0
 ; check addr[23:16], if <> 0 then it is extened flash memory
-	tnz FPTR 
+	tnz PTRH 
 	jrne 4$
     cpw y,#FLASH_BASE
     jruge 4$
@@ -254,25 +239,21 @@ LOCK:
 	ret 
 
 ;-------------------------
-; increment FPTR 
-; INC-FPTR ( -- )
+; increment PTR 
+; INC-PTR ( -- )
 ;-------------------------
 	.word LINK 
 	LINK=. 
 	.byte 8 
-	.ascii "INC-FPTR" 
-INC_FPTR:
-	inc PTR8 
-	jrne 1$
-	pushw y 
-	ldw y,FPTR 
+	.ascii "INC-PTR" 
+INC_PTR:
+	_ldyz PTRH 
 	incw y 
-	ldw FPTR,y
-	popw y  
-1$: ret 
+	_stryz PTRH 
+    ret 
 
 ;------------------------------
-; add u to FPTR 
+; add u to PTR 
 ; PTR+ ( u -- )
 ;------------------------------
 	.word LINK 
@@ -281,53 +262,15 @@ INC_FPTR:
 	.ascii "PTR+"
 PTRPLUS:
 	ldw y,x 
-	addw x,#CELLL 
-	addw y,PTR16 
-	ldw PTR16,y  
-	jrnc 1$
-	inc FPTR 
+	addw x,#CELLL
+	ldw y,(y) 
+	addw y,PTRH  
+	_stryz PTRH   
 1$: ret 
-
-;---------------------------------
-; read word at address pointed FPTR
-; increment FPTR 
-; EE-READ ( -- w )
-;------------------------------------
-	.word LINK 
-	LINK=.
-	.byte 7 
-	.ascii "EE-READ"
-EE_READ:
-	subw x,#CELLL 
-	ldf a,[FPTR]
-	ld yh,a 
-	call INC_FPTR 
-	ldf a,[FPTR]
-	call INC_FPTR 
-	ld yl,a 
-	ldw (x),y 
-	ret 
-
-;---------------------------------------
-; Read byte at address pointed by FPTR 
-; EE-CREAD ( -- c )
-;---------------------------------------
-	.word LINK 
-	LINK=.
-	.byte 8
-	.ascii "EE-CREAD" 
-EE_CREAD:
-	subw x,#CELLL 
-	ldf a,[FPTR]	
-	call INC_FPTR
-	clrw y 
-	ld yl,a 
-	ldw (x),y 
-	ret 
 
 ;----------------------------
 ; write a byte at address pointed 
-; by FPTR and increment FPTR.
+; by PTR and increment PTR.
 ; Expect pointer already initialized 
 ; and memory unlocked 
 ; WR-BYTE ( c -- )
@@ -336,19 +279,16 @@ EE_CREAD:
 	LINK=. 
 	.byte 7 
 	.ascii "WR-BYTE" 
-
 WR_BYTE:
-	ldw y,x 
-	ldw y,(y)
+	ld a,(1,x)
 	addw x,#CELLL 
-	ld a,yl
-	ldf [FPTR],a
+	ld [PTRH],a
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	jp INC_FPTR 
+	jp INC_PTR 
 
 ;---------------------------------------
 ; write a word at address pointed 
-; by FPTR and increment FPTR 
+; by PTRH and increment PTRH 
 ; Expect pointer already initialzed 
 ; and memory unlocked 
 ; WR-WORD ( w -- )
@@ -362,18 +302,17 @@ WR_WORD:
 	ldw y,(y)
 	addw x,#CELLL 
 	ld a,yh 
-	ldf [FPTR],a
+	ld [PTRH],a
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	call INC_FPTR 
+	call INC_PTR 
 	ld a,yl 
-	ldf [FPTR],a
+	ld [PTRH],a
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	jp INC_FPTR 
-
+	jp INC_PTR 
 
 ;---------------------------------------
 ; write a byte to FLASH or EEPROM/OPTION  
-; EEC!  (c ud -- )
+; EEC!  (c u -- )
 ;---------------------------------------
     .word LINK 
 	LINK=.
@@ -385,16 +324,16 @@ WR_WORD:
 	VSIZE = 2
 EECSTORE:
 	sub sp,#VSIZE
-    call FPSTOR
+    call PTRSTOR
 	ld a,(1,x)
 	cpl a 
 	ld (BTW,sp),a ; byte to write 
 	clr (OPT,sp)  ; OPTION flag
 	call UNLOCK 
 	; check if option
-	tnz FPTR 
+	tnz PTRH 
 	jrne 2$
-	ldw y,PTR16 
+	ldw y,PTRH 
 	cpw y,#OPTION_BASE
 	jrmi 2$
 	cpw y,#OPTION_END+1
@@ -420,14 +359,14 @@ EECSTORE:
 
 ;------------------------------
 ; write integer in FLASH|EEPROM
-; EE! ( n ud -- )
+; EE! ( n u -- )
 ;------------------------------
 	.word LINK 
 	LINK=.
 	.byte 3 
 	.ascii "EE!"
 EESTORE:
-	call FPSTOR 
+	call PTRSTOR 
 	call UNLOCK 
 	ldw y,x 
 	ldw y,(y)
@@ -444,15 +383,15 @@ EESTORE:
 
 ;----------------------------
 ; Erase flash memory row 
-; stm8s208 as 128 bytes rows
-; ROW-ERASE ( ud -- )
+; stm8l151k6 as 128 bytes rows
+; ROW-ERASE ( u -- )
 ;----------------------------
 	.word LINK 
 	LINK=. 
 	.byte 9 
 	.ascii "ROW-ERASE" 
 row_erase:
-	call FPSTOR
+	call PTRSTOR
 ;code must be execute from RAM 
 ;copy routine to PAD 
 	subw x,#CELLL 
@@ -465,7 +404,7 @@ row_erase:
 	ldw (x),y 
 	call CMOVE 
 block_erase:
-	ldw y,FPTR+1
+	ldw y,PTRH
 	cpw y,#app_space 
 	jrpl erase_flash 
 ; erase EEPROM block
@@ -496,24 +435,23 @@ row_erase_proc:
 ;	mov FLASH_NCR2,#~(1<<FLASH_CR2_ERASE)
 	clr a 
 	clrw y 
-	ldf ([FPTR],y),a
+	ld ([PTRH],y),a
     incw y
-	ldf ([FPTR],y),a
+	ld ([PTRH],y),a
     incw y
-	ldf ([FPTR],y),a
+	ld ([PTRH],y),a
     incw y
-	ldf ([FPTR],y),a
+	ld ([PTRH],y),a
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
 	ret
 row_erase_proc_end:
-
 
 ;-----------------------------------
 ; block programming must be 
 ; executed from RAM 
 ; initial contidions: 
 ; 		memory unlocked
-;       FPTR initialized 
+;       PTRH initialized 
 ; input: 
 ;    x   buffer address 
 ;-----------------------------------
@@ -525,7 +463,7 @@ copy_buffer:
 ;	bres FLASH_NCR2,#FLASH_CR2_PRG
 	clrw y
 1$:	ld a,(x)
-	ldf ([FPTR],y),a
+	ld ([PTRH],y),a
 	incw x 
 	incw y 
 	dec (BCNT,sp)
@@ -555,20 +493,20 @@ copy_prog_to_ram:
 
 ;-----------------------------
 ; write a row in FLASH/EEPROM 
-; WR-ROW ( a ud -- )
+; WR-ROW ( a u -- )
 ; a -> address 128 byte buffer to write 
-; ud ->  row address in FLASH|EEPROM 
+; u ->  row address in FLASH|EEPROM 
 ;-----------------------------
 	.word LINK 
 	LINK=.
 	.byte 6 
 	.ascii "WR-ROW"
 write_row:
-	call FPSTOR
+	call PTRSTOR
 ; align to FLASH block 
 	ld a,#0x80 
-	and a,PTR8 
-	ld PTR8,a  
+	and a,PTRL 
+	ld PTRL,a  
 	call copy_prog_to_ram
 	call UNLOCK
 	ldw y,x 
@@ -609,7 +547,11 @@ set_option:
 		call EECSTORE
 		ret 
 
-
+.if STM8L151K6
+clear_l151k6_opt:
+	
+	ret 
+.endif 
 
 ;--------------------------------------
 ; reset system to its original state 
@@ -623,33 +565,25 @@ set_option:
 pristine:
 ;;; erase EEPROM
 	call EEPROM 
-1$:	call DDUP 
+1$:	call DUPP  
 	call row_erase
 	ldw y,x 
-	ldw y,(2,y)
-	addw y,#BLOCK_SIZE
-	ldw (2,x),y
-	cpw y,#OPTION_BASE 
-	jrult 1$
-;;; reset OPTION to default values
-	ldw y,#1 ; OPT1 
-2$:	ldw (x),y   
-	clrw y 
-	ldw (2,x),y  ; ( 0 1 -- ) 
-	call DDUP    ; ( 0 1 0 1 -- )  
-	call set_option
-	ldw y,x 
 	ldw y,(y)
-	incw y  ; next OPTION 
-	cpw y,#8 
-	jrult 2$
-;;; erase first row of app_space 	
+	addw y,#BLOCK_SIZE
+	ldw (x),y
+	cpw y,#EEPROM_END 
+	jrult 1$
+	addw x,#CELLL 
+;;; reset OPTION to default values
+.if STM8L151K6
+	callr clear_l151k6_opt
+.endif 
+;;; erase first row of app_space 		
+	subw x,#CELLL 
 	ldw y,#app_space
-	ldw (2,x),y  
-	clrw y 
-	ldw (x),y ; ( app_space 0 -- )
+	ldw (x),y  
 	call row_erase 
-; reset interrupt vectors 
+; reset interrupt vectors 0..29 for stm8l151k6  
 	subw x,#CELLL 
 	clrw y  
 4$:	ldw (x),y  ; ( n -- ) int# 
@@ -658,7 +592,7 @@ pristine:
 	ldw y,x 
 	ldw y,(y)
 	incw y   ; next vector 
-	cpw y,#25 
+	cpw y,#30
 	jrult 4$
 	jp NonHandledInterrupt ; reset MCU
 
@@ -676,29 +610,26 @@ reset_vector:
 	ldw y,x
 	addw x,#CELLL 
 	ldw y,(y)
-	cpw y,#23 
+	cpw y,#25 ; timer4 preserved 
 	jreq 9$
+	cpw y,#27 ; usart1 rx preserved 
+	jreq 9$ 
 	cpw y,#29 ; last vector
 	jrugt 9$  
 	sllw y 
 	sllw y 
 	addw y,#0x8008 ; irq0 address 
 	ldw YTEMP,y
-	subw x,#3*CELLL 
-	ldw (2,x),y 
-	clrw y
+	subw x,#2*CELLL 
 	ldw (x),y 
-	ld a,#0x82 
-	ld yh,a
-	ldw (4,x),y
+	ldw y,#0x8200 
+	ldw (2,x),y
 	call EESTORE
-	subw x,#3*CELLL
-	clrw y 
-	ldw (x),y 
+	subw x,#2*CELLL
+	ldw y,YTEMP 
+	addw y,#2 
+	ldw (x),y
 	ldw y,#NonHandledInterrupt
-	ldw (4,x),y 
-	ldw y,YTEMP  
-	addw y,#2
 	ldw (2,x),y 
 	call EESTORE
 9$:	ret 
@@ -726,17 +657,17 @@ CHKIVEC:
 	ldw (CADR,sp),y ; ca 
 	ldw (SSP,sp),x 
 	ldw x,#0x800a ; irq0 address 
-	ldw PTR16,X
+	ldw PTRH,X
 	ldw x,#-4 
 1$:	addw x,#4
 	cpw x,#30*4 ; irq0-29 
 	jreq 9$
 	ldw y,x  
-	ld a,([PTR16],y)
+	ld a,([PTRH],y)
 	cp a,(CADR,sp)
 	jrult 1$
 	incw y 
-	ld a,([PTR16],y)
+	ld a,([PTRH],y)
 	cp a,(CADR+1,sp) 
 	jrult 1$ 
 	ldw (OFS,sp),x 
@@ -755,8 +686,8 @@ CHKIVEC:
 
 ;------------------------------
 ; set interrupt vector 
-; SET-IVEC ( ud n -- )
-;  ud Handler address
+; SET-IVEC ( u n -- )
+;  u  Handler address
 ;  n  vector # 0 .. 29 
 ;-----------------------------
 	.word LINK
@@ -854,15 +785,15 @@ EE_CCOMMA:
 	.byte 7 
 	.ascii "ROW>BUF"
 ROW2BUF: 
-	call FPSTOR 
+	call PTRSTOR 
 	ld a,#BLOCK_SIZE
 	push a 
-	and a,PTR8 ; block align 
-	ld PTR8,a
+	and a,PTRL ; block align 
+	ld PTRL,a
 	ldw y,#ROWBUFF 
-1$: ldf a,[FPTR]
+1$: ldf a,[PTRH]
 	ld (y),a
-	call INC_FPTR
+	call INC_PTR
 	incw y 
 	dec (1,sp)
 	jrne 1$ 

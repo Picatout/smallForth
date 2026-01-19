@@ -1,5 +1,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Copyright Jacques Deschênes 2019,2020,2021 
+;; Copyright Jacques Deschênes 2019,2020,2021,2026 
 ;; This file is part of stm8_tinyForth  
 ;;
 ;;     stm8_tinyForth is free software: you can redistribute it and/or modify
@@ -18,10 +18,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;-------------------------------------------------------------
-;  eForth for STM8S adapted from C. H. Ting source file to 
-;  assemble using sdasstm8
+;  Strip down version of stm8_eForth wich take origin from
+;  eForth for STM8S C. H. Ting source file and  
+;  adpated to assemble using sdasstm8
 ;  implemented on stm8l151k6
-;  Adapted by picatout 2026/01/17
+;  picatout 2026/01/17
 ;--------------------------------------------------------------
 	.module TINYFORTH
          .optsdcc -mstm8
@@ -35,11 +36,10 @@
 ;  Date: 2020-06-07 
 ;       Suite aux nombreux changement remplacé le numéro de version pour 3.0
 ;  Date: 2019-10-26
-;  Changes to memory map:
-;       0x16f0  Data Stack, growing downward
-;       0x1700  Terminal input buffer TIB
-;       0x17ff  Return Stack, growing downard
 ;================================================================
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;   Original comment from C. H. Ting
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       STM8EF, Version 2.1, 13 July
 ;               Implemented on STM8S-Discovery Board.
 ;               Assembled by ST VisualDevelop STVD 
@@ -97,23 +97,17 @@
 ;       156 14th Avenue
 ;       San Mateo, CA 94402
 ;       (650) 571-7639
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
       
 ;*********************************************************
 ;	Assembler constants
 ;*********************************************************
 RAMBASE =	0x0000	   ;ram base
-STACK   =	0x7FF 	;system (return) stack empty 
-DATSTK  =	0x680	;data stack  empty
-TBUFFBASE =     0x680  ; flash read/write transaction buffer address  
-TIBBASE =       0X700  ; transaction input buffer addr.
-
-; floatting point state bits in UFPSW 
-ZBIT=0 ; zero bit flag
-NBIT=1 ; negative flag 
-OVBIT=2 ; overflow flag 
-
+STACK   =	RAM_END    ;system (return) stack empty 0x780...0x7FF
+DATSTK  =	0x680	   ;data stack  empty, growing downward 64 bytes, 0x640...0x67F 
+TBUFFBASE =     0x680      ; flash read/write transaction buffer address 128 bytes: 0x680...0x6FF   
+TIBBASE =       0X700     ; transaction input buffer addr. 128 bytes 0x700...0x77F 
 
 ;; Memory allocation
 UPP     =     RAMBASE+6          ; systeme variables base address 
@@ -126,8 +120,7 @@ VAR_TOP =     STACK-32*CELLL  ; reserve 32 cells for data stack.
 
 ; user variables constants 
 UBASE = UPP       ; numeric base 
-UFPSW = UBASE+2  ; floating point state word 
-UTMP = UFPSW+2    ; temporary storage
+UTMP = UBASE+2    ; temporary storage
 UINN = UTMP+2     ; >IN tib pointer 
 UCTIB = UINN+2    ; tib count 
 UTIB = UCTIB+2    ; tib address 
@@ -135,8 +128,8 @@ UINTER = UTIB+2   ; interpreter vector
 UHLD = UINTER+2   ; hold 
 UCNTXT = UHLD+2   ; context, dictionary first link 
 UVP = UCNTXT+2    ; variable pointer 
-UCP = UVP+2      ; code pointer
-ULAST = UCP+2    ; last dictionary pointer 
+UCP = UVP+2       ; code pointer
+ULAST = UCP+2     ; last dictionary pointer 
 UOFFSET = ULAST+2 ; distance between CP and VP to adjust jump address at compile time.
 UTFLASH = UOFFSET+2 ; select where between FLASH and RAM for compilation destination. 
 URLAST = UTFLASH+2 ; context for dictionary in RAM memory 
@@ -152,10 +145,9 @@ SP0	= CARRY+2	;initial data stack pointer
 RP0	= SP0+2		;initial return stack pointer
 MS    =   RP0+2         ; millisecond counter 
 CNTDWN =  MS+2          ; count down timer 
-FPTR = CNTDWN+2         ; 24 bits farptr 
-PTR16 = FPTR+1          ; middle byte of farptr 
-PTR8 = FPTR+2           ; least byte of farptr 
-SEEDX = PTR8+2          ; PRNG seed X 
+PTRH = CNTDWN+2        ; hi byte of pointer  
+PTRL = PTRH+1           ; least byte of farptr 
+SEEDX = PTRL+1          ; PRNG seed X 
 SEEDY = SEEDX+2         ; PRNG seed Y 
 RX_QUEUE = SEEDY+2       ; last char received from UART 
 RX_HEAD = RX_QUEUE+RX_QUEUE_SIZE ;  
@@ -336,7 +328,8 @@ uart_init:
 	mov UART_CR2,#((1<<UART_CR2_TEN)|(1<<UART_CR2_REN)|(1<<UART_CR2_RIEN));
 
 ; initialize timer4, used for millisecond interrupt  
-	mov TIM4_PSCR,#7 ; prescale 128  
+	bset CLK_PCKENR1,#CLK_PCKENR1_TIM4 
+        mov TIM4_PSCR,#7 ; prescale 128  
 	mov TIM4_ARR,#125 ; set for 1msec.
 	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
 	bset TIM4_IER,#TIM4_IER_UIE 
