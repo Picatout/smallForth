@@ -301,7 +301,11 @@ ORIG:
 ; no divisor 16Mhz 
 clock_init:
         clr CLK_CKDIVR
-        
+
+.if STM8L151K6 
+   call unlock_ee
+.endif
+
 ; initialize UART, 115200 8N1
 uart_init:
 	bset CLK_PCKENR1,#UART_PCKEN
@@ -350,6 +354,7 @@ uart_init:
 ; sélectionne l'application 
 ; qui démarre automatique lors 
 ; d'un COLD start 
+; AUTORUN app_name 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER AUTORUN,7,"AUTORUN"
         call TOKEN 
@@ -366,7 +371,7 @@ uart_init:
         ldw (x),y 
         ldw y,#APP_RUN 
         ldw (2,x),y 
-        jp EESTORE 
+        jp STORE 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Reset dictionary pointer before 
@@ -4488,8 +4493,8 @@ COLD1:  CALL     DOLIT
         CALL     DOLIT
 	.word      UEND-UZERO
         CALL     CMOVE   ;initialize user area
-        ldw y,APP_RUN 
-        jrne 1$
+;        ldw y,APP_RUN 
+;        jrne 1$
 0$:
 ; there is no autorun application
 ; initialize EEPROM variables to default  
@@ -4541,8 +4546,10 @@ COLD1:  CALL     DOLIT
         CALL     OVERT
         JP     QUIT    ;start interpretation
 
+.if STM8L151K6
+        .include "stm8l151k6_flash.asm"
+.endif 
 
-        .include "flash.asm"
 .if WANT_SCALING_CONST 
         .include "const_ratio.asm"
 .endif

@@ -26,6 +26,10 @@ EOL_LF=0
 ; file: const_ratio.asm 
 WANT_SCALING_CONST = 0
 
+; set to 1 to include 
+; flash.asm to project
+WANT_FLASH=0
+
 ; set to 1 to make vocabulary 
 ; case sensitive 
 CASE_SENSE = 0 
