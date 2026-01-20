@@ -226,22 +226,7 @@ Timer4Handler:
         ldw CNTDWN,x 
 1$:         
         iret 
-.if 0
-UartRxHandler:
-        btjf UART_SR,#UART_SR_RXNE,1$
-        LD A,UART_DR 
-        JREQ 1$ 
-        CP A,#CTRL_X 
-        JREQ reset_mcu 
-; accept this character 
-        LD RX_CHAR,A 
-        MOV CHAR_RDY,#255 
-1$:     IRET         
-reset_mcu: 
-        LD A, #0x80
-        LD WWDG_CR,A ; WWDG_CR used to reset mcu
-        JRA . 
-.else 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Uart1 intterrupt handler 
 ;;; on receive character 
@@ -271,7 +256,6 @@ UartRxHandler: ; console receive char
 	and a,#RX_QUEUE_SIZE-1
 	ld RX_TAIL,a 
 5$:	iret 
-.endif 
 
 ;; power up entry points and COLD start data
 reset:
@@ -628,11 +612,7 @@ FREEVAR4: ; not variable
         _HEADER reboot,6,"REBOOT"
         CALL CR
         BTJF UART_SR,#UART_SR_TC,.
-.if 0
-        jp reset_mcu
-.else 
         _swreset
-.endif
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; compile to flash memory 
@@ -660,97 +640,9 @@ FREEVAR4: ; not variable
         ldw UTFLASH,y 
         ret 
 
-;; Device dependent I/O
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ?RX     ( -- c T | F )
-;         Return input character and true, or only false.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER QKEY,4,"?KEY"
-.if 0
-        TNZ CHAR_RDY 
-        JRNE  INCH 
-	SUBW	X,#CELLL
-        CLRW    Y 
-        LDW (X),Y
-        RET 
-INCH:         
-        SIM
-        SUBW X, #2*CELLL 
-        LD A,   RX_CHAR  
-        CLR     (CELLL,X)
-        LD     (CELLL+1,X),A
-	LDW     Y,#-1
-        LDw     (X),Y 
-        CLR     CHAR_RDY 
-        RIM 
-        RET 
-.else 
-; ?KEY 
-        ld a,RX_HEAD 
-        cp a,RX_TAIL
-        jrne INCH 
-	subw x,#CELLL 
-        clr (x)
-        clr (1,x)
-	ret 
-INCH:	  
-        SUBW X,#2*CELLL 
-        clrw y 
-        add a,#RX_QUEUE
-        ld yl,a
-	ld a,(y)
-        ld yl,a 
-        ldw (2,x),y
-        ldw y,#0xffff
-        ldw (x),y
-	inc RX_HEAD  
-	ld a,#RX_QUEUE_SIZE-1 
-	and a,RX_HEAD   
-	_straz RX_HEAD   
-	ld a,(x)
-	popw x 
-    ret 
-.endif 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       TX!     ( c -- )
-;       Send character c to  output device.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER EMIT,4,"EMIT"
-        LD     A,(1,X)
-	ADDW	X,#2
-putc:         
-OUTPUT: BTJF UART_SR,#UART_SR_TXE,OUTPUT  ;loop until tx empty 
-        LD    UART_DR,A   ;send A
-        RET
-
-.if 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       FC-XON  ( -- )
-;       send XON character 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER FC_XON,6,"FC-XON"
-        subw x,#CELLL 
-        clr (x)
-        ld a,#XON 
-        ld (1,x),a 
-        call EMIT 
-        ret 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       FC-XOFF ( -- )
-;       Send XOFF character 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER FC_XOFF,7,"FC-XOFF"
-        subw x,#CELLL 
-        clr (x)
-        ld a,#XOFF 
-        ld (1,x),a 
-        call EMIT 
-        ret
-.endif 
-
+;;;;;;;;;;;;;;;
 ;; The kernel
+;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       doLIT   ( -- w )
@@ -976,7 +868,7 @@ EXIT:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        ( n -- w)
-;      fetch nth element ofr return stack 
+;      fetch nth element of return stack 
 ;      n==0 is same as R@ 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NRAT,3,"NR@"
@@ -1167,7 +1059,6 @@ ZEQU1:
 ;       and return a double sum.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER UPLUS,3,"UM+"
-        LD A,#1
         LDW Y,X
         LDW Y,(2,Y)
         LDW YTEMP,Y
@@ -1175,11 +1066,10 @@ ZEQU1:
         LDW Y,(Y)
         ADDW Y,YTEMP
         LDW (2,X),Y
-        JRC     UPL1
-        CLR A
-UPL1:   LD     (1,X),A
-        CLR (X)
-        RET
+        CLRW Y  
+        RLCW Y 
+        LDW (X),Y  
+        RET 
 
 ;; System and user variables
 
@@ -1207,7 +1097,7 @@ DOVAR:
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       tmp     ( -- a )
+;       TMP     ( -- a )
 ;       A temporary storage.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TEMP,3,"TMP"
@@ -2818,14 +2708,78 @@ NUMQ3:
         LDW  Y, #-1 
         LDW (X),Y     ; n -1 R: base 
         JRA      NUMQ9
-NUMQ6:  
+NUMQ6: 
 ; restore BASE 
 NUMQ9: 
         CALL     RFROM
         CALL     BASE
         JP       STORE
 
-;; Basic I/O
+;;;;;;;;;;;;;;;;;;
+;; Basic UART I/O
+;;;;;;;;;;;;;;;;;;
+;-----------------------
+; cehck if char in queue
+; output:
+;    A    0 no char
+;-----------------------
+qchar: 
+        ld a,RX_HEAD 
+        sub a,#RX_TAIL 
+        ret 
+
+;------------------------
+; extract char from queue
+;  output:
+;    A     c  
+;------------------------
+getc:
+        clrw y 
+        _ldaz RX_HEAD 
+        add a,#RX_QUEUE 
+        ld yl,a 
+        ld a,(y)
+        push a 
+        _ldaz RX_HEAD 
+        inc a 
+        and a,#RX_QUEUE_SIZE-1 
+        _straz RX_HEAD 
+        pop a 
+        ret 
+
+;---------------------------------
+; send character to UART 
+;  input: 
+;     A     c 
+;---------------------------------
+putc:
+        BTJF UART_SR,#UART_SR_TXE,.  ;loop until tx empty 
+        LD    UART_DR,A   ;send A
+        RET        
+
+;;;;;;;;;;;;;;;;;;;;;;
+; forht terminal 
+; interface 
+;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       ?KEY      ( -- c T | F )
+; Return input character and true, or only false.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER QKEY,4,"?KEY"
+        subw x,#CELLL 
+        clr (1,x)
+        clr (x)
+        call qchar 
+        tnz a 
+        jrne INCH
+        ret 
+INCH:	  
+        subw x,#CELLL 
+        clr (x)
+        call getc 
+        ld (1,x),a         
+        ret 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       KEY     ( -- c )
@@ -2833,34 +2787,20 @@ NUMQ9:
 ;       input character.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER KEY,3,"KEY"
-.if 0
-0$:     TNZ CHAR_RDY 
-        JREQ 0$         
-        SIM 
-        SUBW X,#CELLL 
-        CLR (X)
-        LD A,RX_CHAR 
-        LD (1,X),A 
-        CLR CHAR_RDY 
-        RIM 
-        RET  
-.else 
 0$:     ld a,RX_HEAD 
         cp a,RX_TAIL 
         jreq 0$ 
-        subw x,#CELLL
-        clrw y 
-        add a,#RX_QUEUE 
-        ld yl,a 
-        ld a,(y)
-        ld yl,a 
-        ldw (x),y 
-        inc RX_HEAD 
-        ld a,RX_HEAD 
-        and a,#RX_QUEUE_SIZE-1 
-        ld RX_HEAD,a 
-        ret 
-.endif 
+        jra INCH  
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       EMIT    ( c -- )
+;       Send character c to  output device.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER EMIT,4,"EMIT"
+        LD     A,(1,X)
+	ADDW	X,#CELLL
+        JRA    putc  
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NUF?    ( -- t )
@@ -2868,16 +2808,16 @@ NUMQ9:
 ;       else pause and if CR return true.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NUFQ,4,"NUF?"
-        CALL     QKEY
-        CALL     DUPP
-        CALL     QBRAN
-        .word    NUFQ1
-        CALL     DDROP
-        CALL     KEY
-        CALL     DOLIT
-        .word      CRR
-        JP     EQUAL
-NUFQ1:  RET
+        subw    x,#CELLL 
+        clr     (x)
+        clr     (1,x)
+        CALL    qchar 
+        tnz     a 
+        jreq    9$ 
+        call    getc 
+        sub     a,#CRR 
+        ld      (1,x),a 
+9$:     ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SPACE   ( -- )
