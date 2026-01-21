@@ -180,12 +180,10 @@ BASEE   =     10      ;default radix
 BKSPP   =     8       ;back space
 LF      =     10      ;line feed
 CRR     =     13      ;carriage return
-XON     =     17
-XOFF    =     19
 CTRL_X  =     24      ; reboot hotkey 
 ERR     =     27      ;error escape
 TIC     =     39      ;tick
-CALLL   =     0xCD     ;CALL opcodes
+CALLL   =     0xCD     ;CALL opcode
 IRET_CODE =   0x80    ; IRET opcode 
 ADDWX   =     0x1C    ; opcode for ADDW X,#word  
 JPIMM   =     0xCC    ; JP addr opcode 
@@ -198,7 +196,7 @@ JPIMM   =     0xCC    ; JP addr opcode
 
 ;**********************************************************
         .area SSEG (ABS) ; STACK
-        .org 0x1700
+        .org RAM_SIZE-256
         .ds 256 
 ; space for DATSTK,TIB and STACK         
 ;**********************************************************
@@ -228,14 +226,13 @@ Timer4Handler:
         iret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Uart1 intterrupt handler 
+;;; UART intterrupt handler 
 ;;; on receive character 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--------------------------
 ; UART receive character
 ; in a FIFO buffer 
-; CTRL+C (ASCII 3)
-; reboot MCU  
+; CTRL+X reboot MCU  
 ;--------------------------
 UartRxHandler: ; console receive char 
         btjf UART_SR,#UART_SR_RXNE,5$ 
@@ -261,10 +258,10 @@ UartRxHandler: ; console receive char
 reset:
 ; clear all RAM
 	ldw X,#RAM_END
-clear_ram0:
+1$:
 	clr (X)
 	decw x 
-        jrne clear_ram0 
+        jrne 1$
 ; set SEEDX and SEEDY to 1 
         inc SEEDX+1 
         inc SEEDY+1          
@@ -273,18 +270,17 @@ clear_ram0:
 ; COLD initialize these variables.
 UZERO:
         .word      BASEE   ;BASE
-        .word      0       ; floating point state 
-        .word      0       ;tmp
+        .word      0       ;TMP 
         .word      0       ;>IN
         .word      0       ;#TIB
         .word      TIBB    ;TIB
         .word      INTER   ;'EVAL
         .word      0       ;HLD
-        .word      LASTN  ;CNTXT pointer
-        .word      VAR_BASE   ;variables free space pointer 
+        .word      LASTN  ; CNTXT pointer
+        .word      VAR_BASE ;variables free space pointer 
         .word      app_space ; FLASH free space pointer 
         .word      LASTN   ;LAST
-        .word      0        ; OFFSET 
+        .word      0       ; OFFSET 
         .word      0       ; TFLASH
 ;       .word      0       ; URLAST   
 UEND:   .word      0
@@ -3951,9 +3947,10 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL     COMPI
         .word EXIT 
 .endif 
+ 
         CALL     LBRAC
         call OVERT 
-        CALL FMOVE
+;        CALL FMOVE
         call QDUP 
         call QBRAN 
         .word SET_RAMLAST 
@@ -4492,9 +4489,9 @@ COLD1:  CALL     DOLIT
         .word      UPP
         CALL     DOLIT
 	.word      UEND-UZERO
-        CALL     CMOVE   ;initialize user area
-;        ldw y,APP_RUN 
-;        jrne 1$
+        CALL     CMOVE   ; ( src dest cnt -- ) initialize user area
+        ldw y,APP_RUN 
+        jrne 1$
 0$:
 ; there is no autorun application
 ; initialize EEPROM variables to default  
@@ -4544,7 +4541,7 @@ COLD1:  CALL     DOLIT
         CALL     TBOOT
         CALL     ATEXE   ;application boot
         CALL     OVERT
-        JP     QUIT    ;start interpretation
+        JP       QUIT    ;start interpretation
 
 .if STM8L151K6
         .include "stm8l151k6_flash.asm"
@@ -4562,6 +4559,5 @@ LASTN =	LINK   ;last name defined
 	.bndry 128 ; align on flash block  
 app_space: 
 .word 0,0,0,0
-
 
 

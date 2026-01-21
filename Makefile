@@ -47,9 +47,10 @@ clean: build
 .PHONY: clear_eevars 
 clear_eevars:
 	@echo
-	@echo "**********************"
+	@echo "****************************"
 	@echo "erase EEPROM variables"
-	@echo "**********************"
+	@echo "and reset options to default"
+	@echo "****************************"
 	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s eeprom -b 16 -w zero.bin  
 
 .PHONY: erase 
@@ -57,7 +58,7 @@ erase: clear_eevars
 	@echo "************************"
 	@echo "  reset all flash types "
 	@echo "************************"
-	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s flash -b 65536 -w zero.bin   	
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s flash -b FLASH_SIZE -w zero.bin   	
 
 build:
 	mkdir build
