@@ -106,7 +106,7 @@ unlock_ee:
 ; in EEPROM 
 ;----------------------------------
 	_HEADER UPDATLAST,10,"UPDAT-LAST"
-	call LAST
+	call CNTXT 
 	call AT      ; ( adr -- )
 	call EEPLAST ; ( adr ee_adr -- )
 	jp FSTORE 
@@ -140,8 +140,7 @@ unlock_ee:
 ; in EEPROM 
 ;----------------------------------
 	_HEADER UPDATVP,8,"UPDAT-VP"
-	call VPP   
-	call AT    ; ( adr -- )
+	call HERE    
 	call EEPVP  ; ( adr ee_adr -- )
 	jp FSTORE
 	
@@ -221,23 +220,104 @@ unlock_ee:
 
     ret 
 
-
 ;--------------------------
-; move new colon definition to FLASH 
+; FMOVE ( -- cp+ )
+; 
+; move new definition to FLASH 
 ; using WR-ROW for efficiency 
 ; preserving bytes already used 
 ; in the current block. 
 ; At this point the compiler as completed
 ; in RAM and pointers CP and CNTXT updated.
-; CNTXT point to nfa of new word and  
-; CP is after compiled word so CP-CNTXT+2=count to write 
-; 
-; FMOVE ( -- cp+ )
-; 
+; CNTXT point to nfa of new word in RAM and  
+; CP is after last compile word so 
+; CP-CNTXT+2=count to write 
 ;--------------------------
 	_HEADER FMOVE,5,"FMOVE"
+	call CPP
+	call AT   ; destination address  
+ONE_BYTE=1
+.if ONE_BYTE 
 
-    ret
+	CALL CNTXT 
+	CALL AT     ; nfa 
+	CALL CELLM  ; source address 
+	CALL DUPP 
+	CALL TOR  ; save to reset UVP 
+	CALL HERE  
+	CALL OVER
+	CALL SUBB  ; src cnt  
+	CALL DUPP 
+	CALL TOR  ; save cnt to update UCP later 
+	CALL CPP 
+	CALL AT 
+	CALL SWAPP ; src dest cnt 
+	CALL CMOVE
+; update  CNTXT and UCP 
+	CALL RFROM 
+	CALL CPP 
+	CALL AT 
+; set CNTXT to last NFA 	
+	CALL DUPP 
+	CALL CELLP ; NFA 
+	CALL CNTXT 
+	CALL STORE  
+; update UCP 	
+	CALL PLUS
+	CALL CPP 
+	CALL STORE ; CP point after last definition
+; reset UVP 
+	CALL RFROM 
+	CALL VPP  
+	CALL STORE  ; RAM pointer restored 
+	RET 
+
+.else 
+
+	call DUPP ; ( udl udl -- ) destination address 
+	call CNTXT 
+	call AT 
+	call DOLIT 
+	.word 2 
+	call SUBB ; ( udl udl a -- ) source address 
+	call SWAPP 
+	call ROT  ; ( udl a udl -- )
+	call DUPP 
+	call TOR    ; R: a 
+FMOVE2: 
+	call HERE 
+	call RAT 
+	call SUBB ; (udl ud a wl -- )
+next_row:
+	call DUPP 
+	call TOR  ; ( udl ud a wl -- ) R: a wl
+	call RAM2EE ; ( udl a u -- udl u2 ) u2 is byte written to FLASH 
+	call DUPP 
+	call TOR
+	call PLUS  ; ( udl+ ) 
+	call DUPP 
+	call ZERO   ; ( udl+ ud -- )
+	call RFROM  ; ( udl+ ud u2  R: a wl ) 
+	call RFROM  ; ( udl+ ud u2 wl R: a ) 
+	call OVER   ; ( udl+ ud u2 wl u2 -- )
+	call SUBB  ; ( udl+ ud u2 wl- R: a )
+	call DUPP 
+	call QBRAN
+	.word fmove_done 
+	call SWAPP  ; ( udl+ ud wl- u2 R: a )
+	call RFROM ; ( udl+ ud wl- u2 a -- ) 
+	call PLUS  ; ( udl+2 ud wl- a+ )
+	call DUPP 
+	call TOR   ; ( udl+2 ud wl- a+ ) R: a+
+	call SWAPP 
+	call BRAN
+	.word next_row  
+fmove_done:	
+	call RFROM  ; ( -- udl+ ud u2 wl- a  )
+	addw x,#5*CELLL ; (  -- cp+ ) new CP 
+ 	ret  
+
+.endif 
 
 ;------------------------------
 ; all interrupt vector with 

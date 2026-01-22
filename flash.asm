@@ -899,6 +899,8 @@ FADDR:
 
 
 ;--------------------------
+; FMOVE ( -- cp+ )
+; 
 ; move new colon definition to FLASH 
 ; using WR-ROW for efficiency 
 ; preserving bytes already used 
@@ -906,20 +908,10 @@ FADDR:
 ; At this point the compiler as completed
 ; in RAM and pointers CP and CNTXT updated.
 ; CNTXT point to nfa of new word and  
-; CP is after compiled word so CP-CNTXT+2=count to write 
-; 
-; FMOVE ( -- cp+ )
-; 
+; CP is after last compiled word so 
+; CP-CNTXT+2=count to write 
 ;--------------------------
-	.word LINK 
-	LINK=.
-	.byte 5 
-	.ascii "FMOVE" 
-FMOVE:
-	call TFLASH 
-	CALL AT 
-	CALL QBRAN 
-	.word no_move  
+	_HEADER FMOVE,5,"FMOVE"
 	call CPP
 	call AT  
 	call DUPP ; ( udl udl -- )
@@ -929,7 +921,6 @@ FMOVE:
 	.word 2 
 	call SUBB ; ( udl udl a -- )
 	call SWAPP 
-	call FADDR 
 	call ROT  ; ( udl ud a -- )
 	call DUPP 
 	call TOR    ; R: a 
@@ -965,9 +956,6 @@ fmove_done:
 	call RFROM  ; ( -- udl+ ud u2 wl- a  )
 	addw x,#5*CELLL ; (  -- cp+ ) new CP 
  	ret  
-no_move:
-	call ZERO
-	ret 
 
 ;------------------------------------------
 ; adjust pointers after **FMOVE** operetion.
