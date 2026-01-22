@@ -127,16 +127,13 @@ UTIB = UCTIB+2    ; tib address
 UINTER = UTIB+2   ; interpreter vector 
 UHLD = UINTER+2   ; hold 
 UCNTXT = UHLD+2   ; context, dictionary first link 
-UVP = UCNTXT+2    ; variable pointer 
-UCP = UVP+2       ; code pointer
+UVP = UCNTXT+2    ; variable data pointer (in RAM) 
+UCP = UVP+2       ; code pointer (FLASH)
 ULAST = UCP+2     ; last dictionary pointer 
-UOFFSET = ULAST+2 ; distance between CP and VP to adjust jump address at compile time.
-UTFLASH = UOFFSET+2 ; select where between FLASH and RAM for compilation destination. 
-URLAST = UTFLASH+2 ; context for dictionary in RAM memory 
 
 ;******  System Variables  ******
-XTEMP	=	URLAST +2;address called by CREATE
-YTEMP	=	XTEMP+2	;address called by CREATE
+XTEMP	= ULAST +2 ;address called by CREATE
+YTEMP	= XTEMP+2  ;address called by CREATE
 PROD1 = XTEMP	;space for UM*
 PROD2 = PROD1+2
 PROD3 = PROD2+2
@@ -215,13 +212,13 @@ NonHandledInterrupt:
 ; MS is 16 bits counter 
 Timer4Handler:
 	clr TIM4_SR 
-        ldw x,MS 
+        _ldxz MS 
         incw x 
-        ldw MS,x
-        ldw x,CNTDWN 
+        _strxz MS
+        _ldxz CNTDWN 
         jreq 1$
         decw x 
-        ldw CNTDWN,x 
+        _strxz CNTDWN 
 1$:         
         iret 
 
@@ -280,9 +277,6 @@ UZERO:
         .word      VAR_BASE ;variables free space pointer 
         .word      app_space ; FLASH free space pointer 
         .word      LASTN   ;LAST
-        .word      0       ; OFFSET 
-        .word      0       ; TFLASH
-;       .word      0       ; URLAST   
 UEND:   .word      0
 
 ORIG:   
@@ -313,8 +307,8 @@ uart_init:
 
 ; initialize timer4, used for millisecond interrupt  
 	bset CLK_PCKENR1,#CLK_PCKENR1_TIM4 
-        mov TIM4_PSCR,#7 ; prescale 128  
-	mov TIM4_ARR,#125 ; set for 1msec.
+        mov TIM4_PSCR,#7 ; prescale 128 ; 16Mhz/128=125Khz  
+	mov TIM4_ARR,#256-125 ; set for 1msec.
 	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
 	bset TIM4_IER,#TIM4_IER_UIE 
         rim 
@@ -573,12 +567,12 @@ FREEVAR4: ; not variable
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PAUSE,5,"PAUSE"
         ldw y,x
+        addw x,#CELLL 
         ldw y,(y)
         addw y,MS 
 1$:     wfi  
         cpw y,MS  
         jrne 1$        
-        addw x,#CELLL 
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -587,9 +581,9 @@ FREEVAR4: ; not variable
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIMER,5,"TIMER"
         ldw y,x
-        ldw y,(y) 
-        ldw CNTDWN,y
         addw x,#CELLL 
+        ldw y,(y) 
+        _stryz CNTDWN
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -614,32 +608,6 @@ FREEVAR4: ; not variable
         CALL CR
         BTJF UART_SR,#UART_SR_TC,.
         _swreset
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-; compile to flash memory 
-; TO-FLASH ( -- )
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TOFLASH,8,"TO-FLASH"
-        call RAMLAST 
-        call AT 
-        call QDUP 
-        call QBRAN
-        .word 1$
-        call ABORQ 
-        .byte 29
-        .ascii " Not while definitions in RAM"   
-1$:     ldw y,#-1 
-        ldw UTFLASH,y
-        ret 
-
-;;;;;;;;;;;;;;;;;;;;;;
-; compile to RAM 
-; TO-RAM ( -- )
-;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TORAM,6,"TO-RAM"
-        clrw y 
-        ldw UTFLASH,y 
-        ret 
 
 ;;;;;;;;;;;;;;;
 ;; The kernel
@@ -1140,15 +1108,6 @@ DOVAR:
         ret 
 
 ; systeme variable 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; compilation destination 
-; TFLASH ( -- A )
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TFLASH,6,"TFLASH"
-        subw x,#CELLL 
-        ldw y,#UTFLASH
-        ldw (x),y 
-        ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       "EVAL   ( -- a )
@@ -1212,6 +1171,7 @@ DOVAR:
         LDW (X),Y
         RET
 
+.if 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; address of system variable URLAST 
 ;       RAMLAST ( -- a )
@@ -1222,7 +1182,7 @@ DOVAR:
         subw x,#CELLL 
         ldw (x),y 
         ret 
-
+ 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       OFFSET ( -- a )
 ;       address of system 
@@ -1234,6 +1194,7 @@ DOVAR:
         ldw (x),y 
         ret 
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; adjust jump address 
 ;  adding OFFSET
@@ -1244,6 +1205,7 @@ ADRADJ:
         call AT 
         jp PLUS 
 
+.endif 
 
 ;; Common functions
 
@@ -2115,7 +2077,7 @@ RSHIFT4:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       HERE    ( -- a )
-;       Return  top of  variables
+;       Return  top of ram space  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER HERE,4,"HERE"
       	ldw y,#UVP 
@@ -3544,15 +3506,18 @@ QUIT2:  CALL     QUERY   ;get input
         .word      ABOR1
         RET     ;yes, push code address
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ALLOT   ( n -- )
-;       Allocate n bytes to RAM 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       Allocate n bytes to top of RAM 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ALLOT,5,"ALLOT"
-        CALL     VPP
+        CALL    HERE 
+        CALL    PLUS
+        CALL    VPP  
+        CALL    STORE 
 ; must update APP_VP each time VP is modidied
-        call PSTOR 
-        jp UPDATVP 
+        JP UPDATVP 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ,       ( w -- )
@@ -3565,7 +3530,8 @@ QUIT2:  CALL     QUERY   ;get input
         CALL     CELLP   ;cell boundary
         CALL     VPP
         CALL     STORE
-        JP     STORE
+        CALL     STORE
+        JP       UPDATVP 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       C,      ( c -- )
@@ -3578,7 +3544,8 @@ QUIT2:  CALL     QUERY   ;get input
         CALL     ONEP
         CALL     VPP
         CALL     STORE
-        JP     CSTOR
+        CALL     CSTOR
+        JP       UPDATVP 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       [COMPILE]       ( -- ; <string> )
@@ -3587,7 +3554,7 @@ QUIT2:  CALL     QUERY   ;get input
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BCOMP,COMPO+IMEDD+9,"[COMPILE]"
         CALL     TICK
-        JP     JSRC
+        JP       JSRC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       COMPILE ( -- )
@@ -3613,7 +3580,7 @@ QUIT2:  CALL     QUERY   ;get input
         _HEADER LITER,COMPO+IMEDD+7,"LITERAL"
         CALL     COMPI
         .word DOLIT 
-        JP     COMMA
+        JP     FCOMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       $,"     ( -- )
@@ -3651,7 +3618,7 @@ STRCQ:
         _HEADER NEXT,COMPO+IMEDD+4,"NEXT"
         CALL     COMPI
         .word DONXT 
-        call ADRADJ
+;        call ADRADJ
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3692,7 +3659,7 @@ STRCQ:
         _HEADER UNTIL,COMPO+IMEDD+5,"UNTIL"
         CALL     COMPI
         .word    QBRAN 
-        call ADRADJ
+;        call ADRADJ
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3708,7 +3675,7 @@ STRCQ:
         CALL     COMPI
         .word BRAN
 .endif 
-        call ADRADJ 
+;        call ADRADJ 
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3729,7 +3696,7 @@ STRCQ:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER THENN,COMPO+IMEDD+4,"THEN"
         CALL     HERE
-        call ADRADJ 
+;        call ADRADJ 
         CALL     SWAPP
         JP     STORE
 
@@ -3751,7 +3718,7 @@ STRCQ:
         CALL     COMMA
         CALL     SWAPP
         CALL     HERE
-        call ADRADJ 
+;        call ADRADJ 
         CALL     SWAPP
         JP     STORE
 
@@ -3798,10 +3765,10 @@ STRCQ:
         CALL     COMPI
         .word BRAN
 .endif 
-        call ADRADJ 
+;        call ADRADJ 
         CALL     COMMA
         CALL     HERE
-        call ADRADJ 
+;        call ADRADJ 
         CALL     SWAPP
         JP     STORE
 
@@ -3880,8 +3847,8 @@ SNAME:
         CALL     DUPP
         CALL     COUNT
         CALL     PLUS
-        CALL     VPP
-        CALL     STORE
+        CALL     CPP
+        CALL     FSTORE
         CALL     DUPP
         CALL     LAST
         CALL     STORE   ;save na for vocabulary link
@@ -3894,7 +3861,7 @@ SNAME:
 PNAM1:  CALL     STRQP
         .byte      5
         .ascii     " name" ;null input
-        JP     ABOR1
+        JP       ABOR1
 
 ;; FORTH compiler
 
@@ -3932,31 +3899,22 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL     LAST
         CALL     AT
         CALL     CNTXT
-        JP     STORE
+        JP       STORE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ;       ( -- )
 ;       Terminate a colon definition.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SEMIS,IMEDD+COMPO+1,^/";"/
-.if OPTIMIZE ; more compact and faster
-        call DOLIT 
-        .word 0x81   ; opcode for RET 
-        call CCOMMA 
-.else
-        CALL     COMPI
-        .word EXIT 
-.endif 
- 
-        CALL     LBRAC
-        call OVERT 
-;        CALL FMOVE
-        call QDUP 
-        call QBRAN 
-        .word SET_RAMLAST 
-        CALL UPDATPTR
-        RET 
+        CALL    DOLIT 
+        .word   0x81   ; opcode for RET 
+        call    FCCOMMA 
+        CALL    LBRAC
+        CALL    OVERT 
+        CALL    UPDATLAST 
+        CALL    UPDATCP 
 
+.if 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       Terminate an ISR definition 
 ;       retourn ca of ISR as double
@@ -3985,7 +3943,8 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         call STORE 
         jp ZERO
         ret           
-        
+.endif     
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ]       ( -- )
 ;       Start compiling words in
@@ -4013,9 +3972,9 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
 ; replace CALL DROP BY  ADDW X,#CELLL 
         ADDW X,#CELLL 
         _DOLIT ADDWX ; opcode 
-        CALL   CCOMMA 
+        CALL   FCCOMMA 
         _DOLIT CELLL 
-        JP      COMMA 
+        JP      FCOMMA 
 JSRC1: ; check for DDROP 
         LDW Y,#DDROP 
         LDW YTEMP,Y 
@@ -4026,17 +3985,18 @@ JSRC1: ; check for DDROP
 ; replace CALL DDROP BY ADDW X,#2*CELLL 
         ADDW X,#CELLL 
         _DOLIT ADDWX 
-        CALL  CCOMMA 
+        CALL  FCCOMMA 
         _DOLIT 2*CELLL 
-        JP  COMMA 
+        JP  FCOMMA 
 JSRC2: 
 ;;;;;;;; end optimization code ;;;;;;;;;;        
 .endif        
         CALL     DOLIT
-        .word     CALLL     ;CALL
-        CALL     CCOMMA
-        JP     COMMA
+        .word    CALLL     ;CALL
+        CALL     FCCOMMA
+        JP       FCOMMA
 
+.if 0
 ;       INIT-OFS ( -- )
 ;       compute offset to adjust jump address 
 ;       set variable OFFSET 
@@ -4057,6 +4017,7 @@ INITOFS:
         call SUBB 
 1$:     call OFFSET 
         jp STORE  
+.endif 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       :       ( -- ; <string> )
@@ -4064,7 +4025,6 @@ INITOFS:
 ;       using next word as its name.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER COLON,1,":"
-        call INITOFS       
         CALL   TOKEN
         CALL   SNAME
         JP     RBRAC
@@ -4077,7 +4037,7 @@ INITOFS:
 ;       no name.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ICOLON,2,"I:"
-        call INITOFS 
+;        call INITOFS 
         jp RBRAC  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4118,7 +4078,7 @@ IMM01:  CALL	LAST
         CALL     SNAME
         CALL     OVERT        
         CALL     COMPI 
-        .word DOVAR 
+        .word    DOVAR 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4127,30 +4087,21 @@ IMM01:  CALL	LAST
 ;       initialized to 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
-; indirect variable so that VARIABLE definition can be compiled in FLASH 
+;allocate space in RAM for variable value 
         CALL HERE
+        CALL DUPP 
         CALL DUPP 
         CALL CELLP
         CALL VPP 
         CALL STORE
-        CALL CREAT
-        CALL DUPP
-        CALL COMMA
         CALL ZERO
         call SWAPP 
         CALL STORE
-        CALL FMOVE ; move definition to FLASH
-        CALL QDUP 
-        CALL QBRAN 
-        .word SET_RAMLAST   
-        call UPDATVP  ; don't update if variable kept in RAM.
-        CALL UPDATPTR
-        RET         
-SET_RAMLAST: 
-        CALL LAST 
-        CALL AT 
-        CALL RAMLAST 
-        JP STORE  
+        call UPDATVP 
+        CALL CREAT
+        CALL FCOMMA ; compile address of data 
+        JP   UPDATLAST 
+            
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -4163,13 +4114,10 @@ SET_RAMLAST:
         CALL OVERT 
         CALL COMPI 
         .word DOCONST
-        CALL COMMA 
-        CALL FMOVE
-        CALL QDUP 
-        CALL QBRAN 
-        .word SET_RAMLAST  
-        CALL UPDATPTR  
-1$:     RET          
+        CALL FCOMMA 
+        CALL UPDATLAST 
+        JP UPDATCP 
+          
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CONSTANT runtime semantic 
@@ -4193,14 +4141,10 @@ DOCONST:
         CALL OVERT 
         CALL COMPI 
         .word DO_DCONST
-        CALL COMMA
-        CALL COMMA  
-        CALL FMOVE
-        CALL QDUP 
-        CALL QBRAN 
-        .word SET_RAMLAST  
-        CALL UPDATPTR  
-1$:     RET          
+        CALL FCOMMA
+        CALL FCOMMA  
+        CALL UPDATCP   
+        JP   UPDATLAST  
     
 ;----------------------------------
 ; runtime for DCONST 
@@ -4416,20 +4360,9 @@ WORS2:  RET
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 COPYRIGHT:
     CALL DOTQP 
-    .byte 50 
-    .ascii "Copyright Jacques Deschenes, 2021, 2022,2023,2026\n"
+    .byte 34 
+    .ascii "Copyright Jacques Deschenes, 2026\n"
     RET 
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  PRINT_LICENSE 
-;  print GPL V3 license 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-PRINT_LICENSE:
-        CALL DOTQP 
-        .byte  16 
-        .ascii "\nLICENSE GPL V3\n"
-        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    PRINT_VERSION ( c1 c2 -- )
@@ -4458,16 +4391,15 @@ PRINT_VERSION:
         _HEADER HI,2,"HI"
         CALL     CR
         CALL     DOTQP   
-        .byte      11,27
-        .ascii     "ctinyForth"
+        .byte      11,27,'c' ; bytes 27,'c' clear terminal display 
+        .ascii     "tinyForth"
 	_DOLIT VER 
         _DOLIT MINOR 
         CALL PRINT_VERSION
-        CALL PRINT_LICENSE
-        CALL COPYRIGHT
         CALL    DOTQP
-        .byte 16
-        .ascii  " on stm8s151k6t6"
+        .byte 17
+        .ascii  " on stm8s151k6t6\n"
+        CALL COPYRIGHT
         JP     CR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

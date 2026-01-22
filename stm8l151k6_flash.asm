@@ -21,154 +21,198 @@ unlock_ee:
     ret 
 
 
+.if 0
 ;--------------------------------
-; initialize PTRH 
 ; P!  ( u -- )
+; initialize PTRH 
 ;---------------------------------
-    .word LINK 
-    LINK=.
-    .byte 2 
-    .ascii "P!"
-PTRSTOR:
+	_HEADER PTRSTORE,2,"P!"
     ldw y,x
     ldw y,(y)
     _stryz PTRH 
     addw x,#CELLL 
     ret 
+.endif 
+
+;---------------------------------
+;   F!  ( w a -- )
+;   store word in FLASH || EEPROM 
+;----------------------------------
+	_HEADER FSTORE,2,"F!"
+	ldw y,x 
+	ldw y,(y)
+	ld a,(2,x)
+	ld (y),a 
+	ld a,(3,x)
+	ld (1,y),a 
+	addw x,#2*CELLL 
+	ret 
 
 ;-----------------------------------
+;  EEPROM  ( -- u )
 ; return EEPROM base address 
 ; as a double 
-;  EEPROM  ( -- u )
 ;-----------------------------------
-    .word LINK 
-	LINK=.
-    .byte 6 
-    .ascii "EEPROM"
-EEPROM: 
+	_HEADER EEPROM,6,"EEPROM"
     ldw y,#EEPROM_BASE
     subw x,#CELLL 
     ldw (x),y 
     ret
 
 ;---------------------------------
-; return APP_LAST pointer
 ; EEP-LAST ( -- u )
+; return APP_LAST pointer
 ;---------------------------------
-	.word LINK 
-	LINK=.
-	.byte 8 
-	.ascii "EEP-LAST"
-EEPLAST:
+	_HEADER EEPLAST,8,"EEP-LAST"
 	subw x,#CELLL 
 	ldw y,#APP_LAST 
 	ldw (x),y 
 	ret 
 
 ;----------------------------------
-; return APP_RUN pointer
 ; EEP-RUN ( -- u )
+; return APP_RUN pointer
 ;-----------------------------------
-	.word LINK 
-	LINK=.
-	.byte 7
-	.ascii "EEP-RUN"
-EEPRUN:
+	_HEADER EEPRUN,7,"EEP-RUN"
 	subw x,#CELLL 
 	ldw y,#APP_RUN 
 	ldw (x),y 
 	ret 
 
 ;------------------------------------
-; return APP_CP pointer 
 ; EEP-CP ( -- u )
+; return APP_CP pointer 
 ;------------------------------------
-	.word LINK
-	LINK=.
-	.byte 6 
-	.ascii "EEP-CP"
-EEPCP:
+	_HEADER EEPCP,6,"EEP-CP"
 	subw x,#CELLL 
 	ldw y,#APP_CP  
 	ldw (x),y 
 	ret 
 
 ;------------------------------------
+; EEP-VP ( -- u )
 ; return APP_VP pointer 
-; EEP-VP ( -- ud )
 ;-------------------------------------
-	.word LINK
-	LINK=.
-	.byte 6
-	.ascii "EEP-VP"
-EEPVP:
+	_HEADER EEPVP,6,"EEP-VP"
 	subw x,#CELLL 
 	ldw y,#APP_VP  
 	ldw (x),y 
 	ret 
 
 ;----------------------------------
+; UPDAT-LAST ( -- )
 ; update APP_LAST with LAST 
 ; store link address of dictionary head 
 ; in EEPROM 
-; UPDAT-LAST ( -- )
 ;----------------------------------
-	.word LINK 
-	LINK=.
-	.byte 10
-	.ascii "UPDAT-LAST"
-UPDATLAST:
+	_HEADER UPDATLAST,10,"UPDAT-LAST"
 	call LAST
 	call AT      ; ( adr -- )
 	call EEPLAST ; ( adr ee_adr -- )
-	jp STORE 
+	jp FSTORE 
 
 ;---------------------------------
+; UPDAT-RUN ( a -- )
 ; update APP_RUN 
 ; store autorun code address in 
 ; EEPROM 
-; UPDAT-RUN ( a -- )
 ;---------------------------------
-	.word LINK
-	LINK=.
-	.byte 9
-	.ascii "UPDAT-RUN"
-UPDATRUN:
+	_HEADER UPDATRUN,9,"UPDAT-RUN"
 	call EEPRUN ; ( adr ee_adr -- )
-	jp STORE 
+	jp FSTORE 
 	
 ;---------------------------------
-; update APP_CP with CP 
-; store free code start address 
-; in EEPROM 
 ; UPDAT-CP ( -- )
+; update APP_CP with CP 
+; store top FLASH address 
+; in EEPROM 
 ;---------------------------------
-	.word LINK 
-	LINK=.
-	.byte 8 
-	.ascii "UPDAT-CP"
-UPDATCP:
+	_HEADER UPDATCP,8,"UPDAT-CP"
 	call CPP 
 	call AT     ; ( adr -- )
 	call EEPCP  ; ( adr ee_adr -- )
-	jp STORE 
+	jp FSTORE 
 
 ;----------------------------------
-; update APP_VP with VP 
-; store free variables start address
-; in EEPROM 
 ; UPDAT-VP ( -- )
+; update APP_VP  
+; store top variables address
+; in EEPROM 
 ;----------------------------------
-	.word LINK
-	LINK=.
-	.byte 8 
-	.ascii "UPDAT-VP" 
-UPDATVP:
+	_HEADER UPDATVP,8,"UPDAT-VP"
 	call VPP   
 	call AT    ; ( adr -- )
 	call EEPVP  ; ( adr ee_adr -- )
-	jp STORE
+	jp FSTORE
 	
+;----------------------------
+;  FHERE ( -- a )
+;  get top of FLASH 
+;---------------------------
+	_HEADER FHERE,5,"FHERE"
+	ldw y,#UCP 
+	ldw y,(y)
+	subw x,#CELLL 
+	ldw (x),y 
+	ret 
+
+;----------------------------
+;  FALLOT ( n -- )
+;  allocate n byte to code space 
+;---------------------------
+	_HEADER FALLOT,6,"FALLOT"
+	CALL FHERE  
+	CALL PLUS 
+	CALL CPP 
+	CALL STORE 
+	JP UPDATCP 
+
+;----------------------------
+;   F, ( w -- )
+; compile 16 bits integer to 
+; top of FLASH 
+;-----------------------------
+	_HEADER FCOMMA,2,^/"F,"/
+	CALL     FHERE
+	CALL     DUPP
+	CALL     CELLP   ;cell boundary
+	CALL     CPP
+	CALL     STORE
+	CALL     FSTORE
+	JP       UPDATCP 
+
+;----------------------------
+;   FC, ( c -- )
+; compile byt to  
+; top of FLASH 
+;-----------------------------
+	_HEADER FCCOMMA,2,^/"FC,"/
+	CALL     FHERE
+	CALL     DUPP
+	CALL     ONEP   
+	CALL     CPP
+	CALL     STORE
+	CALL     STORE
+	JP       UPDATCP 
+
+.if 0
+;------------------------------------------
+; UPDAT-PTR 
+; update pointers kept in EEPROM
+;-------------------------------------------
+    _HEADER UPDATPTR,9,"UPDAT-PTR"
+;update CONTEXT and LAST 
+	call LAST
+	call AT 
+	call STORE 
+	call UPDATLAST 
+;update CP 
+	call CPP 
+	call STORE
+	call UPDATCP 
+	ret 
+.endif 
+
 ;-----------------------------
 ; move interrupt sub-routine
 ; in flash memory
@@ -177,14 +221,6 @@ UPDATVP:
 
     ret 
 
-;------------------------------------------
-; adjust pointers after **FMOVE** operetion.
-; UPDAT-PTR ( cp+ -- )
-; cp+ is new CP position after FMOVE 
-;-------------------------------------------
-    _HEADER UPDATPTR,9,"UPDAT-PTR"
-
-    ret 
 
 ;--------------------------
 ; move new colon definition to FLASH 
