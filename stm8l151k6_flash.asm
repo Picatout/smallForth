@@ -221,7 +221,7 @@ unlock_ee:
     ret 
 
 ;--------------------------
-; FMOVE ( -- cp+ )
+; FMOVE ( -- )
 ; 
 ; move new definition to FLASH 
 ; using WR-ROW for efficiency 
@@ -234,46 +234,45 @@ unlock_ee:
 ; CP-CNTXT+2=count to write 
 ;--------------------------
 	_HEADER FMOVE,5,"FMOVE"
-	call CPP
-	call AT   ; destination address  
 ONE_BYTE=1
 .if ONE_BYTE 
-
 	CALL CNTXT 
 	CALL AT     ; nfa 
 	CALL CELLM  ; source address 
 	CALL DUPP 
-	CALL TOR  ; save to reset UVP 
+	CALL TOR  ; R: src, save to reset UVP 
 	CALL HERE  
 	CALL OVER
 	CALL SUBB  ; src cnt  
 	CALL DUPP 
-	CALL TOR  ; save cnt to update UCP later 
+	CALL TOR  ; R: src cnt,  save cnt to update UCP later 
 	CALL CPP 
-	CALL AT 
-	CALL SWAPP ; src dest cnt 
-	CALL CMOVE
+	CALL AT    ; src cnt dest  
+	CALL SWAPP ; src dest cnt
+	CALL CMOVE ; stack empty 
 ; update  CNTXT and UCP 
-	CALL RFROM 
+	CALL RFROM ; cnt  R: src 
 	CALL CPP 
-	CALL AT 
+	CALL AT   ; cnt adr  
 ; set CNTXT to last NFA 	
 	CALL DUPP 
-	CALL CELLP ; NFA 
+	CALL CELLP ; cnt adr nfa  
 	CALL CNTXT 
-	CALL STORE  
+	CALL STORE ; -- cnt adr  
 ; update UCP 	
 	CALL PLUS
 	CALL CPP 
 	CALL STORE ; CP point after last definition
 ; reset UVP 
-	CALL RFROM 
+	CALL RFROM ; src 
 	CALL VPP  
 	CALL STORE  ; RAM pointer restored 
 	RET 
 
 .else 
 
+	call CPP
+	call AT   ; destination address  
 	call DUPP ; ( udl udl -- ) destination address 
 	call CNTXT 
 	call AT 

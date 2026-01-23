@@ -157,7 +157,7 @@ RX_TAIL = RX_HEAD+1
 
 ; EEPROM persistant data  
 APP_CNTXT= EEPROM_BASE 
-APP_LAST = EEPROM_CNTXT+2 ; Application last word pointer  
+APP_LAST = APP_CNTXT+2 ; Application last word pointer  
 APP_RUN = APP_LAST+2   ; application autorun address 
 APP_CP = APP_RUN+2     ; free application space pointer 
 APP_VP = APP_CP+2      ; free data space pointer 
@@ -656,7 +656,7 @@ NEX1:
 ;       _HEADER QBRAN,COMPO+7,"?BRANCH"        
 QBRAN:	
         LDW Y,X
-	ADDW X,#2
+	ADDW X,#CELLL 
 	LDW Y,(Y)
         JREQ     BRAN
 	POPW Y
@@ -2665,7 +2665,7 @@ NUMQ9:
 ;-----------------------
 qchar: 
         ld a,RX_HEAD 
-        sub a,#RX_TAIL 
+        sub a,RX_TAIL 
         ret 
 
 ;------------------------
@@ -2709,22 +2709,17 @@ putc:
 ; interface 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ?KEY      ( -- c T | F )
-; Return input character and true, or only false.
+;       KEY?      ( -- T | F )
+; return a flag .
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER QKEY,4,"?KEY"
+        _HEADER KEYQ,4,"KEY?"
         subw x,#CELLL 
-        clr (1,x)
-        clr (x)
+        clrw y 
         call qchar 
-        tnz a 
-        jrne INCH
-        ret 
-INCH:	  
-        subw x,#CELLL 
-        clr (x)
-        call getc 
-        ld (1,x),a         
+        jreq 1$
+        cplw y 
+1$:         
+        ldw (x),y 
         ret 
 
 
@@ -2737,7 +2732,13 @@ INCH:
 0$:     ld a,RX_HEAD 
         cp a,RX_TAIL 
         jreq 0$ 
-        jra INCH  
+INCH:	  
+        call getc 
+        subw x,#CELLL 
+        clrw y
+        ld yl ,a         
+        ldw (x),y
+        ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       EMIT    ( c -- )
@@ -3309,7 +3310,7 @@ ACCP4:  CALL     DROP
 ;       jump to QUIT.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABORT,5,"ABORT"
-        CALL     PRESE
+        CALL   PRESE
         JP     QUIT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3421,14 +3422,14 @@ EVAL2:  CALL     DROP
 ;       terminal input buffer.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PRESE,6,"PRESET"
+        CALL    DOLIT 
+        .WORD   SPP 
+        CALL    SPSTO 
         CALL     DOLIT
-        .word      SPP
-        CALL     SPSTO
-        CALL     DOLIT
-        .word      TIBB
+        .word    TIBB
         CALL     NTIB
         CALL     CELLP
-        JP     STORE
+        JP       STORE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       QUIT    ( -- )
@@ -3455,7 +3456,7 @@ QUIT2:  CALL     QUERY   ;get input
         CALL     TOKEN
         CALL     NAMEQ   ;?defined
         CALL     QBRAN
-        .word      ABOR1
+        .word    ABOR1
         RET     ;yes, push code address
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3606,8 +3607,8 @@ STRCQ:
         _HEADER UNTIL,COMPO+IMEDD+5,"UNTIL"
         CALL     COMPI
         .word    QBRAN 
-        call ADRADJ
-        JP     COMMA
+        call     ADRADJ
+        JP       COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AGAIN   ( a -- )
@@ -3678,11 +3679,11 @@ STRCQ:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER WHILE,COMPO+IMEDD+5,"WHILE"
         CALL     COMPI
-        .word QBRAN
+        .WORD    QBRAN
         CALL     HERE
         CALL     ZERO
         CALL     COMMA
-        JP     SWAPP
+        JP       SWAPP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       REPEAT      ( A a -- )
@@ -3691,12 +3692,12 @@ STRCQ:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER REPEA,COMPO+IMEDD+6,"REPEAT"
         _DOLIT JPIMM 
-        CALL  CCOMMA
-        call ADRADJ 
-        CALL     COMMA
-        CALL     HERE
-        call ADRADJ 
-        CALL     SWAPP
+        CALL   CCOMMA
+        call   ADRADJ 
+        CALL   COMMA
+        CALL   HERE
+        call   ADRADJ 
+        CALL   SWAPP
         JP     STORE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3916,19 +3917,17 @@ JSRC2:
         CALL     CCOMMA
         JP     COMMA
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       INIT-OFS ( -- )
 ;       compute offset to adjust jump address 
-;       set variable OFFSET 
-        .word LINK 
-        LINK=.
-        .byte 8 
-        .ascii "INIT-OFS" 
-INITOFS:
+;       set variable OFFSET
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+        _HEADER INITOFS,8,"INIT-OFS"
         call CPP 
         call AT 
         call HERE
         call SUBB 
-1$:     call OFFSET 
+        call OFFSET 
         jp STORE  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
