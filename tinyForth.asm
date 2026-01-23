@@ -299,10 +299,6 @@ ORIG:
 clock_init:
         clr CLK_CKDIVR
 
-.if STM8L151K6 
-   call unlock_ee
-.endif
-
 ; initialize UART, 115200 8N1
 uart_init:
 	bset CLK_PCKENR1,#UART_PCKEN
@@ -3840,8 +3836,8 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL     LBRAC
         call OVERT 
         CALL FMOVE  ; move definition to FLASH 
-        CALL UPDATCP 
-        JP UPDATLAST
+        ;CALL UPDATCP 
+        ;JP UPDATLAST
          
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4012,10 +4008,11 @@ IMM01:  CALL	LAST
         CALL ZERO
         CALL SWAPP 
         CALL STORE
-        CALL FMOVE ; move definition to FLASH
-        CALL UPDATVP  ; don't update if variable kept in RAM.
-        CALL UPDATLAST 
-        JP UPDATCP 
+        JP FMOVE ; move definition to FLASH
+        
+        ;CALL UPDATVP  ; don't update if variable kept in RAM.
+        ;CALL UPDATLAST 
+        ;JP UPDATCP 
                  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -4029,10 +4026,10 @@ IMM01:  CALL	LAST
         CALL COMPI 
         .word DOCONST
         CALL COMMA 
-        CALL FMOVE
-        CALL UPDATLAST 
-        CALL UPDATCP   
-1$:     RET          
+        JP FMOVE
+        ;CALL UPDATLAST 
+        ;CALL UPDATCP   
+1$:     ;RET          
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CONSTANT runtime semantic 
@@ -4058,9 +4055,9 @@ DOCONST:
         .word DO_DCONST
         CALL COMMA
         CALL COMMA  
-        CALL FMOVE
-        CALL UPDATLAST 
-        JP   UPDATCP   
+        JP FMOVE
+        ;CALL UPDATLAST 
+        ;JP   UPDATCP   
     
 ;----------------------------------
 ; runtime for DCONST 
@@ -4345,10 +4342,12 @@ COLD1:  CALL     DOLIT
         subw x,#CELLL 
         ldw y,#HI  
         ldw (x),y
+        call unlock_ee 
         call UPDATRUN
         call UPDATLAST 
         call UPDATCP 
         call UPDATVP
+        call lock_ee 
         jra 6$ 
 1$:        
 ; if no app at app_space initialize EEPROM with ca of 'HI'  

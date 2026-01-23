@@ -16,10 +16,12 @@ unlock_ee:
 ;unlock EEPROM IAP 
     mov FLASH_DUKR,#FLASH_DUKR_KEY1 
     mov FLASH_DUKR,#FLASH_DUKR_KEY2
-;enable write to OPTION registers 
-    bset FLASH_CR2,#FLASH_CR2_OPT 
     ret 
 
+lock_ee:
+	bres FLASH_IAPSR,#FLASH_IAPSR_DUL
+	bres FLASH_IAPSR,#FLASH_IAPSR_PUL 
+	ret 
 
 .if 0
 ;--------------------------------
@@ -234,8 +236,7 @@ unlock_ee:
 ; CP-CNTXT+2=count to write 
 ;--------------------------
 	_HEADER FMOVE,5,"FMOVE"
-ONE_BYTE=1
-.if ONE_BYTE 
+	CALL unlock_ee 
 	CALL CNTXT 
 	CALL AT     ; nfa 
 	CALL CELLM  ; source address 
@@ -267,56 +268,11 @@ ONE_BYTE=1
 	CALL RFROM ; src 
 	CALL VPP  
 	CALL STORE  ; RAM pointer restored 
+	CALL UPDATVP 
+	CALL UPDATCP 
+	CALL UPDATLAST 
+	call lock_ee 
 	RET 
-
-.else 
-
-	call CPP
-	call AT   ; destination address  
-	call DUPP ; ( udl udl -- ) destination address 
-	call CNTXT 
-	call AT 
-	call DOLIT 
-	.word 2 
-	call SUBB ; ( udl udl a -- ) source address 
-	call SWAPP 
-	call ROT  ; ( udl a udl -- )
-	call DUPP 
-	call TOR    ; R: a 
-FMOVE2: 
-	call HERE 
-	call RAT 
-	call SUBB ; (udl ud a wl -- )
-next_row:
-	call DUPP 
-	call TOR  ; ( udl ud a wl -- ) R: a wl
-	call RAM2EE ; ( udl a u -- udl u2 ) u2 is byte written to FLASH 
-	call DUPP 
-	call TOR
-	call PLUS  ; ( udl+ ) 
-	call DUPP 
-	call ZERO   ; ( udl+ ud -- )
-	call RFROM  ; ( udl+ ud u2  R: a wl ) 
-	call RFROM  ; ( udl+ ud u2 wl R: a ) 
-	call OVER   ; ( udl+ ud u2 wl u2 -- )
-	call SUBB  ; ( udl+ ud u2 wl- R: a )
-	call DUPP 
-	call QBRAN
-	.word fmove_done 
-	call SWAPP  ; ( udl+ ud wl- u2 R: a )
-	call RFROM ; ( udl+ ud wl- u2 a -- ) 
-	call PLUS  ; ( udl+2 ud wl- a+ )
-	call DUPP 
-	call TOR   ; ( udl+2 ud wl- a+ ) R: a+
-	call SWAPP 
-	call BRAN
-	.word next_row  
-fmove_done:	
-	call RFROM  ; ( -- udl+ ud u2 wl- a  )
-	addw x,#5*CELLL ; (  -- cp+ ) new CP 
- 	ret  
-
-.endif 
 
 ;------------------------------
 ; all interrupt vector with 
