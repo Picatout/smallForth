@@ -1,3 +1,9 @@
+### 2026-01-22 
+
+* je dois décidé de la stratégie à utiliser pour le verrouillage déverrouillage de la programmation IAP.
+
+<HR>
+
 ### 2023-02-23 
 
 1. Corrigé bogue #1 avec mot __\\__.  En fait le bogue était dans l'entête **_HEADER COMMA,1,^/","/**.  Il y avait un __\\__ avant la virgule dans la chaîne de caractères.

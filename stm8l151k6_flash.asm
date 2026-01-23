@@ -4,50 +4,56 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-
-;----------------------
-; unlock flash and 
-; eeprom programming 
-;----------------------
-unlock_ee:
-; unlock FLASH IAP 
-    mov FLASH_PUKR,#FLASH_PUKR_KEY1
+;-----------------------
+; unlock FLASH for 
+; IAP programming 
+;-----------------------
+unlock_flash:
+    btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$
+	mov FLASH_PUKR,#FLASH_PUKR_KEY1
     mov FLASH_PUKR,#FLASH_PUKR_KEY2 
-;unlock EEPROM IAP 
-    mov FLASH_DUKR,#FLASH_DUKR_KEY1 
-    mov FLASH_DUKR,#FLASH_DUKR_KEY2
-    ret 
+1$:	ret 
 
-lock_ee:
-	bres FLASH_IAPSR,#FLASH_IAPSR_DUL
+;------------------------
+; lock FLASH IAP 
+; programming 
+;------------------------
+lock_flash:
 	bres FLASH_IAPSR,#FLASH_IAPSR_PUL 
 	ret 
 
-.if 0
-;--------------------------------
-; P!  ( u -- )
-; initialize PTRH 
+;----------------------
+; unlock EEPROM for  
+; IAP programming 
+;----------------------
+unlock_eeprom:
+    btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,1$
+	mov FLASH_DUKR,#FLASH_DUKR_KEY1 
+    mov FLASH_DUKR,#FLASH_DUKR_KEY2
+1$: ret 
+
 ;---------------------------------
-	_HEADER PTRSTORE,2,"P!"
-    ldw y,x
-    ldw y,(y)
-    _stryz PTRH 
-    addw x,#CELLL 
-    ret 
-.endif 
+;  block EEPROM IAP programming 
+;--------------------------------
+lock_eeprom:
+	bres FLASH_IAPSR,#FLASH_IAPSR_DUL
+	ret 
 
 ;---------------------------------
 ;   F!  ( w a -- )
-;   store word in FLASH || EEPROM 
+;   store word in FLASH
 ;----------------------------------
 	_HEADER FSTORE,2,"F!"
-	ldw y,x 
+	btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$ 
+	call unlock_flash  
+1$:	ldw y,x 
 	ldw y,(y)
 	ld a,(2,x)
 	ld (y),a 
 	ld a,(3,x)
 	ld (1,y),a 
 	addw x,#2*CELLL 
+	call lock_ee 
 	ret 
 
 ;-----------------------------------
@@ -105,9 +111,12 @@ lock_ee:
 ; UPDAT-LAST ( -- )
 ; update APP_LAST with LAST 
 ; store link address of dictionary head 
-; in EEPROM 
+; in EEPROM. 
 ;----------------------------------
 	_HEADER UPDATLAST,10,"UPDAT-LAST"
+	btjt FLASH_IAPSR_SR,#FLASH_IAPSR_DUL,1$
+	call
+1$:	
 	call CNTXT 
 	call AT      ; ( adr -- )
 	call EEPLAST ; ( adr ee_adr -- )
@@ -198,7 +207,7 @@ lock_ee:
 
 .if 0
 ;------------------------------------------
-; UPDAT-PTR 
+; UPDAT-PTR  ( -- )
 ; update pointers kept in EEPROM
 ;-------------------------------------------
     _HEADER UPDATPTR,9,"UPDAT-PTR"
