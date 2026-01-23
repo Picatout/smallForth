@@ -28,7 +28,7 @@ WANT_SCALING_CONST = 0
 
 ; how many bytes are reserved 
 ; by system at EEPROM base.
-EEPROM_RES = 18  
+EEPROM_RES = 16 
 
 	.include "inc/macros.inc" 
 

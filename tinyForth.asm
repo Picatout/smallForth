@@ -155,12 +155,11 @@ RX_QUEUE = SEEDY+2       ; last char received from UART
 RX_HEAD = RX_QUEUE+RX_QUEUE_SIZE ;  
 RX_TAIL = RX_HEAD+1 
 
-; EEPROM persistant data  
-APP_CNTXT= EEPROM_BASE 
-APP_LAST = APP_CNTXT+2 ; Application last word pointer  
-APP_RUN = APP_LAST+2   ; application autorun address 
-APP_CP = APP_RUN+2     ; free application space pointer 
-APP_VP = APP_CP+2      ; free data space pointer 
+; system variables saved in EEPROM when updated   
+EEP_CNTXT= EEPROM_BASE  ; value of UCNTXT  
+EEP_VP = EEP_CNTXT+2      ; value of UVP  
+EEP_CP = EEP_VP+2     ; value UCP  
+EEP_RUN = EEP_CP+2   ; application autorun Code Addr  
 
 
 ;***********************************************
@@ -242,6 +241,7 @@ UartRxHandler: ; console receive char
 	ld a,UART_DR 
 	cp a,#CTRL_X  
 	jrne 2$
+        clr FLASH_IAPSR
 	_swreset 	
 2$:
 	push a 
@@ -344,6 +344,7 @@ uart_init:
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; AUTORUN name 
 ; sélectionne l'application 
 ; qui démarre automatique lors 
 ; d'un COLD start 
@@ -359,12 +360,7 @@ uart_init:
         call QBRAN 
         .word FORGET2
         _DROP 
-        subw x,#2*CELLL 
-        clrw y 
-        ldw (x),y 
-        ldw y,#APP_RUN 
-        ldw (2,x),y 
-        jp STORE 
+        JP UPDATRUN 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Reset dictionary pointer before 
@@ -420,8 +416,8 @@ FORGET1:
         call SUBB 
         call CPP 
         call STORE  
-        call UPDATCP 
-        jp UPDATLAST 
+        call UPDATPTR 
+        jp UPDATPTR 
 FORGET6: ; tried to forget a RAM or system word 
 ; ( ca na -- )
         subw x,#CELLL 
@@ -469,7 +465,7 @@ FORGET4:
         call AT 
         call VPP   
         call STORE 
-        jp UPDATVP 
+        jp UPDATPTR 
 FREEVAR4: ; not variable
         _DROP 
         RET 
@@ -610,6 +606,7 @@ FREEVAR4: ; not variable
         _HEADER reboot,6,"REBOOT"
         CALL CR
         BTJF UART_SR,#UART_SR_TC,.
+        clr FLASH_IAPSR 
         _swreset
 
 ;;;;;;;;;;;;;;;
@@ -3461,9 +3458,9 @@ QUIT2:  CALL     QUERY   ;get input
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ALLOT,5,"ALLOT"
         CALL     VPP
-; must update APP_VP each time VP is modidied
+; must update EEP_VP each time VP is modidied
         call PSTOR 
-        jp UPDATVP 
+        jp UPDATPTR 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ,       ( w -- )
@@ -3836,9 +3833,10 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL     LBRAC
         call OVERT 
         CALL FMOVE  ; move definition to FLASH 
-        ;CALL UPDATCP 
-        ;JP UPDATLAST
+        ;CALL UPDATPTR 
+        ;JP UPDATPTR
          
+.if 0 ;**************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       Terminate an ISR definition 
@@ -3851,20 +3849,21 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         ldw (x),y 
         call CCOMMA
         call LBRAC 
-        call IFMOVE
+        call FMOVE
         CALL CPP
         call AT 
         call SWAPP 
         CALL CPP 
         call STORE 
-        call UPDATCP 
+        call UPDATPTR 
         call EEPVP 
         _DROP 
         call AT 
         call VPP 
         call STORE 
         JP ZERO
-           
+
+ .ENDIF ; ************************          
         
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ]       ( -- )
@@ -3962,7 +3961,9 @@ IMM01:  CALL	LAST
         CALL    ORR
         CALL    LAST
         CALL    AT
-        JP      FSTORE
+        CALL    unlock_flash 
+        CALL    FSTOR
+        JP      lock_flash 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;		COMPILE-ONLY  ( -- )
@@ -4010,9 +4011,9 @@ IMM01:  CALL	LAST
         CALL STORE
         JP FMOVE ; move definition to FLASH
         
-        ;CALL UPDATVP  ; don't update if variable kept in RAM.
-        ;CALL UPDATLAST 
-        ;JP UPDATCP 
+        ;CALL UPDATPTR  ; don't update if variable kept in RAM.
+        ;CALL UPDATPTR 
+        ;JP UPDATPTR 
                  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -4027,8 +4028,8 @@ IMM01:  CALL	LAST
         .word DOCONST
         CALL COMMA 
         JP FMOVE
-        ;CALL UPDATLAST 
-        ;CALL UPDATCP   
+        ;CALL UPDATPTR 
+        ;CALL UPDATPTR   
 1$:     ;RET          
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4056,8 +4057,8 @@ DOCONST:
         CALL COMMA
         CALL COMMA  
         JP FMOVE
-        ;CALL UPDATLAST 
-        ;JP   UPDATCP   
+        ;CALL UPDATPTR 
+        ;JP   UPDATPTR   
     
 ;----------------------------------
 ; runtime for DCONST 
@@ -4320,13 +4321,14 @@ PRINT_VERSION:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TBOOT,5,"'BOOT"
         CALL     DOVAR
-        .word    APP_RUN      ;application to boot
+        .word    EEP_RUN      ;application to boot
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       COLD    ( -- )
 ;       The hilevel cold start s=ence.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER COLD,4,"COLD"
+; initialize user variables from UZERO table. 
 COLD1:  CALL     DOLIT
         .word      UZERO
 	CALL     DOLIT
@@ -4334,55 +4336,29 @@ COLD1:  CALL     DOLIT
         CALL     DOLIT
 	.word      UEND-UZERO
         CALL     CMOVE   ; ( src dest cnt -- ) initialize user area
-        ldw y,APP_RUN 
-        jrne 1$
-0$:
-; there is no autorun application
-; initialize EEPROM variables to default  
-        subw x,#CELLL 
-        ldw y,#HI  
-        ldw (x),y
-        call unlock_ee 
-        call UPDATRUN
-        call UPDATLAST 
-        call UPDATCP 
-        call UPDATVP
-        call lock_ee 
-        jra 6$ 
-1$:        
-; if no app at app_space initialize EEPROM with ca of 'HI'  
-        ldw y,app_space
-        jreq 0$ 
-; update LAST with APP_LAST 
-; if APP_LAST > LAST else do the opposite
-        ldw y,APP_LAST 
-        cpw y,ULAST 
-        jrugt 2$ 
-; save LAST at APP_LAST  
-        call UPDATLAST 
-        jra 3$
-2$: ; update LAST with APP_LAST 
-        ldw ULAST,y
-        ldw UCNTXT,y
-3$:  
-; update APP_CP if < app_space 
-        ldw y,APP_CP  
-        cpw y,UCP   
-        jruge 4$ 
-        call UPDATCP
-        ldw y,UCP   
-4$:
-        ldw UCP,y                 
-; update UVP with APP_VP  
-; if APP_VP>UVP else do the opposite 
-        ldw y,APP_VP 
-        cpw y,UVP 
-        jrugt 5$
-        call UPDATVP 
-        jra 6$
-5$: ; update UVP with APP_VP 
-        ldw UVP,y 
-6$:      
+; check if default CNTXT have been replaced 
+; load system variables from EEPROM if required 
+        ldw y,EEP_CNTXT
+        jreq COLD2    ; not set in EEPROM 
+        cpw y,UCNTXT
+        jreq COLD9    ; default already saved    
+        jrne COLD3 ; changed
+COLD2: ; save default values in EEPROM  
+        CALL UPDATPTR
+        ; set autorun to HI  
+        CALL DOLIT 
+        .WORD HI 
+        CALL UPDATRUN  
+        JRA COLD9
+COLD3: ; load system variables from EEPROM 
+        LDW Y,EEP_CNTXT 
+        _stryz UCNTXT 
+        _stryz ULAST 
+        LDW Y,EEP_CP 
+        _stryz UCP 
+        LDW Y,EEP_VP 
+        _stryz UVP
+COLD9:      
         CALL     PRESE   ;initialize data stack and TIB
         CALL     TBOOT
         CALL     ATEXE   ;application boot
