@@ -58,7 +58,7 @@ erase: clear_eevars
 	@echo "************************"
 	@echo "  reset all flash types "
 	@echo "************************"
-	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s flash -b FLASH_SIZE -w zero.bin   	
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s flash -b $(FLASH_SIZE) -w zero.bin   	
 
 build:
 	mkdir build

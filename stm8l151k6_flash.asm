@@ -10,8 +10,10 @@
 ;-----------------------
 unlock_flash:
     btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$
+	sim 
 	mov FLASH_PUKR,#FLASH_PUKR_KEY1
-    mov FLASH_PUKR,#FLASH_PUKR_KEY2 
+    mov FLASH_PUKR,#FLASH_PUKR_KEY2
+	rim  
 1$:	ret 
 
 ;------------------------
@@ -28,8 +30,10 @@ lock_flash:
 ;----------------------
 unlock_eeprom:
     btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,1$
+	sim 
 	mov FLASH_DUKR,#FLASH_DUKR_KEY1 
     mov FLASH_DUKR,#FLASH_DUKR_KEY2
+	rim 
 1$: ret 
 
 ;---------------------------------
@@ -257,7 +261,7 @@ iap_locked:
 	CALL AT    ; src cnt dest  
 	CALL SWAPP ; src dest cnt
 	CALL CMOVE ; stack empty
-	CALL lock_flash  
+;	CALL lock_flash  
 ; update  CNTXT
 	CALL RFROM ; cnt  R: src 
 	CALL CPP 
