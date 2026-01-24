@@ -5,42 +5,27 @@
 
 
 ;-----------------------
+; UNLOCK_IAP ( -- )
 ; unlock FLASH for 
 ; IAP programming 
 ;-----------------------
-unlock_flash:
+	_HEADER unlock_iap,10,"UNLOCK-IAP"
     btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$
 	sim 
 	mov FLASH_PUKR,#FLASH_PUKR_KEY1
     mov FLASH_PUKR,#FLASH_PUKR_KEY2
+	mov FLASH_DUKR,#FLASH_DUKR_KEY1 
+    mov FLASH_DUKR,#FLASH_DUKR_KEY2
 	rim  
 1$:	ret 
 
 ;------------------------
-; lock FLASH IAP 
+; LOCK_IAP ( -- )
+; lock  IAP 
 ; programming 
 ;------------------------
-lock_flash:
-	bres FLASH_IAPSR,#FLASH_IAPSR_PUL 
-	ret 
-
-;----------------------
-; unlock EEPROM for  
-; IAP programming 
-;----------------------
-unlock_eeprom:
-    btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,1$
-	sim 
-	mov FLASH_DUKR,#FLASH_DUKR_KEY1 
-    mov FLASH_DUKR,#FLASH_DUKR_KEY2
-	rim 
-1$: ret 
-
-;---------------------------------
-;  block EEPROM IAP programming 
-;--------------------------------
-lock_eeprom:
-	bres FLASH_IAPSR,#FLASH_IAPSR_DUL
+	_HEADER lock_iap,8,"LOCK-IAP"
+	clr FLASH_IAPSR 
 	ret 
 
 ;---------------------------------
@@ -54,9 +39,11 @@ write_word:
 	ldw y,x 
 	ldw y,(y)
 	ld a,(2,x)
-	ld (y),a 
+	ld (y),a
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.  
 	ld a,(3,x)
 	ld (1,y),a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
 	addw x,#2*CELLL 
 	ret 
 
@@ -71,6 +58,7 @@ write_byte:
 	ldw y,(y)
 	ld a,(3,x)
 	ld (y),a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
 	addw x,#2*CELLL 
 	ret 
 
@@ -156,10 +144,10 @@ iap_locked:
 ; EEPROM 
 ;---------------------------------
 	_HEADER UPDATRUN,9,"UPDAT-RUN"
-	call unlock_eeprom 
+	call unlock_iap  
 	call EEPRUN ; ( adr ee_adr -- )
-	call FSTOR 
-	call lock_eeprom 
+	call EESTOR  
+	call lock_iap 
 	ret 
 
 ;----------------------------------
@@ -203,14 +191,15 @@ iap_locked:
 ;  in EEPROM 
 ;----------------------------------
 	_HEADER UPDATPTR,11,"UPDAT-EEPTR"
-	call unlock_eeprom 
+	btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,1$
+	call unlock_iap  
+1$:
+	call UPDATCNTXT 
 	call UPDATCP 
 	call UPDATVP 
-	call EPPCNTXT 
-	call lock_eeprom  
+	call lock_iap   
 	ret 
 	
-
 .IF 0 ;*********************
 
 ;----------------------------
@@ -246,7 +235,7 @@ iap_locked:
 ; HERE-CNTXT+2=count to write 
 ;--------------------------
 	_HEADER FMOVE,5,"FMOVE"
-	CALL unlock_flash  
+	CALL unlock_iap  
 	CALL CNTXT 
 	CALL AT     ; nfa 
 	CALL CELLM  ; source address 
@@ -260,8 +249,7 @@ iap_locked:
 	CALL CPP 
 	CALL AT    ; src cnt dest  
 	CALL SWAPP ; src dest cnt
-	CALL CMOVE ; stack empty
-;	CALL lock_flash  
+	CALL CMOVE ; stack empty 
 ; update  CNTXT
 	CALL RFROM ; cnt  R: src 
 	CALL CPP 
@@ -287,9 +275,33 @@ iap_locked:
 ; to default
 ; CHKIVEC ( a -- )
 ;------------------------------
+VECTOR_SIZE=4 
     _HEADER CHKIVEC,7,"CHKIVEC"
-
-    ret 
+	call unlock_iap 
+	ldw y,x 
+	ldw y,(y)
+	_stryz UTMP
+	addw x,#CELLL ; drop a 
+	pushw x 
+	ldw x,#0x8000 
+1$: 
+	addw x,#VECTOR_SIZE  
+    cpw x,#VECTOR_USART1_RX ; protected 
+	jreq 1$ 
+	cpw x,#VECTOR_TIM4 ; protected 
+	jreq 1$  
+	cpw x,#8080
+	jreq 9$  ; done 
+	ldw y,x   
+	ldw y,(2,y) 
+	cpw y,UTMP 
+	jrmi 1$ 
+	ldw  y,#NonHandledInterrupt
+	ld (2,x),a 
+	jra 1$
+9$: popw x 
+	call lock_iap 
+	ret 
 
 .IF 0 ;*******************
 

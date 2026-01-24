@@ -79,7 +79,7 @@
 ;               to EF12.S19 before flashing
 ;               add TICKS1 and DELAY1 for motor stepping
 ;
-;       EF12, 02/18/00, C. H. Ting
+;       EF12, 02/18/00, C. H. TingCOLD1,
 ;       Adapt 86eForth v2.02 to 68HC12.
 ;               Use WHYP to seed EF12.ASM
 ;               Use AS12 native 68HC12 assembler:
@@ -209,9 +209,8 @@ JPIMM   =     0xCC    ; JP addr opcode
 
 ; non handled interrupt reset MCU
 NonHandledInterrupt:
-        iret 
-;        ld a, #0x80
-;        ld WWDG_CR,a ; WWDG_CR used to reset mcu
+;      _swreset 
+       iret 
 
 ; used for milliseconds counter 
 ; MS is 16 bits counter 
@@ -307,6 +306,7 @@ uart_init:
 	mov UART_BRR1,#0x08
         clr UART_DR
 	mov UART_CR2,#((1<<UART_CR2_TEN)|(1<<UART_CR2_REN)|(1<<UART_CR2_RIEN));
+        call clr_scr
 
 ; initialize timer4, used for millisecond interrupt  
 	bset CLK_PCKENR1,#CLK_PCKENR1_TIM4 
@@ -397,9 +397,7 @@ FORGET1:
         call DUPP  ; ( -- na last last )
         call FREEVAR ; ( -- na last )
         call DUPP 
-        call DOLIT 
-        .word 2 
-        call SUBB ; ( na last -- na last lfa ) link address 
+        call CELLM ; ( na last -- na last lfa ) link address 
         call AT 
         call DUPP ; ( -- na last a a )
         call CNTXT 
@@ -411,25 +409,11 @@ FORGET1:
         call QBRAN 
         .word FORGET1 
 ; ( na -- )
-        call DOLIT 
-        .word 2 
-        call SUBB 
+        call CELLM  
         call CPP 
         call STORE  
-        call UPDATPTR 
         jp UPDATPTR 
 FORGET6: ; tried to forget a RAM or system word 
-; ( ca na -- )
-        subw x,#CELLL 
-        ldw y,SP0 
-        ldw (x),y  
-        call ULESS
-        call QBRAN 
-        .word PROTECTED 
-        call ABORQ 
-        .byte 29
-        .ascii " For RAM definition do REBOOT"
-PROTECTED:
         call ABORQ
         .byte 10
         .ascii " Protected"
@@ -449,6 +433,8 @@ FORGET4:
         _HEADER FREEVAR,7,"FREEVAR"
         call DUPP ; ( na na -- )
         CALL CAT  ; ( na c -- )
+        _DOLIT MASKK>>8   
+        CALL ANDD 
         call ONEP ;
         CALL PLUS ; ( na c+1 -- ca ) 
         call ONEP ; ( ca+ -- ) to get routne address 
@@ -459,13 +445,10 @@ FORGET4:
         call EQUAL  ; ( ca+ fnaddr DOVAR -- ca+ T|F ) 
         call QBRAN 
         .word FREEVAR4 
-        call DOLIT 
-        .word 2 
-        call PLUS  ; ( ca+ 2 -- da ) da is data address 
+        call CELLP ; ( ca+ 2 -- da ) da is data address 
         call AT 
         call VPP   
         call STORE 
-        jp UPDATPTR 
 FREEVAR4: ; not variable
         _DROP 
         RET 
@@ -2651,6 +2634,16 @@ NUMQ9:
 ;;;;;;;;;;;;;;;;;;
 ;; Basic UART I/O
 ;;;;;;;;;;;;;;;;;;
+
+;----------------------
+; clear terminal screen
+;----------------------
+clr_scr:
+        ld a,#27 
+        call putc 
+        ld a,#'c 
+        jra putc 
+
 ;-----------------------
 ; cehck if char in queue
 ; output:
@@ -3059,7 +3052,7 @@ PARS8:  CALL     OVER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       WORD    ( c -- a ; <string> )
 ;       Parse a word from input stream
-;       and copy it to code dictionary.
+;       and copy it at HERE+CELLL.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER WORDD,4,"WORD"
         CALL     PARSE
@@ -3833,9 +3826,8 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL     LBRAC
         call OVERT 
         CALL FMOVE  ; move definition to FLASH 
-        ;CALL UPDATPTR 
-        ;JP UPDATPTR
-         
+        RET 
+
 .if 0 ;**************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3961,9 +3953,9 @@ IMM01:  CALL	LAST
         CALL    ORR
         CALL    LAST
         CALL    AT
-        CALL    unlock_flash 
+        CALL    unlock_iap
         CALL    FSTOR
-        JP      lock_flash 
+        JP      lock_iap 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;		COMPILE-ONLY  ( -- )
@@ -4028,9 +4020,6 @@ IMM01:  CALL	LAST
         .word DOCONST
         CALL COMMA 
         JP FMOVE
-        ;CALL UPDATPTR 
-        ;CALL UPDATPTR   
-1$:     ;RET          
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CONSTANT runtime semantic 
@@ -4238,7 +4227,8 @@ SEE2:   CALL     QDUP    ;name address or zero
         CALL     ONEP
         JRA      SEE4
 SEE3:   CALL     DUPP
-        CALL     CAT
+        CALL     CATNonHandledInterrupt ;int0 reserved 
+	int 
         CALL     UDOT    ;display number
 SEE4:   CALL     NUFQ    ;user control
         CALL     QBRAN
@@ -4305,14 +4295,14 @@ PRINT_VERSION:
         _HEADER HI,2,"HI"
         CALL     CR
         CALL     DOTQP   
-        .byte      11,27
-        .ascii     "ctinyForth"
+        .byte      9
+        .ascii     "tinyForth"
 	_DOLIT VER 
         _DOLIT MINOR 
         CALL PRINT_VERSION
         CALL    DOTQP
-        .byte 17
-        .ascii  " on stm8s151k6t6\n"
+        .byte 15
+        .ascii  " on stm8l151k6\n"
         JP COPYRIGHT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4347,7 +4337,7 @@ COLD2: ; save default values in EEPROM
         CALL UPDATPTR
         ; set autorun to HI  
         CALL DOLIT 
-        .WORD HI 
+        .WORD HI    ; default startup application  
         CALL UPDATRUN  
         JRA COLD9
 COLD3: ; load system variables from EEPROM 

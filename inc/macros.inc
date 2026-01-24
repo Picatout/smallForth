@@ -132,7 +132,9 @@
 
     ; software reset 
     .macro _swreset
-    mov WWDG_CR,#0X80
+     sim 
+     mov WWDG_CR,#0XFF
+     wfi 
     .endm 
 
     ; increment zero page variable 
