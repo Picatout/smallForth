@@ -271,18 +271,18 @@ reset:
 
 ; COLD initialize these variables.
 UZERO:
-        .word      BASEE   ;BASE
-        .word      0       ;TMP 
-        .word      0       ;>IN
-        .word      0       ;#TIB
-        .word      TIBB    ;TIB
-        .word      INTER   ;'EVAL
-        .word      0       ;HLD
-        .word      LASTN  ; CNTXT pointer
-        .word      VAR_BASE ;variables free space pointer 
-        .word      app_space ; FLASH free space pointer 
-        .word      LASTN   ;LAST
-        .word      0       ; OFFSET 
+        .word      BASEE   ;UBASE
+        .word      0       ;UTMP 
+        .word      0       ;UINN
+        .word      0       ;UCTIB
+        .word      TIBB    ;UTIB
+        .word      INTER   ;UINTER 
+        .word      0       ;UHLD
+        .word      LASTN   ;UCNTXT pointer
+        .word      VAR_BASE ;UVP variables free space pointer 
+        .word      app_space ;UCP FLASH free space pointer 
+        .word      LASTN   ;ULAST
+        .word      0       ;UOFFSET 
 UEND:   .word      0
 
 ORIG:   
@@ -413,7 +413,7 @@ FORGET1:
         call CPP 
         call STORE  
         jp UPDATPTR 
-FORGET6: ; tried to forget a RAM or system word 
+FORGET6: ; tried to forget system word 
         call ABORQ
         .byte 10
         .ascii " Protected"
@@ -4310,8 +4310,12 @@ PRINT_VERSION:
 ;       The application startup vector.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TBOOT,5,"'BOOT"
-        CALL     DOVAR
-        .word    EEP_RUN      ;application to boot
+        SUBW    X,#CELLL 
+        LDW     Y,EEP_RUN
+        JRNE    1$
+        LDW     Y,#HI 
+1$:     LDW     (X),Y 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       COLD    ( -- )
@@ -4351,7 +4355,7 @@ COLD3: ; load system variables from EEPROM
 COLD9:      
         CALL     PRESE   ;initialize data stack and TIB
         CALL     TBOOT
-        CALL     ATEXE   ;application boot
+        CALL     EXECU   ;application boot
         CALL     OVERT
         JP       QUIT    ;start interpretation
 

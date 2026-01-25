@@ -39,11 +39,13 @@ write_word:
 	ldw y,x 
 	ldw y,(y)
 	ld a,(2,x)
+	sim 
 	ld (y),a
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.  
 	ld a,(3,x)
 	ld (1,y),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
+	rim 
 	addw x,#2*CELLL 
 	ret 
 
@@ -57,8 +59,10 @@ write_byte:
 	ldw y,x 
 	ldw y,(y)
 	ld a,(3,x)
+	sim 
 	ld (y),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	rim 
 	addw x,#2*CELLL 
 	ret 
 
@@ -249,16 +253,21 @@ iap_locked:
 	CALL CPP 
 	CALL AT    ; src cnt dest  
 	CALL SWAPP ; src dest cnt
+	SIM 
 	CALL CMOVE ; stack empty 
+	RIM 
 ; update  CNTXT
 	CALL RFROM ; cnt  R: src 
 	CALL CPP 
 	CALL AT   ; cnt adr  
-; set CNTXT to last NFA 	
+; set CNTXT and LAST to last NFA 	
 	CALL DUPP 
 	CALL CELLP ; cnt adr nfa  
+	CALL DUPP 
 	CALL CNTXT 
 	CALL STORE ; -- cnt adr  
+	CALL LAST 
+	CALL STORE 
 ; update UCP 	
 	CALL PLUS
 	CALL CPP 
@@ -270,10 +279,10 @@ iap_locked:
 	JP   UPDATPTR  
 
 ;------------------------------
+; CHKIVEC ( a -- )
 ; all interrupt vector with 
 ; an address >= a are resetted 
 ; to default
-; CHKIVEC ( a -- )
 ;------------------------------
 VECTOR_SIZE=4 
     _HEADER CHKIVEC,7,"CHKIVEC"
@@ -297,7 +306,16 @@ VECTOR_SIZE=4
 	cpw y,UTMP 
 	jrmi 1$ 
 	ldw  y,#NonHandledInterrupt
+	cpw y,(x)
+	jreq 1$ 
+	ld a,yh 
+	sim 
 	ld (2,x),a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	ld a,yl 
+	ld (3,x),a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	rim 
 	jra 1$
 9$: popw x 
 	call lock_iap 
