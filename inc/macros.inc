@@ -132,9 +132,14 @@
 
     ; software reset 
     .macro _swreset
+.if 0
      sim 
-     mov WWDG_CR,#0XFF
+     mov WWDG_CR,#0X80
      wfi 
+.else 
+    ;execute an ivalid machine code 
+    .byte 0x75
+.endif 
     .endm 
 
     ; increment zero page variable 

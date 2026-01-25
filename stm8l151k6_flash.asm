@@ -10,14 +10,15 @@
 ; IAP programming 
 ;-----------------------
 	_HEADER unlock_iap,10,"UNLOCK-IAP"
-    btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$
-	sim 
+    sim 
+	btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$
 	mov FLASH_PUKR,#FLASH_PUKR_KEY1
     mov FLASH_PUKR,#FLASH_PUKR_KEY2
+	btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,1$
 	mov FLASH_DUKR,#FLASH_DUKR_KEY1 
-    mov FLASH_DUKR,#FLASH_DUKR_KEY2
-	rim  
-1$:	ret 
+    mov FLASH_DUKR,#FLASH_DUKR_KEY2 
+1$:	rim 
+	ret 
 
 ;------------------------
 ; LOCK_IAP ( -- )
@@ -39,13 +40,11 @@ write_word:
 	ldw y,x 
 	ldw y,(y)
 	ld a,(2,x)
-	sim 
 	ld (y),a
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.  
 	ld a,(3,x)
 	ld (1,y),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
-	rim 
 	addw x,#2*CELLL 
 	ret 
 
@@ -59,10 +58,8 @@ write_byte:
 	ldw y,x 
 	ldw y,(y)
 	ld a,(3,x)
-	sim 
 	ld (y),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	rim 
 	addw x,#2*CELLL 
 	ret 
 
@@ -104,7 +101,7 @@ iap_locked:
 ; EEP-CNTXT ( -- u )
 ; return EEP_CNTXT pointer
 ;---------------------------------
-	_HEADER EPPCNTXT,9,"EEP-CNTXT"
+	_HEADER EEPCNTXT,9,"EEP-CNTXT"
 	subw x,#CELLL 
 	ldw y,#EEP_CNTXT  
 	ldw (x),y 
@@ -163,7 +160,7 @@ iap_locked:
 	_HEADER UPDATCNTXT,11,"UPDAT-CNTXT"
 	call CNTXT 
 	call AT      ; ( adr -- )
-	call EPPCNTXT ; ( adr ee_adr -- )
+	call EEPCNTXT ; ( adr ee_adr -- )
 	jp FSTOR 
 
 ;---------------------------------
@@ -277,6 +274,28 @@ iap_locked:
 	CALL VPP  
 	CALL STORE  ; RAM pointer restored 
 	JP   UPDATPTR  
+
+;-----------------------------
+;   RESET ( -- )
+; reset system to original 
+; state removing all user 
+; modification.
+;-----------------------------
+	_HEADER SYS_RST,5,"RESET"
+	CALL unlock_iap 
+	ldw y,#EEPROM_BASE  
+1$:	bset FLASH_CR2,#FLASH_CR2_WPRG
+	clr (y)
+	clr (1,y)
+	clr (2,y)
+	clr (3,y)
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	addw y,#4
+	cpw y,#EEPROM+EEPROM_RES 
+	jrmi 1$ 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
+;	CALL CHKIVEC 
+	JP reboot 
 
 ;------------------------------
 ; CHKIVEC ( a -- )

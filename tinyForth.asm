@@ -587,8 +587,6 @@ FREEVAR4: ; not variable
 ; REBOOT ( -- )
 ;;;;;;;;;;;;;;;;;;;;;
         _HEADER reboot,6,"REBOOT"
-        CALL CR
-        BTJF UART_SR,#UART_SR_TC,.
         clr FLASH_IAPSR 
         _swreset
 
