@@ -444,7 +444,7 @@ FREEVAR:
         call CELLP ; ( ra -- da ) da is pointer to data address 
         call AT    ; data address in RAM 
         call VPP   ; new VP back at data address 
-        call STORE 
+        jp   STORE 
 FREEVAR4: ; not variable
         _DROP ; ca 
         RET 
