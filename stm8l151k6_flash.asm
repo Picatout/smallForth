@@ -14,10 +14,10 @@
 	btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$
 	mov FLASH_PUKR,#FLASH_PUKR_KEY1
     mov FLASH_PUKR,#FLASH_PUKR_KEY2
-	btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,1$
+1$:	btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,2$
 	mov FLASH_DUKR,#FLASH_DUKR_KEY1 
     mov FLASH_DUKR,#FLASH_DUKR_KEY2 
-1$:	rim 
+2$:	rim 
 	ret 
 
 ;------------------------
@@ -294,47 +294,48 @@ iap_locked:
 	cpw y,#EEPROM+EEPROM_RES 
 	jrmi 1$ 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
-;	CALL CHKIVEC 
+	_DOLIT #app_space
+	CALL CHKIVEC 
 	JP reboot 
 
 ;------------------------------
-; CHKIVEC ( a -- )
+; CHKIVEC ( ca -- )
 ; all interrupt vector with 
 ; an address >= a are resetted 
 ; to default
 ;------------------------------
 VECTOR_SIZE=4 
-    _HEADER CHKIVEC,7,"CHKIVEC"
+CHKIVEC:
 	call unlock_iap 
 	ldw y,x 
 	ldw y,(y)
 	_stryz UTMP
 	addw x,#CELLL ; drop a 
 	pushw x 
-	ldw x,#0x8000 
+	ldw x,#0x8000 ; vector table address 
 1$: 
-	addw x,#VECTOR_SIZE  
+	addw x,#VECTOR_SIZE  ; next vector 
     cpw x,#VECTOR_USART1_RX ; protected 
 	jreq 1$ 
 	cpw x,#VECTOR_TIM4 ; protected 
 	jreq 1$  
-	cpw x,#8080
+	cpw x,#0x8080 ; all vectors done 
 	jreq 9$  ; done 
 	ldw y,x   
-	ldw y,(2,y) 
-	cpw y,UTMP 
+	ldw y,(2,y) ; handler address 
+	cpw y,UTMP  ; bound address 
 	jrmi 1$ 
 	ldw  y,#NonHandledInterrupt
-	cpw y,(x)
-	jreq 1$ 
+	cpw y,(2,x)
+	jreq 1$ ; already default handler 
+; set vector to default handler 
 	ld a,yh 
-	sim 
 	ld (2,x),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
 	ld a,yl 
 	ld (3,x),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	rim 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
 	jra 1$
 9$: popw x 
 	call lock_iap 

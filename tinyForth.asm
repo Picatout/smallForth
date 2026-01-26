@@ -369,50 +369,47 @@ uart_init:
 ;; must be resetted also.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FORGET,6,"FORGET"
-        call TOKEN
-        call DUPP 
-        call QBRAN 
-        .word FORGET2
-        call NAMEQ ; ( a -- ca na | a F )
-        call QDUP 
-        call QBRAN 
-        .word FORGET2
+        CALL TICK
+        CALL DUPP 
+        CALL TNAME 
 ; only forget users words 
         call DUPP ; ( ca na na )
         call DOLIT 
         .word app_space 
-        call SWAPP 
         call  ULESS 
-        call QBRAN 
+        call  TBRAN 
         .word FORGET6 
 ; ( ca na -- )        
 ;reset ivec with address >= ca
-        call SWAPP ; ( na ca -- ) 
-        call CHKIVEC ; ( na -- ) 
+        call SWAPP ; ( -- na ca ) 
+        call CHKIVEC ; ( -- na ) 
 ; start at LAST and link back to na 
 ; if variable found reset VP at that point.
 FORGET1:
-        call LAST 
-        call AT 
-        call DUPP  ; ( -- na last last )
-        call FREEVAR ; ( -- na last )
+        call CNTXT  
+        call AT    ; ( -- na nfa )  
+        call DUPP  ; ( -- na nfa nfa )
+        call FREEVAR ; ( -- na nfa )
         call DUPP 
-        call CELLM ; ( na last -- na last lfa ) link address 
-        call AT 
-        call DUPP ; ( -- na last a a )
+        call CELLM ; ( na nfa -- na nfa lfa ) link address 
+        call AT    ; ( -- na nfa  )
+        call DUPP ; ( -- na nfa a a )
         call CNTXT 
         call STORE
         call LAST  
-        call STORE ; ( --  na last )
+        call STORE ; ( --  na nfa )
         call OVER 
-        call EQUAL ; ( na last na -- na T|F ) 
+        call EQUAL ; ( na nfa na -- na T|F ) 
         call QBRAN 
         .word FORGET1 
 ; ( na -- )
         call CELLM  
         call CPP 
         call STORE  
-        jp UPDATPTR 
+        call UPDATPTR
+        call ZERO 
+        CALL UPDATRUN  
+        JP   reboot
 FORGET6: ; tried to forget system word 
         call ABORQ
         .byte 10
@@ -424,33 +421,32 @@ FORGET2: ; no name or not found in dictionary
 FORGET4:
         jp DROP 
 
-
 ;;;;;;;;;;;;;;;;;;;;;
+; FREEVAR ( na -- )
 ; if na is variable 
 ; free variable data  
-; FREEVAR ( na -- )
 ;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER FREEVAR,7,"FREEVAR"
-        call DUPP ; ( na na -- )
-        CALL CAT  ; ( na c -- )
-        _DOLIT MASKK>>8   
-        CALL ANDD 
-        call ONEP ;
-        CALL PLUS ; ( na c+1 -- ca ) 
-        call ONEP ; ( ca+ -- ) to get routne address 
-        call DUPP ; ( ca+ ca+ -- )
-        CALL AT   ; ( ca+ fnaddr -- ) ; fnaddr is routine address 
+FREEVAR:
+        call DUPP ;  na na
+        CALL CAT  ; na c 
+        _DOLIT 0x1F  ; na c 0x1F 
+        CALL ANDD   ; na c 
+        call ONEP ; ; na c+1
+        CALL PLUS ;   c+1 
+        call ONEP ;  ra  to get routine address following CALL 
+        CALL DUPP ;  ra ra 
+        CALL AT   ; ra fnaddr  , routine address 
         call DOLIT 
         .word DOVAR ; if routine address is DOVAR then variable 
-        call EQUAL  ; ( ca+ fnaddr DOVAR -- ca+ T|F ) 
+        call EQUAL  ; ( ra fnaddr DOVAR --ra  T|F ) 
         call QBRAN 
         .word FREEVAR4 
-        call CELLP ; ( ca+ 2 -- da ) da is data address 
-        call AT 
-        call VPP   
+        call CELLP ; ( ra -- da ) da is pointer to data address 
+        call AT    ; data address in RAM 
+        call VPP   ; new VP back at data address 
         call STORE 
 FREEVAR4: ; not variable
-        _DROP 
+        _DROP ; ca 
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
