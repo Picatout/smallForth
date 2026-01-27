@@ -249,10 +249,8 @@ iap_locked:
 	CALL TOR  ; R: src cnt,  save cnt to update UCP later 
 	CALL CPP 
 	CALL AT    ; src cnt dest  
-	CALL SWAPP ; src dest cnt
-	SIM 
+	CALL SWAPP ; src dest cnt 
 	CALL CMOVE ; stack empty 
-	RIM 
 ; update  CNTXT
 	CALL RFROM ; cnt  R: src 
 	CALL CPP 

@@ -363,63 +363,89 @@ uart_init:
         JP UPDATRUN 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; FORGET  <name>
 ;; Reset dictionary pointer before 
 ;; forgotten word. RAM space and 
 ;; interrupt vector defined after 
 ;; must be resetted also.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FORGET,6,"FORGET"
-        CALL TICK
-        CALL DUPP 
-        CALL TNAME 
-; only forget users words 
+        CALL TOKEN
+        CALL NAMEQ  ; a -- ca na | a F 
+        CALL QDUP 
+        CALL QBRAN 
+        .WORD FORGET5
+; only forget users words -- ca na  
         call DUPP ; ( ca na na )
         call DOLIT 
-        .word app_space 
+        .word app_space ; ca na na as 
         call  ULESS 
         call  TBRAN 
         .word FORGET6 
 ; ( ca na -- )        
 ;reset ivec with address >= ca
         call SWAPP ; ( -- na ca ) 
-        call CHKIVEC ; ( -- na ) 
-; start at LAST and link back to na 
-; if variable found reset VP at that point.
-FORGET1:
-        call CNTXT  
-        call AT    ; ( -- na nfa )  
-        call DUPP  ; ( -- na nfa nfa )
-        call FREEVAR ; ( -- na nfa )
-        call DUPP 
-        call CELLM ; ( na nfa -- na nfa lfa ) link address 
-        call AT    ; ( -- na nfa  )
-        call DUPP ; ( -- na nfa a a )
-        call CNTXT 
-        call STORE
-        call LAST  
-        call STORE ; ( --  na nfa )
-        call OVER 
-        call EQUAL ; ( na nfa na -- na T|F ) 
-        call QBRAN 
-        .word FORGET1 
-; ( na -- )
-        call CELLM  
-        call CPP 
-        call STORE  
-        call UPDATPTR
+        call CHKIVEC ; ( -- na )
+; reset UCP, CNTXT and LAST to word before this one 
+        CALL CELLM ; link field 
+        CALL DUPP 
+        CALL CPP 
+        CALL STORE ; now UCP point to first deleted word lfa 
+        CALL AT    ; previous na 
+        CALL DUPP  ; na na  
+        CALL DUPP  ; na na na 
+        CALL CNTXT 
+        CALL STORE ; new context 
+        CALL LAST 
+        CALL STORE ; new last  
+; follow LINK chain from CNTXT to app_space 
+; count VARIABLES defined in app_space 
+; and ajust HERE 
+; it tart with CNTXT na on stack   
+        CALL ZERO ; na count 
+        CALL SWAPP ; count na 
+FORGET1: 
+        CALL DUPP  ; count na na 
+        _DOLIT app_space 
+        CALL UGREAT  ; na > app_space?
+        CALL QBRAN 
+        .WORD FORGET4  ; no then done 
+        CALL DUPP   ; count na na 
+        CALL NAMET  ; count na na -- count na ca  
+        CALL ONEP   ; skip over CALL  
+        CALL AT     ; get routine address 
+        _DOLIT DOVAR
+        CALL EQUAL    
+        CALL QBRAN     ; adr = DOVAR
+        .WORD FORGET2  ; not a VARIABLE  
+        CALL SWAPP 
+        CALL ONEP   ; increment count 
+        CALL SWAPP
+FORGET2:
+        CALL CELLM  ; link field  
+        CALL AT     ; previous word  na  
+        CALL DUPP 
+        CALL TBRAN 
+        .WORD FORGET1 
+FORGET4:
+        CALL DROP ; count 
+        CALL CELLS ; count*2  
+        _DOLIT VAR_BASE
+        CALL PLUS 
+        CALL VPP 
+        CALL STORE
+        CALL UPDATPTR 
         call ZERO 
         CALL UPDATRUN  
-        JP   reboot
+        JP   reboot        
+FORGET5:
+        CALL ABORQ 
+        .BYTE 5 
+        .ASCII " what"
 FORGET6: ; tried to forget system word 
         call ABORQ
         .byte 10
         .ascii " Protected"
-FORGET2: ; no name or not found in dictionary 
-        call ABORQ
-        .byte 5
-        .ascii " what"
-FORGET4:
-        jp DROP 
 
 ;;;;;;;;;;;;;;;;;;;;;
 ; FREEVAR ( na -- )
