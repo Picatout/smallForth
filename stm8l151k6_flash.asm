@@ -192,15 +192,127 @@ iap_locked:
 ;  in EEPROM 
 ;----------------------------------
 	_HEADER UPDATPTR,11,"UPDAT-EEPTR"
-	btjt FLASH_IAPSR,#FLASH_IAPSR_DUL,1$
 	call unlock_iap  
-1$:
 	call UPDATCNTXT 
 	call UPDATCP 
 	call UPDATVP 
 	call lock_iap   
 	ret 
 	
+;-----------------------------------------
+;  FD! ( d a -- )
+;  store a double in FLASH || eeprom
+;  'a' must be aligned on 32 bits boundary  
+;-----------------------------------------
+       _HEADER FDSTOR,3,"FD!"
+       ld a,FLASH_IAPSR 
+       and a,#(1<<FLASH_IAPSR_DUL)|(1<<FLASH_IAPSR_PUL)
+       cp a,#(1<<FLASH_IAPSR_DUL)|(1<<FLASH_IAPSR_PUL)
+       jreq 1$
+       jp iap_locked 
+1$:    bset FLASH_CR2,#FLASH_CR2_WPRG
+       ldw y,x 
+       ldw y,(y) ; write address 
+       addw x,#CELLL 
+       ld a,(x)
+       ld (y),a 
+       ld a,(1,x)
+       ld (1,y),a 
+       ld a,(2,x)
+       ld (2,y),a 
+       ld a,(3,x)
+       ld (3,y),a 
+       btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
+       addw x,#2*CELLL ; drop double 
+       ret  
+
+;----------------------------
+;  FCPY ( src dest cnt -- )
+;  copies 'cnt' bytes to 
+;  FLASH || EEPROM
+;  'dest' must be aligned to 
+;  32 bits address.
+;----------------------------
+SRC=1  ; source address 
+DEST=3  ; destination address 
+CNT=5  ; bytes count
+VSIZE=6 ; local variables space on stack  
+	_HEADER FCPY,4,"FCPY"
+	CALL unlock_iap  
+	ldw y,x
+	ldw y,(y) ; CNT 
+	jrne 0$
+; CNT==0 drop and leave 
+	addw x,#3*CELLL 
+	jp 10$ 
+0$: ; push arguments on R: SRC DEST CNT  
+	pushw y ; R: CNT  
+	ldw y,x 
+	ldw y,(2,y)
+	pushw y  ; R: CNT DEST 
+	ldw y,x 
+	ldw y,(4,y) 
+	pushw y ; R: CNT DEST SRC
+	addw x,#3*CELLL ; drop parameters now on R:   
+1$: ; copy loop 
+	ldw Y, (CNT,sp)
+	jreq 9$  ; nothing left, done 
+	cpw y,#4
+	jrmi 3$ 
+; CNT>=4 
+	ld a,(DEST+1,SP)
+	and a,#3 
+	jrne 3$
+	subw x,#3*CELLL 
+; push a double from SRC 
+	ldw y,(SRC,SP)
+	ldw y,(y)
+	ldw (4,x),y 
+	ldw y,(SRC,SP)
+	ldw y,(2,Y) 
+	ldw (2,x),y
+; push DEST 	
+	ldw y,(DEST,sp)
+	ldw (x),y 
+	call FDSTOR 
+; increment SRC,DEST	
+	ldw y,(SRC,SP)
+	addw y,#4 
+	ldw (SRC,SP),Y 
+	ldw Y,(DEST,SP)
+	addw y,#4 
+	ldw (DEST,SP),Y 
+; decrement CNT 	
+	ldw y,(CNT,SP) 
+	subw y,#4 
+	ldw (CNT,SP),Y 
+	jra 1$
+3$: ; DEST not aligned or less than 4 bytes left  
+	subw x,#2*CELLL 
+	ldw y,(SRC,SP)
+	ld a,(y)
+	clrw y 
+	ld yl,a 
+	ldw (2,x),y  
+	ldw y,(DEST,sp) 
+	ldw (x),y 
+	call FCSTOR 
+	ldw y,(SRC,SP)
+	incw y 
+	ldw (SRC,SP),Y 
+	ldw y,(DEST,SP)
+	incw y 
+	ldw (DEST,SP),Y 
+	ldw y,(CNT,SP)
+	decw y 
+	ldw (CNT,SP),Y 
+	jra 1$
+9$:	
+	addw sp,#VSIZE ; drop local variables 
+10$:
+	call lock_iap 
+	ret 
+
 .IF 0 ;*********************
 
 ;----------------------------
@@ -250,7 +362,8 @@ iap_locked:
 	CALL CPP 
 	CALL AT    ; src cnt dest  
 	CALL SWAPP ; src dest cnt 
-	CALL CMOVE ; stack empty 
+;	CALL CMOVE ; stack empty 
+	CALL FCPY 
 ; update  CNTXT
 	CALL RFROM ; cnt  R: src 
 	CALL CPP 

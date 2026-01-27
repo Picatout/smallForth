@@ -437,7 +437,7 @@ FORGET4:
         CALL UPDATPTR 
         call ZERO 
         CALL UPDATRUN  
-        JP   reboot        
+        RET         
 FORGET5:
         CALL ABORQ 
         .BYTE 5 
