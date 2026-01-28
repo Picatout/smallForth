@@ -3934,17 +3934,19 @@ PDUM1:  CALL     DUPP
         CALL     CAT
         CALL     SPACE
         LD       A,(1,X)
-        SWAP     A  
-        CALL     PRT_HEX_DIGIT 
-        LD       A,(1,X)
-        CALL     PRT_HEX_DIGIT 
+        CALL     PRT_HEX_BYTE 
         ADDW     X,#CELLL        
         CALL     ONEP    ;increment address
 PDUM2:  CALL     DONXT
         .word    PDUM1   ;loop till done
         RET
 
-PRT_HEX_DIGIT:
+PRT_HEX_BYTE:
+        PUSH    A 
+        SWAP    A 
+        CALL    PRT_DIGIT 
+        POP     A
+PRT_DIGIT:
         AND      A,#0XF 
         ADD      A,#'0
         CP       A,#'9+1
@@ -3952,6 +3954,7 @@ PRT_HEX_DIGIT:
         ADD      A,#7 
 1$:     CALL     putc 
         RET 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DUMP    ( a u -- )
