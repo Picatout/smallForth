@@ -2696,7 +2696,7 @@ DOTQP:
         CALL     OVER
         CALL     SUBB
         CALL     SPACS
-        JP     TYPES
+        JP       TYPES
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       U.      ( u -- )
@@ -3932,13 +3932,26 @@ UTYP2:  CALL     DONXT
         JRA     PDUM2   ;skip first pass
 PDUM1:  CALL     DUPP
         CALL     CAT
-        CALL     DOLIT
-        .word      3
-        CALL     UDOTR   ;display numeric data
+        CALL     SPACE
+        LD       A,(1,X)
+        SWAP     A  
+        CALL     PRT_HEX_DIGIT 
+        LD       A,(1,X)
+        CALL     PRT_HEX_DIGIT 
+        ADDW     X,#CELLL        
         CALL     ONEP    ;increment address
 PDUM2:  CALL     DONXT
-        .word      PDUM1   ;loop till done
+        .word    PDUM1   ;loop till done
         RET
+
+PRT_HEX_DIGIT:
+        AND      A,#0XF 
+        ADD      A,#'0
+        CP       A,#'9+1
+        JRMI     1$ 
+        ADD      A,#7 
+1$:     CALL     putc 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DUMP    ( a u -- )
