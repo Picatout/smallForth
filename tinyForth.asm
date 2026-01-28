@@ -2371,18 +2371,10 @@ DGTQ1:  CALL     DUPP
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       NUMBER? ( a -- n T | a F )
-;       Convert a number string to
-;       integer. Push a flag on tos.
-;  if integer parse fail because of extra 
-;  character in string and WANT_FLOAT24=1 
-;  in config.inc then jump to FLOAT? in
-;  float24.asm
-; 
-; accepted number format:
-;    decimal ::= ['-'|'+']dec_digits+
-;    hexadecimal ::= ['-'|'+']'$'hex_digits+
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  NUMBER? ( a -- n T | a F )
+;  Convert a number string to
+;  integer. Push a flag on tos.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NUMBQ,7,"NUMBER?"
         CALL     BASE
         CALL     AT
@@ -2397,7 +2389,7 @@ DGTQ1:  CALL     DUPP
         CALL     EQUAL
         CALL     QBRAN
         .WORD    NUMQ1
-        CALL     HEX
+        CALL     HEX   ; hexadecimal string 
         CALL     SWAPP
         CALL     ONEP
         CALL     SWAPP
@@ -2419,7 +2411,8 @@ NUMQ1:  CALL     OVER
         .WORD    NUMQ6
         CALL     ONEM
         CALL     TOR
-NUMQ2:  CALL     DUPP
+NUMQ2:  ; digit loop 
+        CALL     DUPP
         CALL     TOR
         CALL     CAT
         CALL     BASE
@@ -2441,17 +2434,29 @@ NUMQ2:  CALL     DUPP
         CALL     DROP
         CALL     QBRAN
         .WORD    NUMQ3
-        CALL     NEGAT
+        CALL     NEGAT ; negative number 
 NUMQ3:  CALL     SWAPP
         JRA      NUMQ5
-NUMQ4:  CALL     RFROM
+NUMQ4:  
+.if 1 ; optimize 
+        ADDW SP,#2*CELLL ; drop 2 elements from R:
+        ADDW X,#2*CELLL  ; drop 2 elements from S: 
+.else
+        CALL     RFROM
         CALL     RFROM
         CALL     DDROP
         CALL     DDROP
+.endif 
         CALL     ZERO
 NUMQ5:  CALL     DUPP
-NUMQ6:  CALL     RFROM
+NUMQ6:  
+.if 1 ; optimize
+        addw sp,#CELLL  ; drop 1 element from R: 
+        addw x,#CELLL   ; drop 1 element from S: 
+.else 
+        CALL     RFROM
         CALL     DDROP
+.endif 
         CALL     RFROM
         CALL     BASE
         JP       STORE
