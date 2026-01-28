@@ -265,12 +265,12 @@ VSIZE=6 ; local variables space on stack
 	jrne 3$
 	subw x,#3*CELLL 
 ; push a double from SRC 
+	ldw y,(SRC,SP) ; addr 
+	ldw y,(y) ; high word  
+	ldw (2,x),y 
 	ldw y,(SRC,SP)
-	ldw y,(y)
-	ldw (4,x),y 
-	ldw y,(SRC,SP)
-	ldw y,(2,Y) 
-	ldw (2,x),y
+	ldw y,(2,Y) ; low word 
+	ldw (4,x),y
 ; push DEST 	
 	ldw y,(DEST,sp)
 	ldw (x),y 
@@ -348,10 +348,10 @@ VSIZE=6 ; local variables space on stack
 ; HERE-CNTXT+2=count to write 
 ;--------------------------
 	_HEADER FMOVE,5,"FMOVE"
-	CALL unlock_iap  
+;	CALL unlock_iap  
 	CALL CNTXT 
 	CALL AT     ; nfa 
-	CALL CELLM  ; source address 
+	CALL CELLM  ; lfa, source address 
 	CALL DUPP 
 	CALL TOR  ; R: src, save to reset UVP 
 	CALL HERE  
@@ -363,17 +363,17 @@ VSIZE=6 ; local variables space on stack
 	CALL AT    ; src cnt dest  
 	CALL SWAPP ; src dest cnt 
 ;	CALL CMOVE ; stack empty 
-	CALL FCPY 
+	CALL FCPY  ; src dest cnt -- empty 
 ; update  CNTXT
 	CALL RFROM ; cnt  R: src 
 	CALL CPP 
-	CALL AT   ; cnt adr  
+	CALL AT   ; cnt lfa   
 ; set CNTXT and LAST to last NFA 	
 	CALL DUPP 
-	CALL CELLP ; cnt adr nfa  
+	CALL CELLP ; cnt lfa nfa  
 	CALL DUPP 
 	CALL CNTXT 
-	CALL STORE ; -- cnt adr  
+	CALL STORE ; -- cnt lfa   
 	CALL LAST 
 	CALL STORE 
 ; update UCP 	
