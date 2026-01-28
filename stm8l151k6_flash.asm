@@ -146,9 +146,12 @@ iap_locked:
 ;---------------------------------
 	_HEADER UPDATRUN,9,"UPDAT-RUN"
 	call unlock_iap  
+	ldw y, EEP_RUN
+	cpw y,(x)
+	jreq 9$ 
 	call EEPRUN ; ( adr ee_adr -- )
 	call EESTOR  
-	call lock_iap 
+9$:	call lock_iap 
 	ret 
 
 ;----------------------------------
@@ -158,10 +161,14 @@ iap_locked:
 ; in EEPROM. 
 ;----------------------------------
 	_HEADER UPDATCNTXT,11,"UPDAT-CNTXT"
+	_ldyz UCNTXT 
+	cpw y,EEP_CNTXT 
+	jreq 9$ 
 	call CNTXT 
 	call AT      ; ( adr -- )
 	call EEPCNTXT ; ( adr ee_adr -- )
 	jp FSTOR 
+9$: ret 
 
 ;---------------------------------
 ; UPDAT-CP ( -- )
@@ -170,10 +177,14 @@ iap_locked:
 ; in EEPROM 
 ;---------------------------------
 	_HEADER UPDATCP,8,"UPDAT-CP"
+	_ldyz UCP 
+	cpw y,EEP_CP
+	jreq 9$
 	call CPP 
 	call AT     ; ( adr -- )
 	call EEPCP  ; ( adr ee_adr -- )
 	jp FSTOR 
+9$: ret 
 
 ;----------------------------------
 ; UPDAT-VP ( -- )
@@ -182,9 +193,13 @@ iap_locked:
 ; in EEPROM 
 ;----------------------------------
 	_HEADER UPDATVP,8,"UPDAT-VP"
+	_ldyz UVP 
+	cpw y,#EEP_VP 
+	jreq 9$ 
 	call HERE    
 	call EEPVP  ; ( adr ee_adr -- )
 	jp FSTOR
+9$: ret 
 
 ;---------------------------------
 ;  UPDAT-EEPTR ( -- )
@@ -315,18 +330,6 @@ VSIZE=6 ; local variables space on stack
 
 .IF 0 ;*********************
 
-;----------------------------
-;  FALLOT ( n -- )
-;  allocate n byte to code space 
-;---------------------------
-	_HEADER FALLOT,6,"FALLOT"
-	CALL CPP
-	CALL AT   
-	CALL PLUS 
-	CALL CPP 
-	CALL STORE 
-	JP UPDATPTR 
-
 ;-----------------------------
 ; move interrupt sub-routine
 ; in flash memory
@@ -451,79 +454,3 @@ CHKIVEC:
 9$: popw x 
 	call lock_iap 
 	ret 
-
-.IF 0 ;*******************
-
-;-------------------------
-; increment PTR 
-; INC-PTR ( -- )
-;-------------------------
-	.word LINK 
-	LINK=. 
-	.byte 8 
-	.ascii "INC-PTR" 
-INC_PTR:
-	_ldyz PTRH 
-	incw y 
-	_stryz PTRH 
-    ret 
-
-;------------------------------
-; add u to PTR 
-; PTR+ ( u -- )
-;------------------------------
-	.word LINK 
-	LINK=.
-	.byte 4 
-	.ascii "PTR+"
-PTRPLUS:
-	ldw y,x 
-	addw x,#CELLL
-	ldw y,(y) 
-	addw y,PTRH  
-	_stryz PTRH   
-1$: ret 
-
-;----------------------------
-; write a byte at address pointed 
-; by PTR and increment PTR.
-; Expect pointer already initialized 
-; and memory unlocked 
-; WR-BYTE ( c -- )
-;----------------------------
-	.word LINK 
-	LINK=. 
-	.byte 7 
-	.ascii "WR-BYTE" 
-WR_BYTE:
-	ld a,(1,x)
-	addw x,#CELLL 
-	ld [PTRH],a
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	jp INC_PTR 
-
-;---------------------------------------
-; write a word at address pointed 
-; by PTRH and increment PTRH 
-; Expect pointer already initialzed 
-; and memory unlocked 
-; WR-WORD ( w -- )
-;---------------------------------------
-	.word LINK 
-	LINK=.
-	.byte 7 
-	.ascii "WR-WORD" 
-WR_WORD:
-	ldw y,x
-	ldw y,(y)
-	addw x,#CELLL 
-	ld a,yh 
-	ld [PTRH],a
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	call INC_PTR 
-	ld a,yl 
-	ld [PTRH],a
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	jp INC_PTR 
-
-.ENDIF ;***********************

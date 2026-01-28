@@ -1,3 +1,10 @@
+### 2026-01-28 
+
+* changer les valeurs de masque pour le champ nom.
+    *  COMPO= **0x40**  remplacé par **0x20**
+    *  IMEDD= **0x80**  remplacé par **0x40** 
+    *  Ajout de **BUMPER=0x80** qui sera utilisé par le mot **&gt;NAME** pour localiser le début du champ nom.
+    
 ### 2026-01-22 
 
 * je dois décidé de la stratégie à utiliser pour le verrouillage déverrouillage de la programmation IAP.

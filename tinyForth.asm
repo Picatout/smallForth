@@ -4147,6 +4147,31 @@ PRINT_VERSION:
 1$:     LDW     (X),Y 
         RET 
 
+;------------------------------
+; compare EEP values 
+; with values from UZERO 
+; table load if greater 
+;-----------------------------
+LOAD_EEP:
+        _ldyz UCNTXT 
+        cpw y,EEP_CNTXT 
+        jruge 9$ 
+        _ldyz UCP 
+        cpw y,EEP_CP 
+        jruge 9$ 
+        _ldyz UVP 
+        cpw y,EEP_VP 
+        jrugt 9$ 
+; load values from EEPROM 
+        ldw y,EEP_CNTXT 
+        _stryz UCNTXT 
+        _stryz ULAST 
+        ldw y,EEP_CP
+        _stryz UCP 
+        ldw y,EEP_VP 
+        _stryz UVP 
+9$:     ret 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       COLD    ( -- )
 ;       The hilevel cold start s=ence.
@@ -4160,15 +4185,8 @@ COLD1:  CALL     DOLIT
         CALL     DOLIT
 	.word      UEND-UZERO
         CALL     CMOVE   ; ( src dest cnt -- ) initialize user area
-; check if default CNTXT have been replaced 
-; load system variables from EEPROM if required 
-        ldw y,EEP_CNTXT
-        jreq COLD2    ; not set in EEPROM 
-        cpw y,UCNTXT
-        jreq COLD9    ; default already saved    
-        jrne COLD3 ; changed
-COLD2: ; save default values in EEPROM  
-        CALL UPDATPTR
+        CALL     LOAD_EEP
+        CALL     UPDATPTR
         ; set autorun to HI  
         CALL DOLIT 
         .WORD HI    ; default startup application  
