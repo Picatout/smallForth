@@ -2370,238 +2370,6 @@ DGTQ1:  CALL     DUPP
         JP     ULESS
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; move parse to next char 
-; input:
-;   a    string pointer 
-;   cnt  string length 
-; output:
-;    a    a+1 
-;    cnt  cnt-1
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NEXT_CHAR:: ; ( a cnt -- a cnt )
-; increment a 
-    INC (CELLL+1,X) 
-    JRNE 1$
-    INC (CELLL,X)
-1$: ; decrement cnt 
-    LDW Y,X 
-    LDW Y,(Y)
-    DECW Y 
-    LDW (X),Y
-    RET 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; check if first character of string
-; is 'c' 
-; if true 
-;     return  a++ cnt-- -1  
-; else 
-;   return a cnt 0 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ACCEPT_CHAR:: ; ( a cnt c -- a cnt 0|-1 )
-    CALL TOR ; a cnt r: c 
-; exit if end of string, cnt==0? 
-    LD A,(1,X) ; cnt always < 256 
-    JRNE 1$
-    JRA 2$ 
-1$: LDW Y,X 
-    LDW Y,(CELLL,Y) ; a 
-    LD A,(Y)
-    CP A,(2,SP) ; c 
-    JRNE 2$
-; accept c
-    CALL NEXT_CHAR      
-    _DOLIT -1
-    JRA 4$  
-2$: ; ignore char 
-    _DOLIT 0
-4$: ADDW SP,#CELLL ; drop c 
-    RET 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; check for negative sign 
-; ajust pointer and cnt
-; input:
-;    a        string pointer 
-;    cnt      string length
-; output:
-;    a       adjusted pointer 
-;    cnt     adjusted count
-;    f       boolean flag, true if '-'  
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-NSIGN: ; ( a cnt -- a cnt f ) 
-    SUBW X,#CELLL ; a cntr f 
-    PUSH #0 
-; if count==0 exit 
-    LD A,(CELLL+1,X)
-    JREQ NO_ADJ 
-    LDW Y,X 
-    LDW Y,(2*CELLL,Y) ; a 
-    LD A,(Y) ; char=*a  
-    CP A,#'-' 
-    JREQ NEG_SIGN
-    CP A,#'+' 
-    JREQ ADJ_CSTRING
-    JP NO_ADJ  
-NEG_SIGN:
-    CPL (1,SP)
-ADJ_CSTRING: 
-; increment a 
-    INCW Y ; a++ 
-    LDW (2*CELLL,X),Y 
-; decrement cnt 
-    DEC (CELLL+1,X)    
-NO_ADJ: 
-    POP A 
-    LD (X),A 
-    LD (1,X),A 
-    RET 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; skip digits,stop at first non digit.
-; count skipped digits 
-; input:
-;    a     string address 
-;    cnt   charaters left in string 
-; output:
-;    a+         updated a 
-;    cnt-       updated cnt
-;    skip       digits skipped 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;  
-; local variables
-        CNT = 1 ; byte
-        SKIP = 2 ; byte 
-        VARS_SIZE=2        
-SKIP_DIGITS: ; ( a cnt -- a+ cnt- skip )
-        _VARS VARS_SIZE ; space on rstack for local vars 
-        CLR (SKIP,SP)
-        LD A,(1,X); cnt 
-        LD (CNT,SP),A 
-        _DROP ; drop cnt from stack 
-1$:     TNZ (CNT,SP)
-        JREQ 8$
-        CALL COUNT  
-        CALL BASE 
-        CALL AT 
-        CALL DIGTQ 
-        _QBRAN 6$ ; not a digit
-        INC (SKIP,SP)
-        DEC (CNT,SP)
-        _DROP ; c 
-        JRA 1$ 
-6$:     _DROP ; c 
-        CALL ONEM ; a--         
-8$:     SUBW X,#2*CELLL ; space for cnt- 
-        CLRW Y 
-        LD A,(SKIP,SP)
-        LD YL,A 
-        LDW (X),Y 
-        LD A,(CNT,SP)
-        LD YL,A 
-        LDW (CELLL,X),Y ;  
-        _DROP_VARS VARS_SIZE ; discard local vars 
-        RET 
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; get all digits in row 
-; stop at first non-digit or end of string
-; ( n a cnt -- n  a+ cnt- digits )
-; input:
-;   n    initial value of integer 
-;   a    string address 
-;   cnt  # chars in string 
-; output:
-;   n    integer value after parse 
-;   a+   incremented a 
-;   cnt- decremented cnt 
-;   f_skip  -1 ->       some digits have been skip  
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; local variables 
-        SKIP=4 ;byte # digits skipped   
-        UINT=2   ;word 
-        CNT=1    ; byte 
-        VARS_SIZE=4
-parse_digits: ; ( n a cnt -- n  a+ cnt- skip )
-    SUB SP,#VARS_SIZE
-    CLR (SKIP,SP)
-    LD A,(1,X) ; count 
-    LD (CNT,SP),A 
-    _DROP ; drop cnt from stack 
-    LDW Y,X 
-    LDW Y,(CELLL,Y) ; n 
-    LDW (UINT,SP),Y  
-0$:
-    TNZ (CNT,SP)
-    JREQ 9$ 
-1$: CALL COUNT ; n a+ char 
-    CALL BASE 
-    CALL AT 
-    CALL DIGTQ 
-    _QBRAN 8$ ; not a digit
-    DEC (CNT,SP)
-    SUBW X,#CELLL 
-    LDW Y,(UINT,SP)
-    LDW (X),Y 
-    CALL BASE 
-    CALL AT 
-    CALL UMSTA ; u u -- ud 
-; check for overflow 
-    LDW Y,X 
-    LDW Y,(Y)
-    _DROP ; ud hi word 
-    TNZW Y 
-    JREQ 4$ ; no overflow yet 
-; when overflow count following digits 
-; but don't integrate them in UINT 
-; round last value of UINT 
-    _DROP  ; ud low word 
-    CALL BASE
-    CALL AT  
-    CALL TWOSL 
-    CALL LESS ; last_digit < BASE/2 ? 
-    _TBRAN 2$  ; no rounding 
-; round up UINT 
-    LDW Y,(UINT,SP)
-    INCW Y 
-    LDW (UINT,SP),Y 
-2$: CALL ONEM ; a-- 
-    INC (CNT,SP) ; cnt++
-    LDW Y,(UINT,SP)
-    LDW (CELLL,X),Y 
-    SUBW X,#CELLL ; space for count 
-    LD A,(CNT,SP)
-    CLRW Y 
-    LD YL,A 
-    LDW (X),Y ; n a+ cnt- 
-    CALL SKIP_DIGITS ; n a+ cnt- skip  
-    JRA 10$     
-4$: 
-    CALL PLUS ; udlo+digit  
-    LDW Y,X 
-    LDW Y,(Y) ; n 
-    LDW (UINT,SP),Y 
-    _DROP ; sum from stack 
-    JRA 0$ 
-8$: ; n a+ char
-    _DROP ; drop char 
-    CALL ONEM ; decrement a 
-9$: ; no more digits 
-    LDW Y,(UINT,SP)
-    LDW (CELLL,X),Y ; 
-    SUBW X,#2*CELLL ; make space for cnt- digits 
-    LD A,(CNT,SP)
-    CLRW Y 
-    LD YL,A 
-    LDW (CELLL,X),Y ; u a+ cnt- 
-    LD A,(SKIP,SP)
-    LD YL,A 
-    LDW (X),Y ; u a+ cnt- digits 
-10$:
-    _DROP_VARS VARS_SIZE  ; dicard local variables 
-    RET 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NUMBER? ( a -- n T | a F )
 ;       Convert a number string to
@@ -2616,37 +2384,74 @@ parse_digits: ; ( n a cnt -- n  a+ cnt- skip )
 ;    hexadecimal ::= ['-'|'+']'$'hex_digits+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NUMBQ,7,"NUMBER?"
-; save BASE
         CALL     BASE
         CALL     AT
         CALL     TOR
         CALL     ZERO
         CALL     OVER
-        CALL     COUNT ; string length,  a 0 a+ cnt 
-; check for negative number 
-        CALL    NSIGN 
-        CALL    TOR    ; save number sign 
-;  check hexadecimal character        
-        _DOLIT  '$'
-        CALL    ACCEPT_CHAR 
-        _QBRAN  1$ 
-        CALL    HEX 
-1$: ; stack: a 0 a cnt r: base sign 
-        CALL     parse_digits ; a 0 a+ cnt- -- a n a+ cnt- skip R: base sign
-        CALL    OVER 
-        _TBRAN  NUMQ6 
-        _DROPN 3   ; a n  R: base sign 
-        CALL     RFROM   ; a n sign R: base 
-        _QBRAN   NUMQ3
-        CALL     NEGAT ; a n R: base 
-NUMQ3:  
-        CALL    SWAPP ; n a 
-        LDW  Y, #-1 
-        LDW (X),Y     ; n -1 R: base 
-        JRA      NUMQ9
-NUMQ6: 
-; restore BASE 
-NUMQ9: 
+        CALL     COUNT
+        CALL     OVER
+        CALL     CAT
+        CALL     DOLIT
+        .WORD    '$'
+        CALL     EQUAL
+        CALL     QBRAN
+        .WORD    NUMQ1
+        CALL     HEX
+        CALL     SWAPP
+        CALL     ONEP
+        CALL     SWAPP
+        CALL     ONEM
+NUMQ1:  CALL     OVER
+        CALL     CAT
+        CALL     DOLIT
+        .WORD    '-'
+        CALL     EQUAL
+        CALL     TOR
+        CALL     SWAPP
+        CALL     RAT
+        CALL     SUBB
+        CALL     SWAPP
+        CALL     RAT
+        CALL     PLUS
+        CALL     QDUP
+        CALL     QBRAN
+        .WORD    NUMQ6
+        CALL     ONEM
+        CALL     TOR
+NUMQ2:  CALL     DUPP
+        CALL     TOR
+        CALL     CAT
+        CALL     BASE
+        CALL     AT
+        CALL     DIGTQ
+        CALL     QBRAN
+        .WORD    NUMQ4
+        CALL     SWAPP
+        CALL     BASE
+        CALL     AT
+        CALL     STAR
+        CALL     PLUS
+        CALL     RFROM
+        CALL     ONEP
+        CALL     DONXT
+        .WORD    NUMQ2
+        CALL     RAT
+        CALL     SWAPP
+        CALL     DROP
+        CALL     QBRAN
+        .WORD    NUMQ3
+        CALL     NEGAT
+NUMQ3:  CALL     SWAPP
+        JRA      NUMQ5
+NUMQ4:  CALL     RFROM
+        CALL     RFROM
+        CALL     DDROP
+        CALL     DDROP
+        CALL     ZERO
+NUMQ5:  CALL     DUPP
+NUMQ6:  CALL     RFROM
+        CALL     DDROP
         CALL     RFROM
         CALL     BASE
         JP       STORE
@@ -3361,7 +3166,7 @@ ABOR2:  CALL     DOSTR
         .ascii     " compile only"
         JP      EXECU
 INTE1:  
-        CALL     NUMBQ   ;convert a number
+        CALL     NUMBQ   ;convert a number 
         CALL     QBRAN
         .word    ABOR1
         RET
