@@ -107,20 +107,20 @@
 ;*********************************************************
 ;	Assembler constants
 ;*********************************************************
-RAMBASE =	0x0000	   ;ram base
-STACK   =	RAM_END    ;system (return) stack empty 0x780...0x7FF
-DATSTK  =	0x680	   ;data stack  empty, growing downward 64 bytes, 0x640...0x67F 
-TBUFFBASE =     0x680      ; flash read/write transaction buffer address 128 bytes: 0x680...0x6FF   
-TIBBASE =       0X700     ; transaction input buffer addr. 128 bytes 0x700...0x77F 
+RAMBASE =	0x0000	        ;ram base
+STACK_SIZE = 128 
+DSTACK_SIZE = 128 
+TIB_SIZE= 128 
+STACK   =	RAM_END                 ;R: stack  
+DATSTK  =	RAM_SIZE-DSTACK_SIZE 	;S: stack  
+TIBBASE =       DATSTK-TIB_SIZE         ; transaction input buffer addr. 128 bytes
 
 ;; Memory allocation
 UPP     =     RAMBASE+6          ; systeme variables base address 
 SPP     =     RAMBASE+DATSTK     ; data stack bottom 
 RPP     =     RAMBASE+STACK      ;  return stack bottom
-ROWBUFF =     RAMBASE+TBUFFBASE ; flash write buffer 
-TIBB    =     RAMBASE+TIBBASE  ; transaction input buffer
-VAR_BASE =    RAMBASE+0x80  ; user variables start here .
-VAR_TOP =     STACK-32*CELLL  ; reserve 32 cells for data stack. 
+TIBB    =     RAMBASE+TIBBASE    ; transaction input buffer
+VAR_BASE =    RAMBASE+128        ; user variables start here .
 
 ; user variables constants 
 UBASE = UPP       ; numeric base 
@@ -147,11 +147,9 @@ SP0	= CARRY+2	;initial data stack pointer
 RP0	= SP0+2		;initial return stack pointer
 MS    =   RP0+2         ; millisecond counter 
 CNTDWN =  MS+2          ; count down timer 
-PTRH = CNTDWN+2        ; hi byte of pointer  
-PTRL = PTRH+1           ; least byte of farptr 
-SEEDX = PTRL+1          ; PRNG seed X 
+SEEDX = CNTDWN+2        ; PRNG seed X 
 SEEDY = SEEDX+2         ; PRNG seed Y 
-RX_QUEUE = SEEDY+2       ; last char received from UART 
+RX_QUEUE = SEEDY+2      ; UART receive circular queue. 
 RX_HEAD = RX_QUEUE+RX_QUEUE_SIZE ;  
 RX_TAIL = RX_HEAD+1 
 
@@ -198,8 +196,8 @@ JPIMM   =     0xCC    ; JP addr opcode
 
 ;**********************************************************
         .area SSEG (ABS) ; STACK
-        .org RAM_SIZE-256
-        .ds 256 
+        .org RAM_SIZE-STACK_SIZE-DSTACK_SIZE-TIB_SIZE
+        .ds STACK_SIZE+DSTACK_SIZE+TIB_SIZE
 ; space for DATSTK,TIB and STACK         
 ;**********************************************************
 
@@ -208,8 +206,8 @@ JPIMM   =     0xCC    ; JP addr opcode
 ;**********************************************************
 
 ; non handled interrupt reset MCU
+; do nothing 
 NonHandledInterrupt:
-;      _swreset 
        iret 
 
 ; used for milliseconds counter 
@@ -322,6 +320,7 @@ uart_init:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;        
 ;; place MCU in sleep mode with
 ;; halt opcode 
+;; can wakeup from external int.
 ;; BYE ( -- )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BYE,3,"BYE"
@@ -556,8 +555,8 @@ FREEVAR4: ; not variable
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; MSEC ( -- u )
 ;; get millisecond counter 
-;; msec ( -- u )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER MSEC,4,"MSEC"
         subw x,#CELLL 
@@ -566,8 +565,8 @@ FREEVAR4: ; not variable
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  PAUSE ( u -- )
 ; suspend execution for u msec 
-;  pause ( u -- )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PAUSE,5,"PAUSE"
         ldw y,x
@@ -580,8 +579,8 @@ FREEVAR4: ; not variable
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; initialize count down timer 
 ;  TIMER ( u -- )  milliseconds
+; initialize count down timer 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIMER,5,"TIMER"
         ldw y,x
@@ -591,8 +590,8 @@ FREEVAR4: ; not variable
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; check for TIMER exiparition 
 ;  TIMEOUT? ( -- 0|-1 )
+; check for TIMER exiparition 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIMEOUTQ,8,"TIMEOUT?"
         clr a
@@ -785,6 +784,8 @@ BRAN:
         ldw (x),y 
         ret 
 
+.IF 0 ;**********************************
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       LOCAL ( n -- )
 ;       reserve n slots on return stack
@@ -861,6 +862,7 @@ BRAN:
         _DROPN DBL_SIZE  
         RET 
 
+.ENDIF ;***************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >R      ( w -- )
@@ -1034,7 +1036,6 @@ ZEQU1:
 ;       run time code 
 ;       for VARIABLE and CREATE.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       HEADER DOVAR,COMPO+5,"DOVAR"
 DOVAR:
 	SUBW X,#2
         POPW Y    ;get return addr (pfa)
@@ -1083,6 +1084,8 @@ DOVAR:
         LDW (X),Y
         RET
 
+.IF 0 ;******************
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TBUF ( -- a )
 ;       address of 128 bytes 
@@ -1093,6 +1096,8 @@ DOVAR:
         subw x,#CELLL
         ldw (x),y 
         ret 
+
+.ENDIF ;*************************
 
 ; systeme variable 
 
@@ -1159,20 +1164,21 @@ DOVAR:
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       OFFSET ( -- a )
-;       address of system 
-;       variable OFFSET 
+; OFFSET ( -- a )
+; address of system 
+; variable OFFSET 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER OFFSET,6,"OFFSET"
+;        _HEADER OFFSET,6,"OFFSET"
+OFFSET:
         subw x,#CELLL
         ldw y,#UOFFSET 
         ldw (x),y 
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ADRADJ ( a -- a+offset )
 ; adjust jump address 
 ;  adding OFFSET
-; ADR-ADJ ( a -- a+offset )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ADRADJ: 
         call OFFSET 
@@ -1267,14 +1273,15 @@ QDUP1:  RET
         LDW (X),Y
         RET
 
+.IF 0 ;************************
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TRUE ( -- -1 )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TRUE,4,"TRUE"
-        LD A,#255 
+        LDW  Y,#-1 
         SUBW X,#CELLL
-        LD (X),A 
-        LD (1,X),A 
+        LDW (X),Y 
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1282,9 +1289,11 @@ QDUP1:  RET
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FALSE,5,"FALSE"
         SUBW X,#CELLL 
-        CLR (X) 
-        CLR (1,X)
+        CLRW  Y 
+        LDW (X),Y  
         RET 
+
+.ENDIF ;**************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NOT     ( w -- w )
@@ -1494,7 +1503,7 @@ MIN1:	ADDW X,#2
         CALL     TOR
         CALL     SUBB
         CALL     RFROM
-        JP     ULESS
+        JP       ULESS
 
 ;; Divide
 
@@ -1904,10 +1913,12 @@ RSHIFT4:
 ;         Return 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ZERO,1,"0"
-        SUBW X,#2
-	CLRW Y
-        LDW (X),Y
+        SUBW X,#CELLL  
+	CLR (X)
+        CLR (1,X)
         RET
+
+.IF 0 ;*********************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;         1     ( -- 1)
@@ -1928,6 +1939,8 @@ RSHIFT4:
 	LDW Y,#0xFFFF
         LDW (X),Y
         RET
+
+.ENDIF ;**************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >CHAR   ( c -- c )
@@ -2521,7 +2534,7 @@ putc:
         RET        
 
 ;;;;;;;;;;;;;;;;;;;;;;
-; forht terminal 
+; forth terminal 
 ; interface 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2754,7 +2767,7 @@ DOT1:   CALL     STR
 ;; Parsing
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       parse   ( b u c -- b u delta ; <string> )
+;       PARS$   ( b u c -- b u delta ; <string> )
 ;       Scan string delimited by c.
 ;       Return found string and its offset.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3111,7 +3124,7 @@ ACCP4:  CALL     DROP
         _HEADER QUERY,5,"QUERY"
         CALL     TIB
         CALL     DOLIT
-        .word      80
+        .word    TIB_SIZE 
         CALL     ACCEP
         CALL     NTIB
         CALL     STORE
@@ -3702,7 +3715,8 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
 ;       CALL,    ( ca -- )
 ;       Compile a subroutine call.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER JSRC,5,^/"CALL,"/
+;        _HEADER JSRC,5,^/"CALL,"/
+JSRC: 
         LDW Y,#DROP 
         LDW YTEMP,Y 
         LDW Y,X 
@@ -3739,7 +3753,8 @@ JSRC2:
 ;       compute offset to adjust jump address 
 ;       set variable OFFSET
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-        _HEADER INITOFS,8,"INIT-OFS"
+;        _HEADER INITOFS,8,"INIT-OFS"
+INITOFS: 
         call CPP 
         call AT 
         call HERE
@@ -3758,6 +3773,8 @@ JSRC2:
         CALL   SNAME
         JP     RBRAC
 
+.IF 0 ;************************
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       I:  ( -- )
 ;       Start interrupt service 
@@ -3768,6 +3785,8 @@ JSRC2:
         _HEADER ICOLON,2,"I:"
         call INITOFS 
         jp RBRAC  
+
+.ENDIF ;*************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       IMMEDIATE       ( -- )
@@ -3941,6 +3960,12 @@ PDUM2:  CALL     DONXT
         .word    PDUM1   ;loop till done
         RET
 
+;----------------------------
+; print byte in hexadecimal  
+; 2 characters wide
+; input:
+;    A   byte to print 
+;----------------------------
 PRT_HEX_BYTE:
         PUSH    A 
         SWAP    A 
