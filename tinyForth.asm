@@ -434,7 +434,7 @@ FORGET4:
         CALL VPP 
         CALL STORE
         CALL UPDATPTR 
-        call ZERO 
+        call ZERO  
         CALL UPDATRUN  
         RET         
 FORGET5:
@@ -1272,28 +1272,6 @@ QDUP1:  RET
         ADDW Y,YTEMP
         LDW (X),Y
         RET
-
-.IF 0 ;************************
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       TRUE ( -- -1 )
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TRUE,4,"TRUE"
-        LDW  Y,#-1 
-        SUBW X,#CELLL
-        LDW (X),Y 
-        RET 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       FALSE ( -- 0 )
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER FALSE,5,"FALSE"
-        SUBW X,#CELLL 
-        CLRW  Y 
-        LDW (X),Y  
-        RET 
-
-.ENDIF ;**************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NOT     ( w -- w )
@@ -2460,7 +2438,7 @@ NUMQ4:
         CALL     DDROP
         CALL     DDROP
 .endif 
-        CALL     ZERO
+        CALL     ZERO 
 NUMQ5:  CALL     DUPP
 NUMQ6:  
 .if 1 ; optimize
@@ -2610,7 +2588,7 @@ INCH:
 ;       Send n spaces to output device.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SPACS,6,"SPACES"
-        CALL     ZERO
+        CALL     ZERO 
         CALL     MAX
         CALL     TOR
         JRA      CHAR2
@@ -2800,7 +2778,7 @@ PARS1:  CALL     BLANK
         .word      PARS1
         CALL     RFROM
         CALL     DROP
-        CALL     ZERO
+        CALL     ZERO 
         JP     DUPP
 PARS2:  CALL     RFROM
 PARS3:  CALL     OVER
@@ -2952,7 +2930,7 @@ SAME1:  CALL     OVER
         JP     DROP
 SAME2:  CALL     DONXT
         .word      SAME1
-        JP     ZERO
+        JP     ZERO 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       find    ( a va -- ca na | a F )
@@ -3129,7 +3107,7 @@ ACCP4:  CALL     DROP
         CALL     NTIB
         CALL     STORE
         CALL     DROP
-        CALL     ZERO
+        CALL     ZERO 
         CALL     INN
         JP     STORE
 
@@ -3458,7 +3436,7 @@ STRCQ:
         CALL     COMPI
         .word QBRAN
         CALL     HERE
-        CALL     ZERO
+        CALL     ZERO 
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3481,7 +3459,7 @@ STRCQ:
         _DOLIT   JPIMM 
         CALL     CCOMMA 
         CALL     HERE
-        CALL     ZERO
+        CALL     ZERO 
         CALL     COMMA
         CALL     SWAPP
         CALL     HERE
@@ -3498,7 +3476,7 @@ STRCQ:
         _DOLIT JPIMM 
         CALL CCOMMA
         CALL     HERE
-        CALL     ZERO
+        CALL     ZERO 
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3510,7 +3488,7 @@ STRCQ:
         CALL     COMPI
         .WORD    QBRAN
         CALL     HERE
-        CALL     ZERO
+        CALL     ZERO 
         CALL     COMMA
         JP       SWAPP
 
@@ -3696,7 +3674,7 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         call AT 
         call VPP 
         call STORE 
-        JP ZERO
+        JP ZERO 
 
  .ENDIF ; ************************          
         
@@ -3847,7 +3825,7 @@ IMM01:  CALL	LAST
         CALL CREAT
         CALL DUPP
         CALL COMMA
-        CALL ZERO
+        CALL ZERO 
         CALL SWAPP 
         CALL STORE
         JP FMOVE ; move definition to FLASH
@@ -4052,7 +4030,7 @@ TNAM2:  CALL     AT
 TNAM3:  CALL     SWAPP
         JP     DROP
 TNAM4:  CALL     DDROP
-        JP     ZERO
+        JP     ZERO 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .ID     ( na -- )
