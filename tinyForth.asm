@@ -187,7 +187,7 @@ CALLL   =     0xCD     ;CALL opcode
 IRET_CODE =   0x80    ; IRET opcode 
 ADDWX   =     0x1C    ; opcode for ADDW X,#word  
 JPIMM   =     0xCC    ; JP addr opcode 
-
+RET_CODE =    0x81    ; exit subroutine 
 
 ;**********************************************************
         .area DATA (ABS)
@@ -1163,6 +1163,22 @@ DOVAR:
         LDW (X),Y
         RET
 
+.IF 0 ;********************
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       INIT-OFS ( -- )
+;       compute offset to adjust jump address 
+;       set variable OFFSET
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
+;        _HEADER INITOFS,8,"INIT-OFS"
+INITOFS: 
+        call CPP 
+        call AT 
+        call HERE
+        call SUBB 
+        call OFFSET 
+        jp STORE  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; OFFSET ( -- a )
 ; address of system 
@@ -1175,6 +1191,7 @@ OFFSET:
         ldw (x),y 
         ret 
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ADRADJ ( a -- a+offset )
 ; adjust jump address 
@@ -1185,6 +1202,7 @@ ADRADJ:
         call AT 
         jp PLUS 
 
+.ENDIF ;**********************
 
 ;; Common functions
 
@@ -2044,11 +2062,20 @@ RSHIFT4:
 ;       Return  top of  variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER HERE,4,"HERE"
-      	ldw y,#UVP 
-        ldw y,(y)
+      	ldw y,UVP 
         subw x,#CELLL 
         ldw (x),y 
         ret 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; CP-HERE ( -- a)
+; return code space top address 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER CPHERE,7,"CP-HERE"
+        SUBW    X,#CELLL 
+        LDW     Y,UCP 
+        LDW     (X),Y 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PAD     ( -- a )
@@ -2162,29 +2189,20 @@ FILL1: POPW X
         RET         
         
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ERASE   ( b u -- )
-;       Erase u bytes beginning at b.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER ERASE,5,"ERASE"
-        clrw y 
-        subw x,#CELLL 
-        ldw (x),y 
-        jp FILL 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PACK0   ( b u a -- a )
 ;       Build a counted string with
 ;       u characters from b. Null fill.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER PACKS,5,"PACK0"
+;        _HEADER PACKS,5,"PACK0"
+PACKS:
         CALL     DUPP
         CALL     TOR     ;strings only on cell boundary
         CALL     DDUP
         CALL     CSTOR
         CALL     ONEP ;save count
         CALL     SWAPP
-        CALL     CMOVE
+        CALL     CMOVE 
         CALL     RFROM
         RET
 
@@ -2889,7 +2907,7 @@ PARS8:  CALL     OVER
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TOKEN,5,"TOKEN"
         CALL     BLANK
-        JP     WORDD
+        JP       WORDD
 
 ;; Dictionary search
 
@@ -3277,30 +3295,30 @@ QUIT2:  CALL     QUERY   ;get input
         jp UPDATPTR 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ,       ( w -- )
-;         Compile an integer into
-;         variable space.
+;  ,       ( w -- )
+;  Compile an integer into
+;  code space.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER COMMA,1,^/","/
-        CALL     HERE
+        CALL     CPHERE
         CALL     DUPP
         CALL     CELLP   ;cell boundary
-        CALL     VPP
+        CALL     CPP
         CALL     STORE
-        JP     STORE
+        JP       FSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       C,      ( c -- )
-;       Compile a byte into
-;       variables space.
+;  C,      ( c -- )
+;  Compile a byte into
+;  code space.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CCOMMA,2,^/"C,"/
-        CALL     HERE
+        CALL     CPHERE
         CALL     DUPP
         CALL     ONEP
-        CALL     VPP
+        CALL     CPP
         CALL     STORE
-        JP     CSTOR
+        JP       FCSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       [COMPILE]       ( -- ; <string> )
@@ -3337,22 +3355,80 @@ QUIT2:  CALL     QUERY   ;get input
         .word DOLIT 
         JP     COMMA
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ['] <name>
+; compile execution semantic of 
+; <name>
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER COMPTICK,COMPO+IMEDD+3,"[']"
+        CALL TICK 
+        CALL COMMA 
+        RET 
+
+.IF 0 ;*********************
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DEFER <name>
+; create word <name>
+; whick action must be set 
+; by DEFER! 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DEFER,5,"DEFER"
+        CALL  HERE 
+        CALL DUPP 
+        CALL CELLP
+        CALL VPP 
+        CALL STORE
+        CALL  CREAT 
+        CALL  ZERO 
+        CALL  OVER  
+        CALL  STORE
+        CALL  COMMA  
+        _DOLIT DODOES   
+        JP FMOVE 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DOES> 
+; 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DOESS,COMPO+IMEDD+5,"DOES>"
+
+        RET 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  DODOES 
+;  runtime of DOES>
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ DODOES:
+
+.ENDIF ;****************
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       $,"     ( -- )
 ;       Compile a literal string
 ;       up to next " .
+; expect IAP unlocked 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER STRCQ,3,^/'$,"'/
 STRCQ:
         CALL     DOLIT
-        .word     34	; "
+        .word    '"'   
         CALL     PARSE
         CALL     HERE
         CALL     PACKS   ;string to code dictionary
+; copy string to FLASH memory at CPP        
         CALL     COUNT
-        CALL     PLUS    ;calculate aligned end of string
-        CALL     VPP
-        JP     STORE
+        CALL     ONEP 
+        CALL     TOR 
+        CALL     ONEM 
+        CALL     CPP
+        CALL     AT 
+        CALL     RAT 
+        CALL     FCPY 
+        CALL     RFROM 
+        CALL     CPP 
+        JP       STORE 
 
 ;; Structures
 
@@ -3363,8 +3439,8 @@ STRCQ:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FOR,COMPO+IMEDD+3,"FOR"
         CALL     COMPI
-        .word TOR 
-        JP     HERE
+        .word    TOR 
+        JP       CPHERE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NEXT    ( a -- )
@@ -3373,7 +3449,7 @@ STRCQ:
         _HEADER NEXT,COMPO+IMEDD+4,"NEXT"
         CALL     COMPI
         .word DONXT 
-        call ADRADJ
+;        call ADRADJ
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3404,7 +3480,7 @@ STRCQ:
 ;       indefinite loop structure.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BEGIN,COMPO+IMEDD+5,"BEGIN"
-        JP     HERE
+        JP     CPHERE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       UNTIL   ( a -- )
@@ -3414,7 +3490,7 @@ STRCQ:
         _HEADER UNTIL,COMPO+IMEDD+5,"UNTIL"
         CALL     COMPI
         .word    QBRAN 
-        call     ADRADJ
+;        call     ADRADJ
         JP       COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3425,7 +3501,7 @@ STRCQ:
         _HEADER AGAIN,COMPO+IMEDD+5,"AGAIN"
         _DOLIT JPIMM 
         CALL  CCOMMA
-        call ADRADJ 
+;        call ADRADJ 
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3435,7 +3511,7 @@ STRCQ:
         _HEADER IFF,COMPO+IMEDD+2,"IF"
         CALL     COMPI
         .word QBRAN
-        CALL     HERE
+        CALL     CPHERE
         CALL     ZERO 
         JP     COMMA
 
@@ -3445,10 +3521,10 @@ STRCQ:
 ;       branch structure.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER THENN,COMPO+IMEDD+4,"THEN"
-        CALL     HERE
-        call ADRADJ 
+        CALL     CPHERE
+;        call ADRADJ 
         CALL     SWAPP
-        JP     STORE
+        JP     FSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ELSE        ( A -- A )
@@ -3458,14 +3534,13 @@ STRCQ:
         _HEADER ELSEE,COMPO+IMEDD+4,"ELSE"
         _DOLIT   JPIMM 
         CALL     CCOMMA 
-        CALL     HERE
+        CALL     CPHERE
         CALL     ZERO 
         CALL     COMMA
         CALL     SWAPP
-        CALL     HERE
-        call     ADRADJ 
+        CALL     CPHERE
         CALL     SWAPP
-        JP       STORE
+        JP       FSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AHEAD       ( -- A )
@@ -3475,7 +3550,7 @@ STRCQ:
         _HEADER AHEAD,COMPO+IMEDD+5,"AHEAD"
         _DOLIT JPIMM 
         CALL CCOMMA
-        CALL     HERE
+        CALL     CPHERE
         CALL     ZERO 
         JP     COMMA
 
@@ -3487,7 +3562,7 @@ STRCQ:
         _HEADER WHILE,COMPO+IMEDD+5,"WHILE"
         CALL     COMPI
         .WORD    QBRAN
-        CALL     HERE
+        CALL     CPHERE
         CALL     ZERO 
         CALL     COMMA
         JP       SWAPP
@@ -3500,12 +3575,12 @@ STRCQ:
         _HEADER REPEA,COMPO+IMEDD+6,"REPEAT"
         _DOLIT JPIMM 
         CALL   CCOMMA
-        call   ADRADJ 
+;        call   ADRADJ 
         CALL   COMMA
-        CALL   HERE
-        call   ADRADJ 
+        CALL   CPHERE
+;        call   ADRADJ 
         CALL   SWAPP
-        JP     STORE
+        JP     FSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AFT         ( a -- a A )
@@ -3515,7 +3590,7 @@ STRCQ:
         _HEADER AFT,COMPO+IMEDD+3,"AFT"
         CALL     DROP
         CALL     AHEAD
-        CALL     HERE
+        CALL     CPHERE
         JP     SWAPP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3567,32 +3642,44 @@ STRCQ:
 UNIQ1:  JP     DROP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       $,n     ( na -- )
-;       Build a new dictionary name
-;       using string at na.
-; compile dans l'espace des variables 
+; $,N    ( na -- )
+; Build a new dictionary name
+; using string at na.
+; compile in code space  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER SNAME,3,^/"$,n"/
+;       _HEADER SNAME,3,^/"$,N"/
 SNAME: 
         CALL     DUPP
         CALL     CAT     ;?null input
         CALL     QBRAN
-        .word      PNAM1
+        .word    PNAM1
         CALL     UNIQU   ;?redefinition
+; write new link 
+        CALL    CNTXT ; na cn 
+        CALL    AT    ; na pna 
+        CALL    CPHERE ; na pna cp 
+        CALL    FSTOR  ; na 
+; copy name to FLASH memory 
+        CALL     CPHERE ; na cp  
+        CALL     CELLP  ; new name field 
         CALL     DUPP
-        CALL     COUNT
-        CALL     PLUS
-        CALL     VPP
-        CALL     STORE
-        CALL     DUPP
-        CALL     LAST
-        CALL     STORE   ;save na for vocabulary link
-        CALL     CELLM   ;link address
-        CALL     CNTXT
-        CALL     AT
-        CALL     SWAPP
-        CALL     STORE
-        RET     ;save code pointer
+        CALL     LAST 
+        CALL     STORE  ;new name field 
+        CALL     OVER   ; na cp+ na 
+        CALL     COUNT  ; na cp+ na+ cnt 
+        CALL     SWAPP  ; na cp+ cnt na+
+        _DROP           ; na cp+ cnt 
+        CALL     ONEP   ; na cp+ cnt+
+        CALL     DUPP   ; na cp+ cnt+ cnt+ 
+        CALL     TOR    ; na cp+ cnt+ R: cnt+ 
+        CALL     FCPY   ;
+        CALL     LAST  ; cp+ R: cnt+  
+        CALL     AT 
+        CALL     RFROM   ; cp+ cnt+
+        CALL     PLUS    ; cp++ 
+        CALL     CPP     ;  
+        CALL     STORE  ; update cp 
+        RET    
 PNAM1:  CALL     STRQP
         .byte      5
         .ascii     " name" ;null input
@@ -3604,6 +3691,7 @@ PNAM1:  CALL     STRQP
 ;       $COMPILE        ( a -- )
 ;       Compile next word to
 ;       dictionary as a token or literal.
+; expect IAP unlocked 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SCOMP,8,"$COMPILE"
         CALL     NAMEQ
@@ -3634,19 +3722,20 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL     LAST
         CALL     AT
         CALL     CNTXT
-        JP     STORE
+        JP       STORE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ;       ( -- )
 ;       Terminate a colon definition.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SEMIS,IMEDD+COMPO+1,^/";"/
-        call DOLIT 
+        CALL DOLIT 
         .word 0x81   ; opcode for RET 
-        call CCOMMA 
-        CALL     LBRAC
-        call OVERT 
-        CALL FMOVE  ; move definition to FLASH 
+        CALL  CCOMMA 
+        CALL  LBRAC
+        CALL  OVERT
+        CALL  UPDATPTR 
+        _lock_iap  
         RET 
 
 .if 0 ;**************************
@@ -3692,9 +3781,10 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CALL,    ( ca -- )
 ;       Compile a subroutine call.
+; expect IAP unlocked 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER JSRC,5,^/"CALL,"/
-JSRC: 
+        _HEADER JSRC,5,^/"CALL,"/
+;JSRC: 
         LDW Y,#DROP 
         LDW YTEMP,Y 
         LDW Y,X 
@@ -3706,7 +3796,7 @@ JSRC:
         _DOLIT ADDWX ; opcode 
         CALL   CCOMMA 
         _DOLIT CELLL 
-        JP      COMMA 
+        JP     COMMA 
 JSRC1: ; check for DDROP 
         LDW Y,#DDROP 
         LDW YTEMP,Y 
@@ -3721,24 +3811,9 @@ JSRC1: ; check for DDROP
         _DOLIT 2*CELLL 
         JP  COMMA 
 JSRC2: 
-        CALL     DOLIT
-        .word     CALLL     ;CALL
+        _DOLIT  CALLL     ;CALL
         CALL     CCOMMA
-        JP     COMMA
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       INIT-OFS ( -- )
-;       compute offset to adjust jump address 
-;       set variable OFFSET
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-;        _HEADER INITOFS,8,"INIT-OFS"
-INITOFS: 
-        call CPP 
-        call AT 
-        call HERE
-        call SUBB 
-        call OFFSET 
-        jp STORE  
+        JP       COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       :       ( -- ; <string> )
@@ -3746,7 +3821,8 @@ INITOFS:
 ;       using next word as its name.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER COLON,1,":"
-        call INITOFS       
+;       call INITOFS       
+        CALL   unlock_iap 
         CALL   TOKEN
         CALL   SNAME
         JP     RBRAC
@@ -3782,7 +3858,8 @@ IMM01:  CALL	LAST
         CALL    AT
         CALL    unlock_iap
         CALL    FSTOR
-        JP      lock_iap 
+        _lock_iap 
+        RET  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;		COMPILE-ONLY  ( -- )
@@ -3804,7 +3881,7 @@ IMM01:  CALL	LAST
         _HEADER CREAT,6,"CREATE"
         CALL     TOKEN
         CALL     SNAME
-        CALL     OVERT        
+        CALL     OVERT         
         CALL     COMPI 
         .word    DOVAR 
         RET
@@ -3815,6 +3892,7 @@ IMM01:  CALL	LAST
 ;       initialized to 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
+        CALL unlock_iap 
 ; allocate CELL to RAM for variable data  
         CALL HERE
         CALL DUPP 
@@ -3828,11 +3906,10 @@ IMM01:  CALL	LAST
         CALL ZERO 
         CALL SWAPP 
         CALL STORE
-        JP FMOVE ; move definition to FLASH
-        
-        ;CALL UPDATPTR  ; don't update if variable kept in RAM.
-        ;CALL UPDATPTR 
-        ;JP UPDATPTR 
+        CALL UPDATPTR 
+        _lock_iap 
+        RET 
+       
                  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -3840,13 +3917,16 @@ IMM01:  CALL	LAST
 ;       n CONSTANT name 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CONSTANT,8,"CONSTANT"
+        CALL unlock_iap 
         CALL TOKEN
         CALL SNAME 
         CALL OVERT 
         CALL COMPI 
         .word DOCONST
-        CALL COMMA 
-        JP FMOVE
+        CALL COMMA
+        CALL UPDATPTR  
+        _lock_iap 
+        RET  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CONSTANT runtime semantic 
@@ -3865,6 +3945,7 @@ DOCONST:
 ; 2CONSTANT ( d -- ; <string> )
 ;----------------------------------
         _HEADER DCONST,9,"2CONSTANT"
+        CALL unlock_iap 
         CALL TOKEN
         CALL SNAME 
         CALL OVERT 
@@ -3872,9 +3953,9 @@ DOCONST:
         .word DO_DCONST
         CALL COMMA
         CALL COMMA  
-        JP FMOVE
-        ;CALL UPDATPTR 
-        ;JP   UPDATPTR   
+        CALL UPDATPTR 
+        _lock_iap 
+        RET    
     
 ;----------------------------------
 ; runtime for DCONST 

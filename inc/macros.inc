@@ -210,3 +210,8 @@
     .byte 0x45,a2,a1 
     .endm 
 
+    ; lock IAP programming 
+    .macro _lock_iap 
+        clr FLASH_IAPSR 
+    .endm 
+    

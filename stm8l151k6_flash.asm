@@ -241,19 +241,48 @@ iap_locked:
        addw x,#2*CELLL ; drop double 
        ret  
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ERASE   ( n -- )
+; Erase EEPROM, FLASH memory BLOCK 
+; if 1 <= n < 7  erase EEPROM block 
+; if 64 <= n < 256 erase FLASH block 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER ERASE,5,"ERASE"
+		CALL unlock_iap 
+		ldw y,x 
+		ldw y,(y)
+		_DROP
+		ld  a,#FLASH_BLOCK 
+		mul y,a  
+		cpw y,#8*FLASH_BLOCK  
+		jrmi 1$  
+		addw y,#FLASH_BASE
+		cpw y,#app_space
+		jrmi 9$ ; protected   
+		jra 2$
+1$:     addw y,#EEPROM_BASE  
+		cpw y,#128 
+		jrmi 9$ ; EEROM block zero protected 
+2$:     bset FLASH_CR2,#FLASH_CR2_ERASE
+		clr (y)
+		clr (1,y)
+		clr (2,y)
+		clr (3,y)
+		btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
+9$:		_lock_iap
+		RET 
+
 ;----------------------------
 ;  FCPY ( src dest cnt -- )
 ;  copies 'cnt' bytes to 
 ;  FLASH || EEPROM
-;  'dest' must be aligned to 
-;  32 bits address.
 ;----------------------------
 SRC=1  ; source address 
 DEST=3  ; destination address 
 CNT=5  ; bytes count
 VSIZE=6 ; local variables space on stack  
 	_HEADER FCPY,4,"FCPY"
-	CALL unlock_iap  
+;	CALL unlock_iap  
 	ldw y,x
 	ldw y,(y) ; CNT 
 	jrne 0$
@@ -325,7 +354,7 @@ VSIZE=6 ; local variables space on stack
 9$:	
 	addw sp,#VSIZE ; drop local variables 
 10$:
-	call lock_iap 
+;	_lock_iap 
 	ret 
 
 .IF 0 ;*********************
@@ -339,6 +368,8 @@ VSIZE=6 ; local variables space on stack
     ret 
 
 .ENDIF ;************************
+
+.IF 0 ;***********************
 
 ;--------------------------
 ; FMOVE ( -- )
@@ -388,6 +419,8 @@ VSIZE=6 ; local variables space on stack
 	CALL VPP  
 	CALL STORE  ; RAM pointer restored 
 	JP   UPDATPTR  
+
+.ENDIF ;***********************
 
 ;-----------------------------
 ;   RESET ( -- )
