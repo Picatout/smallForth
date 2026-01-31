@@ -1038,8 +1038,8 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DOVAR:
 	SUBW X,#2
-        POPW Y    ;get return addr (pfa)
-        LDW Y,(Y) ; indirect address 
+        LDW Y,(1,SP) ;get return addr
+        LDW Y,(3,Y) ; pfa  
         LDW (X),Y    ;push on stack
         RET     ;go to RET of EXEC
 
@@ -2675,7 +2675,7 @@ STRQP:
 DOTQP:
         CALL     DOSTR
         CALL     COUNT
-        JP     TYPES
+        JP       TYPES
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .R      ( n +n -- )
@@ -3365,7 +3365,6 @@ QUIT2:  CALL     QUERY   ;get input
         CALL COMMA 
         RET 
 
-.IF 0 ;*********************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DEFER <name>
@@ -3374,21 +3373,45 @@ QUIT2:  CALL     QUERY   ;get input
 ; by DEFER! 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEFER,5,"DEFER"
-        CALL  HERE 
-        CALL DUPP 
-        CALL CELLP
-        CALL VPP 
-        CALL STORE
-        CALL  CREAT 
-        CALL  ZERO 
-        CALL  OVER  
-        CALL  STORE
-        CALL  COMMA  
-        _DOLIT DODOES   
-        JP FMOVE 
+        CALL  unlock_iap 
+        CALL  CREAT_VAR_HEADER ; -- pfa  
+        CALL  CPHERE 
+        _DOLIT  4 
+        CALL   SUBB   
+        _DOLIT ATEXE  
+        CALL  SWAPP 
+        CALL  FSTOR  
+        CALL   UPDATPTR 
+        _lock_iap 
+        _DOLIT NOPP
+        CALL  SWAPP 
+        CALL  STORE 
+        RET 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DEFER! ( ca ca2  -- )
+; sauvegarde ca1 dans la pfa 
+; de ca2 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DEFERSTORE,6,"DEFER!"
+        CALL TBODY 
+        JP   STORE
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; DEFER@ ( ca1 -- ca2 )
+; ca2  is code executed by 
+; ca1 of defered word 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DEFERAT,6,"DEFER@"
+        CALL TBODY 
+        JP   AT 
+        
+
+.IF 0 ;*********************
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; DOES> 
+; DOES>  ( pfa -- xt )
 ; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DOESS,COMPO+IMEDD+5,"DOES>"
@@ -3425,8 +3448,10 @@ STRCQ:
         CALL     CPP
         CALL     AT 
         CALL     RAT 
-        CALL     FCPY 
-        CALL     RFROM 
+        CALL     FCPY
+        CALL     CPHERE  
+        CALL     RFROM
+        CALL     PLUS  
         CALL     CPP 
         JP       STORE 
 
@@ -3618,8 +3643,8 @@ STRCQ:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DOTQ,IMEDD+COMPO+2,'."'
         CALL     COMPI
-        .word DOTQP 
-        JP     STRCQ
+        .word    DOTQP 
+        JP       STRCQ
 
 ;; Name compiler
 
@@ -3883,26 +3908,34 @@ IMM01:  CALL	LAST
         CALL     SNAME
         CALL     OVERT         
         CALL     COMPI 
-        .word    DOVAR 
+        .word    DOVAR
+        _DOLIT   JPIMM
+        CALL     CCOMMA 
+        _DOLIT   NOPP 
+        JP       COMMA 
+NOPP:  
         RET
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  >BODY ( ca -- pfa )
+;  from ca goto data field address 
+;  ca is from a word create using 
+;  CREATE 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER TBODY,5,">BODY"
+        _DOLIT 6
+        CALL  PLUS 
+        JP    AT 
+        
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       VARIABLE  ( -- ; <string> )
 ;       Compile a new variable
 ;       initialized to 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
-        CALL unlock_iap 
-; allocate CELL to RAM for variable data  
-        CALL HERE
-        CALL DUPP 
-        CALL CELLP
-        CALL VPP 
-        CALL STORE
-; create variable header         
-        CALL CREAT
-        CALL DUPP
-        CALL COMMA
+        CALL unlock_iap
+        CALL CREAT_VAR_HEADER  
+; initialize variable with zero 
         CALL ZERO 
         CALL SWAPP 
         CALL STORE
@@ -3910,7 +3943,25 @@ IMM01:  CALL	LAST
         _lock_iap 
         RET 
        
-                 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; create dictionnary header 
+; and reserve data space 
+; for variable 
+; -- pfa 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+CREAT_VAR_HEADER:
+; allocate CELL to RAM for variable data  
+        CALL  HERE
+        CALL  DUPP 
+        CALL  CELLP
+        CALL  VPP 
+        CALL  STORE
+; create variable header         
+        CALL  CREAT
+        CALL  DUPP
+        JP    COMMA ; plug pfa address 
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
 ;       Compile a new constant 
