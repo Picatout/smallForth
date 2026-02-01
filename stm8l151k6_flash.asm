@@ -9,7 +9,8 @@
 ; unlock FLASH for 
 ; IAP programming 
 ;-----------------------
-	_HEADER unlock_iap,10,"UNLOCK-IAP"
+;	_HEADER unlock_iap,10,"UNLOCK-IAP"
+unlock_iap: 
     sim 
 	btjt FLASH_IAPSR,#FLASH_IAPSR_PUL,1$
 	mov FLASH_PUKR,#FLASH_PUKR_KEY1
@@ -20,6 +21,8 @@
 2$:	rim 
 	ret 
 
+.IF 0 ;*********************
+
 ;------------------------
 ; LOCK_IAP ( -- )
 ; lock  IAP 
@@ -29,14 +32,39 @@
 	clr FLASH_IAPSR 
 	ret 
 
+.ENDIF ;*********************
+
+;-----------------------------------------
+;  FD! ( d a -- )
+;  store a double in FLASH || eeprom
+;  'a' must be aligned on 32 bits boundary  
+;-----------------------------------------
+       _HEADER FDSTOR,3,"FD!"
+       call unlock_iap  
+1$:    bset FLASH_CR2,#FLASH_CR2_WPRG
+       ldw y,x 
+       ldw y,(y) ; write address 
+       addw x,#CELLL 
+       ld a,(x)
+       ld (y),a 
+       ld a,(1,x)
+       ld (1,y),a 
+       ld a,(2,x)
+       ld (2,y),a 
+       ld a,(3,x)
+       ld (3,y),a 
+       btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
+       addw x,#2*CELLL ; drop double 
+       _lock_iap 
+	   ret  
+
 ;---------------------------------
 ;   F!  ( w a -- )
 ;   store word in FLASH
 ;  IAP must be unlocked 
 ;----------------------------------
 	_HEADER FSTOR,2,"F!"
-	btjf FLASH_IAPSR,#FLASH_IAPSR_PUL,iap_locked 
-write_word:
+	call unlock_iap 
 	ldw y,x 
 	ldw y,(y)
 	ld a,(2,x)
@@ -46,6 +74,7 @@ write_word:
 	ld (1,y),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
 	addw x,#2*CELLL 
+	_lock_iap 
 	ret 
 
 ;---------------------------------
@@ -53,15 +82,48 @@ write_word:
 ; write byte to FLASH 
 ;---------------------------------	 
 	_HEADER FCSTOR,3,"FC!"
-	btjf FLASH_IAPSR,#FLASH_IAPSR_PUL,iap_locked 
-write_byte:
+	call unlock_iap  
 	ldw y,x 
 	ldw y,(y)
 	ld a,(3,x)
 	ld (y),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
 	addw x,#2*CELLL 
+	_lock_iap 
 	ret 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ERASE   ( n -- )
+; Erase EEPROM, FLASH memory BLOCK 
+; if 1 <= n < 7  erase EEPROM block 
+; if 64 <= n < 256 erase FLASH block 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER ERASE,5,"ERASE"
+		call unlock_iap 
+		ldw y,x 
+		ldw y,(y)
+		_DROP
+		ld  a,#FLASH_BLOCK 
+		mul y,a  
+		cpw y,#8*FLASH_BLOCK  
+		jrmi 1$  
+		addw y,#FLASH_BASE
+		cpw y,#app_space
+		jrmi 9$ ; protected   
+		jra 2$
+1$:     addw y,#EEPROM_BASE  
+		cpw y,#128 
+		jrmi 9$ ; EEROM block zero protected 
+2$:     bset FLASH_CR2,#FLASH_CR2_ERASE
+		clr (y)
+		clr (1,y)
+		clr (2,y)
+		clr (3,y)
+		btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
+9$:		_lock_iap
+		RET 
+
+.IF 0 ;****************************
 
 ;-------------------------
 ;  EE! ( w a -- )
@@ -86,6 +148,8 @@ iap_locked:
         call ABORQ
         .byte 19
         .ascii " failed! IAP locked"
+
+.ENDIF ;***********************
 
 ;-----------------------------------
 ;  EEPROM  ( -- u )
@@ -145,13 +209,12 @@ iap_locked:
 ; EEPROM 
 ;---------------------------------
 	_HEADER UPDATRUN,9,"UPDAT-RUN"
-	call unlock_iap  
 	ldw y, EEP_RUN
 	cpw y,(x)
 	jreq 9$ 
 	call EEPRUN ; ( adr ee_adr -- )
-	call EESTOR  
-9$:	call lock_iap 
+	call FSTOR  
+9$:	 
 	ret 
 
 ;----------------------------------
@@ -207,71 +270,11 @@ iap_locked:
 ;  in EEPROM 
 ;----------------------------------
 	_HEADER UPDATPTR,11,"UPDAT-EEPTR"
-	call unlock_iap  
 	call UPDATCNTXT 
 	call UPDATCP 
 	call UPDATVP 
-	call lock_iap   
 	ret 
 	
-;-----------------------------------------
-;  FD! ( d a -- )
-;  store a double in FLASH || eeprom
-;  'a' must be aligned on 32 bits boundary  
-;-----------------------------------------
-       _HEADER FDSTOR,3,"FD!"
-       ld a,FLASH_IAPSR 
-       and a,#(1<<FLASH_IAPSR_DUL)|(1<<FLASH_IAPSR_PUL)
-       cp a,#(1<<FLASH_IAPSR_DUL)|(1<<FLASH_IAPSR_PUL)
-       jreq 1$
-       jp iap_locked 
-1$:    bset FLASH_CR2,#FLASH_CR2_WPRG
-       ldw y,x 
-       ldw y,(y) ; write address 
-       addw x,#CELLL 
-       ld a,(x)
-       ld (y),a 
-       ld a,(1,x)
-       ld (1,y),a 
-       ld a,(2,x)
-       ld (2,y),a 
-       ld a,(3,x)
-       ld (3,y),a 
-       btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
-       addw x,#2*CELLL ; drop double 
-       ret  
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ERASE   ( n -- )
-; Erase EEPROM, FLASH memory BLOCK 
-; if 1 <= n < 7  erase EEPROM block 
-; if 64 <= n < 256 erase FLASH block 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER ERASE,5,"ERASE"
-		CALL unlock_iap 
-		ldw y,x 
-		ldw y,(y)
-		_DROP
-		ld  a,#FLASH_BLOCK 
-		mul y,a  
-		cpw y,#8*FLASH_BLOCK  
-		jrmi 1$  
-		addw y,#FLASH_BASE
-		cpw y,#app_space
-		jrmi 9$ ; protected   
-		jra 2$
-1$:     addw y,#EEPROM_BASE  
-		cpw y,#128 
-		jrmi 9$ ; EEROM block zero protected 
-2$:     bset FLASH_CR2,#FLASH_CR2_ERASE
-		clr (y)
-		clr (1,y)
-		clr (2,y)
-		clr (3,y)
-		btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
-9$:		_lock_iap
-		RET 
-
 ;----------------------------
 ;  FCPY ( src dest cnt -- )
 ;  copies 'cnt' bytes to 
@@ -282,7 +285,6 @@ DEST=3  ; destination address
 CNT=5  ; bytes count
 VSIZE=6 ; local variables space on stack  
 	_HEADER FCPY,4,"FCPY"
-;	CALL unlock_iap  
 	ldw y,x
 	ldw y,(y) ; CNT 
 	jrne 0$
@@ -354,7 +356,6 @@ VSIZE=6 ; local variables space on stack
 9$:	
 	addw sp,#VSIZE ; drop local variables 
 10$:
-;	_lock_iap 
 	ret 
 
 .IF 0 ;*********************
@@ -429,7 +430,7 @@ VSIZE=6 ; local variables space on stack
 ; modification.
 ;-----------------------------
 	_HEADER SYS_RST,5,"RESET"
-	CALL unlock_iap 
+	call unlock_iap 
 	ldw y,#EEPROM_BASE  
 1$:	bset FLASH_CR2,#FLASH_CR2_WPRG
 	clr (y)
@@ -485,5 +486,5 @@ CHKIVEC:
 	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
 	jra 1$
 9$: popw x 
-	call lock_iap 
+	_lock_iap 
 	ret 

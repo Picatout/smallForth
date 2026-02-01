@@ -3373,7 +3373,6 @@ QUIT2:  CALL     QUERY   ;get input
 ; by DEFER! 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEFER,5,"DEFER"
-        CALL  unlock_iap 
         CALL  CREAT_VAR_HEADER ; -- pfa  
         CALL  CPHERE 
         _DOLIT  4 
@@ -3382,7 +3381,6 @@ QUIT2:  CALL     QUERY   ;get input
         CALL  SWAPP 
         CALL  FSTOR  
         CALL   UPDATPTR 
-        _lock_iap 
         _DOLIT NOPP
         CALL  SWAPP 
         CALL  STORE 
@@ -3770,7 +3768,6 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         CALL  LBRAC
         CALL  OVERT
         CALL  UPDATPTR 
-        _lock_iap  
         RET 
 
 .if 0 ;**************************
@@ -3856,8 +3853,6 @@ JSRC2:
 ;       using next word as its name.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER COLON,1,":"
-;       call INITOFS       
-        CALL   unlock_iap 
         CALL   TOKEN
         CALL   SNAME
         JP     RBRAC
@@ -3891,9 +3886,7 @@ IMM01:  CALL	LAST
         CALL    ORR
         CALL    LAST
         CALL    AT
-        CALL    unlock_iap
         CALL    FSTOR
-        _lock_iap 
         RET  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3943,16 +3936,15 @@ NOPP:
 ;       initialized to 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
-        CALL unlock_iap
         CALL CREAT_VAR_HEADER  
 ; initialize variable with zero 
         CALL ZERO 
         CALL SWAPP 
         CALL STORE
         CALL UPDATPTR 
-        _lock_iap 
         RET 
-       
+
+.IF 1       
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; create dictionnary header 
 ; and reserve data space 
@@ -3970,7 +3962,7 @@ CREAT_VAR_HEADER:
         CALL  CREAT
         CALL  DUPP
         JP    COMMA ; plug pfa address 
-
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -3978,7 +3970,6 @@ CREAT_VAR_HEADER:
 ;       n CONSTANT name 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CONSTANT,8,"CONSTANT"
-        CALL unlock_iap 
         CALL TOKEN
         CALL SNAME 
         CALL OVERT 
@@ -3986,7 +3977,6 @@ CREAT_VAR_HEADER:
         .word DOCONST
         CALL COMMA
         CALL UPDATPTR  
-        _lock_iap 
         RET  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4006,7 +3996,6 @@ DOCONST:
 ; 2CONSTANT ( d -- ; <string> )
 ;----------------------------------
         _HEADER DCONST,9,"2CONSTANT"
-        CALL unlock_iap 
         CALL TOKEN
         CALL SNAME 
         CALL OVERT 
@@ -4015,7 +4004,6 @@ DOCONST:
         CALL COMMA
         CALL COMMA  
         CALL UPDATPTR 
-        _lock_iap 
         RET    
     
 ;----------------------------------
