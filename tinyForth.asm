@@ -3289,9 +3289,10 @@ QUIT2:  CALL     QUERY   ;get input
 ;       Allocate n bytes to RAM 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ALLOT,5,"ALLOT"
-        CALL     VPP
-; must update EEP_VP each time VP is modidied
-        call PSTOR 
+        CALL     HERE
+        CALL     PLUS 
+        CALL     VPP 
+        CALL     STORE 
         jp UPDATPTR 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3373,16 +3374,14 @@ QUIT2:  CALL     QUERY   ;get input
 ; by DEFER! 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEFER,5,"DEFER"
-        CALL  VARIA   
-        _DOLIT NOOP   
-        CALL   VPP
-        CALL   AT   
-        CALL   CELLM
-        CALL   STORE
-        CALL   CPHERE 
-        _DOLIT 1 
-        CALL   SUBB
-        CALL   CPP   
+        CALL   CREAT    
+        CALL   HERE 
+        CALL   DUPP 
+        CALL   CELLP ; allot vector space  
+        CALL   VPP 
+        CALL   STORE 
+        _DOLIT NOOP 
+        CALL   SWAPP 
         CALL   STORE 
         CALL  COMPI 
         .WORD  ATEXE
@@ -3410,26 +3409,23 @@ NOOP:
         CALL TBODY 
         JP   AT 
 
-
-.IF 0 ;*********************
-
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DOES>  (  --  )
-; 
+; complete last definition
+; compile runtime DODOES 
+; compile code follwing  DOES>
+; render available the ca of this 
+; code to DODOES 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DOESS,COMPO+IMEDD+5,"DOES>"
-        CALL LAST 
-        CALL AT 
-        CALL NAMET ; na > ca  
-        CALL TBODY ; ca > pfa 
-        CALL CELLM 
-        LDW  Y,(1,SP)
-        ADDW Y,#3 
-        SUBW X,#CELLL
-        ldw (x),Y
+        _HEADER DOESS,COMPO+IMEDD+5,"DOES>" 
         CALL COMPI 
-        .WORD DODOES  
+        .WORD DODOES  ;compile runtime of DOES>
+        CALL  CPHERE 
+        _DOLIT 3 
+        CALL  PLUS     
+        CALL  COMMA   ; address of code to append to new definition 
+        _DOLIT RET_CODE 
+        CALL  CCOMMA 
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3437,9 +3433,15 @@ NOOP:
 ;  runtime of DOES>
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
  DODOES:
-
-.ENDIF ;****************
-
+        LDW Y,(1,SP)
+        LDW Y,(Y)    ; new definition must jump to this address 
+        SUBW X,#CELLL 
+        LDW (X),Y 
+        _DOLIT JPIMM 
+        CALL CCOMMA
+        CALL COMMA  ; JP addr  
+        POPW Y 
+        JP (2,Y) 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       $,"     ( -- )
@@ -3918,10 +3920,8 @@ IMM01:  CALL	LAST
         CALL     OVERT         
         CALL     COMPI 
         .word    DOCONST 
-        CALL     ZERO 
+        CALL     HERE  
         CALL     COMMA 
-        _DOLIT   RET_CODE 
-        CALL     CCOMMA 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3942,19 +3942,11 @@ IMM01:  CALL	LAST
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
         CALL CREAT
-; initialize variable with zero 
-        CALL VPP
-        CALL AT
-        CALL DUPP    
-        CALL CPHERE 
-        _DOLIT 3   
-        CALL SUBB   ; *pfa
-        CALL FSTOR  ; write pfa 
+        CALL HERE  
         CALL CELLP  ; move VP 1 cell up 
         CALL VPP 
         CALL STORE 
-        CALL UPDATPTR 
-        RET 
+        JRA complete 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -3963,12 +3955,18 @@ IMM01:  CALL	LAST
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CONSTANT,8,"CONSTANT"
         CALL CREAT 
-        CALL CPHERE 
-        _DOLIT 3 
-        CALL  SUBB 
-        CALL FSTOR
+        CALL INIT_PFA  
+complete:
+        _DOLIT   RET_CODE 
+        CALL     CCOMMA 
         CALL UPDATPTR  
         RET  
+
+INIT_PFA: ; ( n|addr -- )
+        CALL CPHERE 
+        CALL CELLM 
+        CALL FSTOR  ; write pfa 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CONSTANT runtime semantic 
@@ -3995,6 +3993,8 @@ DOCONST:
         .word DO_DCONST
         CALL COMMA
         CALL COMMA  
+        _DOLIT   RET_CODE 
+        CALL     CCOMMA 
         CALL UPDATPTR 
         RET    
     
