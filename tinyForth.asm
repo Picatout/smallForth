@@ -3405,17 +3405,27 @@ QUIT2:  CALL     QUERY   ;get input
         _HEADER DEFERAT,6,"DEFER@"
         CALL TBODY 
         JP   AT 
-        
+
 
 .IF 0 ;*********************
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; DOES>  ( pfa -- xt )
+; DOES>  (  --  )
 ; 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DOESS,COMPO+IMEDD+5,"DOES>"
-
+        CALL LAST 
+        CALL AT 
+        CALL NAMET ; na > ca  
+        CALL TBODY ; ca > pfa 
+        CALL CELLM 
+        LDW  Y,(1,SP)
+        ADDW Y,#3 
+        SUBW X,#CELLL
+        ldw (x),Y
+        CALL COMPI 
+        .WORD DODOES  
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
