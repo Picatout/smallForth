@@ -3373,17 +3373,23 @@ QUIT2:  CALL     QUERY   ;get input
 ; by DEFER! 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEFER,5,"DEFER"
-        CALL  CREAT_VAR_HEADER ; -- pfa  
-        CALL  CPHERE 
-        _DOLIT  4 
-        CALL   SUBB   
-        _DOLIT ATEXE  
-        CALL  SWAPP 
-        CALL  FSTOR  
+        CALL  VARIA   
+        _DOLIT NOOP   
+        CALL   VPP
+        CALL   AT   
+        CALL   CELLM
+        CALL   STORE
+        CALL   CPHERE 
+        _DOLIT 1 
+        CALL   SUBB
+        CALL   CPP   
+        CALL   STORE 
+        CALL  COMPI 
+        .WORD  ATEXE
+        _DOLIT RET_CODE 
+        CALL   CCOMMA  
         CALL   UPDATPTR 
-        _DOLIT NOPP
-        CALL  SWAPP 
-        CALL  STORE 
+NOOP:
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3911,12 +3917,11 @@ IMM01:  CALL	LAST
         CALL     SNAME
         CALL     OVERT         
         CALL     COMPI 
-        .word    DOVAR
-        _DOLIT   JPIMM
+        .word    DOCONST 
+        CALL     ZERO 
+        CALL     COMMA 
+        _DOLIT   RET_CODE 
         CALL     CCOMMA 
-        _DOLIT   NOPP 
-        JP       COMMA 
-NOPP:  
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3926,7 +3931,7 @@ NOPP:
 ;  CREATE 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TBODY,5,">BODY"
-        _DOLIT 6
+        _DOLIT 3
         CALL  PLUS 
         JP    AT 
         
@@ -3936,33 +3941,20 @@ NOPP:
 ;       initialized to 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
-        CALL CREAT_VAR_HEADER  
+        CALL CREAT
 ; initialize variable with zero 
-        CALL ZERO 
-        CALL SWAPP 
-        CALL STORE
+        CALL VPP
+        CALL AT
+        CALL DUPP    
+        CALL CPHERE 
+        _DOLIT 3   
+        CALL SUBB   ; *pfa
+        CALL FSTOR  ; write pfa 
+        CALL CELLP  ; move VP 1 cell up 
+        CALL VPP 
+        CALL STORE 
         CALL UPDATPTR 
         RET 
-
-.IF 1       
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; create dictionnary header 
-; and reserve data space 
-; for variable 
-; -- pfa 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-CREAT_VAR_HEADER:
-; allocate CELL to RAM for variable data  
-        CALL  HERE
-        CALL  DUPP 
-        CALL  CELLP
-        CALL  VPP 
-        CALL  STORE
-; create variable header         
-        CALL  CREAT
-        CALL  DUPP
-        JP    COMMA ; plug pfa address 
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -3970,12 +3962,11 @@ CREAT_VAR_HEADER:
 ;       n CONSTANT name 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CONSTANT,8,"CONSTANT"
-        CALL TOKEN
-        CALL SNAME 
-        CALL OVERT 
-        CALL COMPI 
-        .word DOCONST
-        CALL COMMA
+        CALL CREAT 
+        CALL CPHERE 
+        _DOLIT 3 
+        CALL  SUBB 
+        CALL FSTOR
         CALL UPDATPTR  
         RET  
 
@@ -3986,10 +3977,11 @@ CREAT_VAR_HEADER:
 ;       _HEADER DOCONST,7,"DOCONST"
 DOCONST:
         subw x,#CELLL
-        popw y 
+        ldw y,(1,sp) 
         ldw y,(y) 
-        ldw (x),y 
-        ret 
+        ldw (x),y
+        popw y  
+        jp (2,y)
 
 ;----------------------------------
 ; create double constant 
