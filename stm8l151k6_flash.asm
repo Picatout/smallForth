@@ -274,7 +274,7 @@ iap_locked:
 	call UPDATCP 
 	call UPDATVP 
 	ret 
-	
+
 ;----------------------------
 ;  FCPY ( src dest cnt -- )
 ;  copies 'cnt' bytes to 
@@ -357,71 +357,6 @@ VSIZE=6 ; local variables space on stack
 	addw sp,#VSIZE ; drop local variables 
 10$:
 	ret 
-
-.IF 0 ;*********************
-
-;-----------------------------
-; move interrupt sub-routine
-; in flash memory
-;----------------------------- 
-    _HEADER IFMOVE,6,"IFMOVE"
-
-    ret 
-
-.ENDIF ;************************
-
-.IF 0 ;***********************
-
-;--------------------------
-; FMOVE ( -- )
-; 
-; move new definition to FLASH 
-; At this point the compiler as completed
-; in RAM and pointers CP and CNTXT updated.
-; CNTXT point to nfa of new word in RAM and  
-; CP is after last compile word so 
-; HERE-CNTXT+2=count to write 
-;--------------------------
-	_HEADER FMOVE,5,"FMOVE"
-;	CALL unlock_iap  
-	CALL CNTXT 
-	CALL AT     ; nfa 
-	CALL CELLM  ; lfa, source address 
-	CALL DUPP 
-	CALL TOR  ; R: src, save to reset UVP 
-	CALL HERE  
-	CALL OVER
-	CALL SUBB  ; src cnt  
-	CALL DUPP 
-	CALL TOR  ; R: src cnt,  save cnt to update UCP later 
-	CALL CPP 
-	CALL AT    ; src cnt dest  
-	CALL SWAPP ; src dest cnt 
-;	CALL CMOVE ; stack empty 
-	CALL FCPY  ; src dest cnt -- empty 
-; update  CNTXT
-	CALL RFROM ; cnt  R: src 
-	CALL CPP 
-	CALL AT   ; cnt lfa   
-; set CNTXT and LAST to last NFA 	
-	CALL DUPP 
-	CALL CELLP ; cnt lfa nfa  
-	CALL DUPP 
-	CALL CNTXT 
-	CALL STORE ; -- cnt lfa   
-	CALL LAST 
-	CALL STORE 
-; update UCP 	
-	CALL PLUS
-	CALL CPP 
-	CALL STORE ; CP point after last definition
-; reset UVP 
-	CALL RFROM ; src 
-	CALL VPP  
-	CALL STORE  ; RAM pointer restored 
-	JP   UPDATPTR  
-
-.ENDIF ;***********************
 
 ;-----------------------------
 ;   RESET ( -- )

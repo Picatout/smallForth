@@ -182,6 +182,7 @@ LF      =     10      ;line feed
 CRR     =     13      ;carriage return
 CTRL_X  =     24      ; reboot hotkey 
 ERR     =     27      ;error escape
+SPC     =     32      ; space 
 TIC     =     39      ;tick
 CALLL   =     0xCD     ;CALL opcode
 IRET_CODE =   0x80    ; IRET opcode 
@@ -317,16 +318,6 @@ uart_init:
 
         LINK = 0  ; used by _HEADER macro 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;        
-;; place MCU in sleep mode with
-;; halt opcode 
-;; can wakeup from external int.
-;; BYE ( -- )
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER BYE,3,"BYE"
-        halt 
-        ret 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Enable interrupts 
 ; EI ( -- )
@@ -445,34 +436,6 @@ FORGET6: ; tried to forget system word
         call ABORQ
         .byte 10
         .ascii " Protected"
-
-;;;;;;;;;;;;;;;;;;;;;
-; FREEVAR ( na -- )
-; if na is variable 
-; free variable data  
-;;;;;;;;;;;;;;;;;;;;;;
-FREEVAR:
-        call DUPP ;  na na
-        CALL CAT  ; na c 
-        _DOLIT 0x1F  ; na c 0x1F 
-        CALL ANDD   ; na c 
-        call ONEP ; ; na c+1
-        CALL PLUS ;   c+1 
-        call ONEP ;  ra  to get routine address following CALL 
-        CALL DUPP ;  ra ra 
-        CALL AT   ; ra fnaddr  , routine address 
-        call DOLIT 
-        .word DOVAR ; if routine address is DOVAR then variable 
-        call EQUAL  ; ( ra fnaddr DOVAR --ra  T|F ) 
-        call QBRAN 
-        .word FREEVAR4 
-        call CELLP ; ( ra -- da ) da is pointer to data address 
-        call AT    ; data address in RAM 
-        call VPP   ; new VP back at data address 
-        jp   STORE 
-FREEVAR4: ; not variable
-        _DROP ; ca 
-        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    SEED ( n -- )
@@ -784,86 +747,6 @@ BRAN:
         ldw (x),y 
         ret 
 
-.IF 0 ;**********************************
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       LOCAL ( n -- )
-;       reserve n slots on return stack
-;       for local variables 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER LOCAL,5,"LOCAL"
-        POPW Y  
-        LDW YTEMP,Y ; RETURN ADDRESS 
-        LD A,(1,X)
-        LD YL,A 
-        LD A,#CELLL 
-        MUL Y,A 
-        LDw XTEMP,Y
-        LDW Y,SP 
-        SUBW Y,XTEMP
-        LDW SP,Y 
-        ADDW X,#CELLL 
-        JP [YTEMP]
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       NRDROP ( n -- )
-;       drop n elements from rstack
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER NRDROP,6,"NRDROP" 
-        POPW Y 
-        LDW YTEMP,Y ; RETURN ADDRESS 
-        LD A,(1,X)
-        LD YL,A  
-        LD A,#CELLL 
-        MUL Y,A 
-        LDW XTEMP,Y 
-        LDW Y,SP 
-        ADDW Y,XTEMP 
-        LDW SP,Y  
-        ADDW X,#CELLL 
-        JP [YTEMP]
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        ( n -- w)
-;      fetch nth element of return stack 
-;      n==0 is same as R@ 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER NRAT,3,"NR@"
-        LD A,(1,X)
-        LD YL,A 
-        LD A,#CELLL 
-        MUL Y,A 
-        LDW YTEMP,Y 
-        LDW Y,SP 
-        ADDW Y,#3 
-        ADDW Y,YTEMP 
-        LDW Y,(Y)
-        LDW (X),Y 
-        RET 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       NR! ( w n --  )
-;       store w on nth position of 
-;       return stack 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER NRSTO,3,"NR!"
-        LDW Y,SP
-        ADDW Y,#3 
-        LDW YTEMP,Y 
-        LD A,(1,X)
-        LD YL,A 
-        LD A,#CELLL 
-        MUL Y,A 
-        ADDW Y,YTEMP
-        PUSHW X 
-        LDW X,(CELLL,X)
-        LDW (Y),X
-        POPW X 
-        _DROPN DBL_SIZE  
-        RET 
-
-.ENDIF ;***************************
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >R      ( w -- )
 ;       Push data stack to return stack.
@@ -1031,6 +914,7 @@ ZEQU1:
 
 ;; System and user variables
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       doVAR   ( -- a )
 ;       run time code 
@@ -1042,6 +926,7 @@ DOVAR:
         LDW Y,(3,Y) ; pfa  
         LDW (X),Y    ;push on stack
         RET     ;go to RET of EXEC
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       BASE    ( -- a )
@@ -2499,6 +2384,9 @@ qchar:
 ;    A     c  
 ;------------------------
 getc:
+        _ldaz RX_HEAD 
+1$:     cp a,RX_TAIL 
+        jreq 1$ 
         clrw y 
         _ldaz RX_HEAD 
         add a,#RX_QUEUE 
@@ -2529,6 +2417,66 @@ putc:
         LD    UART_DR,A   ;send A
         RET        
 
+;-----------------------------
+; move cursor left 
+; 1 character 
+;-----------------------------
+delback:
+    ld a,#BKSPP 
+    call putc  
+    ld a,#SPACE 
+    call putc 
+    ld a,#BKSPP 
+    call putc 
+    ret 
+
+;-----------------------------------
+; accept line from terminal 
+; input:
+;    A   max length 
+;    Y   input buffer 
+; output:
+;    A   actual len 
+;----------------------------------
+LEN=1 
+LIMIT=2
+CHAR=3  
+VSIZE=3
+getline:
+    sub sp,#VSIZE 
+    ld (LIMIT,SP),a  
+    clr (LEN,SP)   
+1$:
+;    clr (y) 
+    callr getc
+    ld (CHAR,sp),a 
+    cp a,#CRR 
+    jreq 9$ 
+    cp a,#BKSPP  
+    jrne 2$
+    tnz (LEN,SP)
+    jreq 1$ 
+    callr delback 
+    dec (LEN,SP)
+    decw y 
+    jra 1$ 
+2$:     
+    cp a,#SPC  
+    jrmi 1$  ; ignore others control char 
+    ld a,(LEN,SP)
+    cp a,(LIMIT,SP)
+    jreq 1$ 
+    ld a,(CHAR,SP)    
+    callr putc
+    ld (y),a 
+    incw y 
+    inc (LEN,SP)
+    jra 1$
+9$: callr putc 
+    ld a,(LEN,SP)
+    addw sp,#VSIZE 
+    ret 
+
 ;;;;;;;;;;;;;;;;;;;;;;
 ; forth terminal 
 ; interface 
@@ -2554,10 +2502,12 @@ putc:
 ;       input character.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER KEY,3,"KEY"
+.IF 0
 0$:     ld a,RX_HEAD 
         cp a,RX_TAIL 
         jreq 0$ 
 INCH:	  
+.ENDIF 
         call getc 
         subw x,#CELLL 
         clrw y
@@ -2572,7 +2522,7 @@ INCH:
         _HEADER EMIT,4,"EMIT"
         LD     A,(1,X)
 	ADDW	X,#CELLL
-        JRA    putc  
+        JP      putc  
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2855,7 +2805,7 @@ PARS8:  CALL     OVER
         CALL     RFROM
         CALL     PARS
         CALL     INN
-        JP     PSTOR
+        JP       PSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .(      ( -- )
@@ -3017,7 +2967,7 @@ FIND5:  CALL     RFROM
         JP     FIND
 
 ;; Terminal response
-
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ^H      ( bot eot cur -- bot eot cur )
 ;       Backup cursor by one character.
@@ -3082,6 +3032,7 @@ KTAP2:  CALL     DROP
         CALL     SWAPP
         CALL     DROP
         JP     DUPP
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       accept  ( b u -- b u )
@@ -3089,6 +3040,15 @@ KTAP2:  CALL     DROP
 ;       buffer. Return with actual count.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ACCEP,6,"ACCEPT"
+.IF 0
+        LD       A,(1,X)
+        LDW     Y,X 
+        LDW     Y,(2,Y)
+        CALL    getline 
+        LD      (1,X),A
+        CLR     (X) 
+        RET 
+.ELSE 
         CALL     OVER
         CALL     PLUS
         CALL     OVER
@@ -3111,6 +3071,7 @@ ACCP3:  JRA     ACCP1
 ACCP4:  CALL     DROP
         CALL     OVER
         JP     SUBB
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       QUERY   ( -- )
@@ -3121,13 +3082,13 @@ ACCP4:  CALL     DROP
         CALL     TIB
         CALL     DOLIT
         .word    TIB_SIZE 
-        CALL     ACCEP
+        CALL     ACCEP 
         CALL     NTIB
         CALL     STORE
         CALL     DROP
         CALL     ZERO 
         CALL     INN
-        JP     STORE
+        JP       STORE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ABORT   ( -- )
@@ -3375,15 +3336,19 @@ QUIT2:  CALL     QUERY   ;get input
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEFER,5,"DEFER"
         CALL   CREAT    
+        CALL   COMPI 
+        .WORD  DOVAR
         CALL   HERE 
         CALL   DUPP 
         CALL   CELLP ; allot vector space  
         CALL   VPP 
-        CALL   STORE 
+        CALL   STORE
+        CALL   DUPP  ; pfa pfa 
+        CALL   COMMA  
         _DOLIT NOOP 
-        CALL   SWAPP 
+        CALL   SWAPP  
         CALL   STORE 
-        CALL  COMPI 
+        CALL   COMPI 
         .WORD  ATEXE
         _DOLIT RET_CODE 
         CALL   CCOMMA  
@@ -3918,10 +3883,6 @@ IMM01:  CALL	LAST
         CALL     TOKEN
         CALL     SNAME
         CALL     OVERT         
-        CALL     COMPI 
-        .word    DOCONST 
-        CALL     HERE  
-        CALL     COMMA 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3941,11 +3902,15 @@ IMM01:  CALL	LAST
 ;       initialized to 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
-        CALL CREAT
-        CALL HERE  
-        CALL CELLP  ; move VP 1 cell up 
-        CALL VPP 
-        CALL STORE 
+        CALL     CREAT
+        CALL     COMPI 
+        .WORD    DOVAR  
+        CALL     HERE  
+        CALL     DUPP 
+        CALL     COMMA 
+        CALL     CELLP  ; move VP 1 cell up 
+        CALL     VPP 
+        CALL     STORE 
         JRA complete 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3954,25 +3919,27 @@ IMM01:  CALL	LAST
 ;       n CONSTANT name 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CONSTANT,8,"CONSTANT"
-        CALL CREAT 
-        CALL INIT_PFA  
+        CALL   CREAT 
+        CALL   COMPI 
+        .WORD  DOCONST  
+        CALL   COMMA 
 complete:
         _DOLIT   RET_CODE 
         CALL     CCOMMA 
-        CALL UPDATPTR  
+        CALL     UPDATPTR  
         RET  
 
-INIT_PFA: ; ( n|addr -- )
-        CALL CPHERE 
-        CALL CELLM 
-        CALL FSTOR  ; write pfa 
-        RET 
+;------------------------
+; required by FORGET to 
+; free erased variables 
+;------------------------
+DOVAR:
+        NOP 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CONSTANT runtime semantic 
 ; doCONST  ( -- n )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       _HEADER DOCONST,7,"DOCONST"
 DOCONST:
         subw x,#CELLL
         ldw y,(1,sp) 
