@@ -92,6 +92,8 @@ unlock_iap:
 	_lock_iap 
 	ret 
 
+.IF 0 ;**************************
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ERASE   ( n -- )
 ; Erase EEPROM, FLASH memory BLOCK 
@@ -99,7 +101,6 @@ unlock_iap:
 ; if 64 <= n < 256 erase FLASH block 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ERASE,5,"ERASE"
-		call unlock_iap 
 		ldw y,x 
 		ldw y,(y)
 		_DROP
@@ -114,14 +115,19 @@ unlock_iap:
 1$:     addw y,#EEPROM_BASE  
 		cpw y,#128 
 		jrmi 9$ ; EEROM block zero protected 
-2$:     bset FLASH_CR2,#FLASH_CR2_ERASE
+2$:     
+		call unlock_iap 
+		bset FLASH_CR2,#FLASH_CR2_ERASE
 		clr (y)
 		clr (1,y)
 		clr (2,y)
 		clr (3,y)
 		btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
-9$:		_lock_iap
+		_lock_iap 
+9$:		
 		RET 
+
+.ENDIF ;**************************
 
 .IF 0 ;****************************
 

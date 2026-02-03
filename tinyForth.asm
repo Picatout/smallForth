@@ -418,7 +418,7 @@ FORGET2:
         CALL TBRAN 
         .WORD FORGET1 
 FORGET4:
-        CALL DROP ; count 
+        _DROP ; count 
         CALL CELLS ; count*2  
         _DOLIT VAR_BASE
         CALL PLUS 
@@ -634,7 +634,7 @@ TBRAN:
         JP (2,Y)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       branch  ( -- )
+;       BRANCH  ( -- )
 ;       Branch to an inline address.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       _HEADER BRAN,COMPO+6,"BRANCH"
@@ -914,20 +914,6 @@ ZEQU1:
 
 ;; System and user variables
 
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       doVAR   ( -- a )
-;       run time code 
-;       for VARIABLE and CREATE.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-DOVAR:
-	SUBW X,#2
-        LDW Y,(1,SP) ;get return addr
-        LDW Y,(3,Y) ; pfa  
-        LDW (X),Y    ;push on stack
-        RET     ;go to RET of EXEC
-.ENDIF 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       BASE    ( -- a )
 ;       Radix base for numeric I/O.
@@ -968,21 +954,6 @@ DOVAR:
 	SUBW X,#2
         LDW (X),Y
         RET
-
-.IF 0 ;******************
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       TBUF ( -- a )
-;       address of 128 bytes 
-;       transaction buffer
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TBUF,4,"TBUF"
-        ldw y,#ROWBUFF
-        subw x,#CELLL
-        ldw (x),y 
-        ret 
-
-.ENDIF ;*************************
 
 ; systeme variable 
 
@@ -1047,47 +1018,6 @@ DOVAR:
 	SUBW X,#2
         LDW (X),Y
         RET
-
-.IF 0 ;********************
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       INIT-OFS ( -- )
-;       compute offset to adjust jump address 
-;       set variable OFFSET
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
-;        _HEADER INITOFS,8,"INIT-OFS"
-INITOFS: 
-        call CPP 
-        call AT 
-        call HERE
-        call SUBB 
-        call OFFSET 
-        jp STORE  
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; OFFSET ( -- a )
-; address of system 
-; variable OFFSET 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER OFFSET,6,"OFFSET"
-OFFSET:
-        subw x,#CELLL
-        ldw y,#UOFFSET 
-        ldw (x),y 
-        ret 
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; ADRADJ ( a -- a+offset )
-; adjust jump address 
-;  adding OFFSET
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-ADRADJ: 
-        call OFFSET 
-        call AT 
-        jp PLUS 
-
-.ENDIF ;**********************
 
 ;; Common functions
 
@@ -1388,14 +1318,14 @@ MIN1:	ADDW X,#2
 
 ;; Divide
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       UM/MOD  ( udl udh un -- ur uq )
 ;       Unsigned divide of a double by a
 ;       single. Return mod and quotient.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 2021-02-22
 ; changed algorithm for Jeeek one 
 ; ref: https://github.com/TG9541/stm8ef/pull/406        
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER UMMOD,6,"UM/MOD"
         LDW     Y,X             ; stack pointer to Y
         LDW     X,(X)           ; un
@@ -1799,30 +1729,6 @@ RSHIFT4:
         CLR (1,X)
         RET
 
-.IF 0 ;*********************
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;         1     ( -- 1)
-;         Return 1.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER ONE,1,"1"
-        SUBW X,#2
-	LDW Y,#1
-        LDW (X),Y
-        RET
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;         -1    ( -- -1)
-;   Return -1
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER MONE,2,"-1"
-        SUBW X,#2
-	LDW Y,#0xFFFF
-        LDW (X),Y
-        RET
-
-.ENDIF ;**************************
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >CHAR   ( c -- c )
 ;       Filter non-printing characters.
@@ -1927,7 +1833,7 @@ RSHIFT4:
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       COUNT   ( b -- b +n )
+;       COUNT   ( b -- b+ n )
 ;       Return count byte of a string
 ;       and add 1 to byte address.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1978,9 +1884,10 @@ RSHIFT4:
 ;       terminal input buffer.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIB,3,"TIB"
-        CALL     NTIB
-        CALL     CELLP
-        JP     AT
+        LDW     Y,UTIB 
+        SUBW    X,#CELLL 
+        LDW     (X),Y 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       @EXECUTE        ( a -- )
@@ -2050,6 +1957,7 @@ CMOV3:
         ADDW SP,#3*CELLL 
         RET 
         
+.IF 0 ;**************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       FILL    ( b u c -- )
@@ -2072,7 +1980,8 @@ FILL0:
         JRA FILL0         
 FILL1: POPW X 
         RET         
-        
+
+.ENDIF ;*************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PACK0   ( b u a -- a )
@@ -2189,7 +2098,7 @@ SIGN1:  RET
 ;       Prepare output string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EDIGS,2,"#>"
-        CALL     DROP
+        _DROP
         CALL     HLD
         CALL     AT
         CALL     PAD
@@ -2197,7 +2106,7 @@ SIGN1:  RET
         JP     SUBB
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       str     ( w -- b u )
+;       STR     ( w -- b u )
 ;       Convert a signed integer
 ;       to a numeric string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2325,7 +2234,7 @@ NUMQ2:  ; digit loop
         .WORD    NUMQ2
         CALL     RAT
         CALL     SWAPP
-        CALL     DROP
+        _DROP
         CALL     QBRAN
         .WORD    NUMQ3
         CALL     NEGAT ; negative number 
@@ -2384,6 +2293,7 @@ qchar:
 ;    A     c  
 ;------------------------
 getc:
+        pushw y 
         _ldaz RX_HEAD 
 1$:     cp a,RX_TAIL 
         jreq 1$ 
@@ -2404,7 +2314,7 @@ getc:
         cp a,#'z+1 
         jrpl 9$ 
         and a,#0xDF          
-9$:
+9$:     popw y 
         ret 
 
 ;---------------------------------
@@ -2423,12 +2333,12 @@ putc:
 ;-----------------------------
 delback:
     ld a,#BKSPP 
-    call putc  
-    ld a,#SPACE 
-    call putc 
+    callr putc  
+    ld a,#SPC  
+    callr putc 
     ld a,#BKSPP 
-    call putc 
-    ret 
+    jra putc 
+
 
 ;-----------------------------------
 ; accept line from terminal 
@@ -2447,7 +2357,6 @@ getline:
     ld (LIMIT,SP),a  
     clr (LEN,SP)   
 1$:
-;    clr (y) 
     callr getc
     ld (CHAR,sp),a 
     cp a,#CRR 
@@ -2472,7 +2381,7 @@ getline:
     incw y 
     inc (LEN,SP)
     jra 1$
-9$: callr putc 
+9$:  
     ld a,(LEN,SP)
     addw sp,#VSIZE 
     ret 
@@ -2502,12 +2411,6 @@ getline:
 ;       input character.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER KEY,3,"KEY"
-.IF 0
-0$:     ld a,RX_HEAD 
-        cp a,RX_TAIL 
-        jreq 0$ 
-INCH:	  
-.ENDIF 
         call getc 
         subw x,#CELLL 
         clrw y
@@ -2745,7 +2648,7 @@ PARS1:  CALL     BLANK
         CALL     DONXT
         .word      PARS1
         CALL     RFROM
-        CALL     DROP
+        _DROP
         CALL     ZERO 
         JP     DUPP
 PARS2:  CALL     RFROM
@@ -2773,7 +2676,7 @@ PARS5:  CALL     QBRAN
         CALL     TOR
         JRA     PARS7
 PARS6:  CALL     RFROM
-        CALL     DROP
+        _DROP
         CALL     DUPP
         CALL     ONEP
         CALL     TOR
@@ -2895,7 +2798,7 @@ SAME1:  CALL     OVER
         CALL     QBRAN
         .word      SAME2
         CALL     RFROM
-        JP     DROP
+        JP       DROP
 SAME2:  CALL     DONXT
         .word      SAME1
         JP     ZERO 
@@ -2940,7 +2843,7 @@ FIND2:  CALL     CELLP
 FIND3:  CALL     BRAN
         .word      FIND4
 FIND6:  CALL     RFROM
-        CALL     DROP
+        _DROP
         CALL     SWAPP
         CALL     CELLM
         JP     SWAPP
@@ -2950,9 +2853,9 @@ FIND4:  CALL     QBRAN
         CALL     CELLM
         JRA     FIND1
 FIND5:  CALL     RFROM
-        CALL     DROP
+        _DROP
         CALL     SWAPP
-        CALL     DROP
+        _DROP
         CALL     CELLM
         CALL     DUPP
         CALL     NAMET
@@ -2967,72 +2870,6 @@ FIND5:  CALL     RFROM
         JP     FIND
 
 ;; Terminal response
-.IF 1
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ^H      ( bot eot cur -- bot eot cur )
-;       Backup cursor by one character.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER BKSP,2,"^H"
-        CALL     TOR
-        CALL     OVER
-        CALL     RFROM
-        CALL     SWAPP
-        CALL     OVER
-        CALL     XORR
-        CALL     QBRAN
-        .word      BACK1
-        CALL     DOLIT
-        .word      BKSPP
-        CALL     EMIT
-        CALL     ONEM
-        CALL     BLANK
-        CALL     EMIT
-        CALL     DOLIT
-        .word      BKSPP
-        JP     EMIT
-BACK1:  RET
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       TAP    ( bot eot cur c -- bot eot cur )
-;       Accept and echo key stroke
-;       and bump cursor.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TAP,3,"TAP"
-        CALL     DUPP
-        CALL     EMIT
-        CALL     OVER
-        CALL     CSTOR
-        JP     ONEP
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       kTAP    ( bot eot cur c -- bot eot cur )
-;       Process a key stroke,
-;       CR,LF or backspace.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER KTAP,4,"KTAP"
-        CALL     DUPP
-        CALL     DOLIT
-.if EOL_CR
-        .word   CRR
-.else ; EOL_LF 
-        .word   LF
-.endif 
-        CALL     XORR
-        CALL     QBRAN
-        .word      KTAP2
-        CALL     DOLIT
-        .word      BKSPP
-        CALL     XORR
-        CALL     QBRAN
-        .word      KTAP1
-        CALL     BLANK
-        JP     TAP
-KTAP1:  JP     BKSP
-KTAP2:  CALL     DROP
-        CALL     SWAPP
-        CALL     DROP
-        JP     DUPP
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       accept  ( b u -- b u )
@@ -3040,7 +2877,6 @@ KTAP2:  CALL     DROP
 ;       buffer. Return with actual count.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ACCEP,6,"ACCEPT"
-.IF 0
         LD       A,(1,X)
         LDW     Y,X 
         LDW     Y,(2,Y)
@@ -3048,30 +2884,6 @@ KTAP2:  CALL     DROP
         LD      (1,X),A
         CLR     (X) 
         RET 
-.ELSE 
-        CALL     OVER
-        CALL     PLUS
-        CALL     OVER
-ACCP1:  CALL     DDUP
-        CALL     XORR
-        CALL     QBRAN
-        .word      ACCP4
-        CALL     KEY
-        CALL     DUPP
-        CALL     BLANK
-        CALL     DOLIT
-        .word      127
-        CALL     WITHI
-        CALL     QBRAN
-        .word      ACCP2
-        CALL     TAP
-        JRA     ACCP3
-ACCP2:  CALL     KTAP
-ACCP3:  JRA     ACCP1
-ACCP4:  CALL     DROP
-        CALL     OVER
-        JP     SUBB
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       QUERY   ( -- )
@@ -3085,7 +2897,7 @@ ACCP4:  CALL     DROP
         CALL     ACCEP 
         CALL     NTIB
         CALL     STORE
-        CALL     DROP
+        _DROP
         CALL     ZERO 
         CALL     INN
         JP       STORE
@@ -3199,7 +3011,7 @@ EVAL1:  CALL     TOKEN
         CALL     ATEXE
         CALL     QSTAC   ;evaluate input, check stack
         JRA     EVAL1 
-EVAL2:  CALL     DROP
+EVAL2:  _DROP
         JP       DOTOK
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3412,7 +3224,6 @@ NOOP:
 ;       $,"     ( -- )
 ;       Compile a literal string
 ;       up to next " .
-; expect IAP unlocked 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER STRCQ,3,^/'$,"'/
 STRCQ:
@@ -3455,7 +3266,6 @@ STRCQ:
         _HEADER NEXT,COMPO+IMEDD+4,"NEXT"
         CALL     COMPI
         .word DONXT 
-;        call ADRADJ
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3528,7 +3338,6 @@ STRCQ:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER THENN,COMPO+IMEDD+4,"THEN"
         CALL     CPHERE
-;        call ADRADJ 
         CALL     SWAPP
         JP     FSTOR
 
@@ -3594,7 +3403,7 @@ STRCQ:
 ;       loop the first time through.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER AFT,COMPO+IMEDD+3,"AFT"
-        CALL     DROP
+        _DROP
         CALL     AHEAD
         CALL     CPHERE
         JP     SWAPP
@@ -3786,7 +3595,6 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CALL,    ( ca -- )
 ;       Compile a subroutine call.
-; expect IAP unlocked 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER JSRC,5,^/"CALL,"/
 ;JSRC: 
@@ -4074,7 +3882,7 @@ DUMP1:  CALL     CR
         CALL     UTYPE   ;display printable characters
         CALL     DONXT
         .word      DUMP1   ;loop till done
-DUMP3:  CALL     DROP
+DUMP3:  _DROP
         CALL     RFROM
         CALL     BASE
         JP     STORE   ;restore radix
@@ -4138,41 +3946,6 @@ DOTI1:  CALL     DOTQP
         .byte      9
         .ascii     " noName"
         RET
-
-WANT_SEE=0
-.if WANT_SEE 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       SEE     ( -- ; <string> )
-;       A simple decompiler.
-;       Updated for byte machines.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER SEE,3,"SEE"
-        CALL     TICK    ;starting address
-        CALL     CR
-        CALL     ONEM
-SEE1:   CALL     ONEP
-        CALL     DUPP
-        CALL     AT
-        CALL     DUPP
-        CALL     QBRAN
-        .word    SEE2
-        CALL     TNAME   ;?is it a name
-SEE2:   CALL     QDUP    ;name address or zero
-        CALL     QBRAN
-        .word    SEE3
-        CALL     SPACE
-        CALL     DOTID   ;display name
-        CALL     ONEP
-        JRA      SEE4
-SEE3:   CALL     DUPP
-        CALL     CATNonHandledInterrupt ;int0 reserved 
-	int 
-        CALL     UDOT    ;display number
-SEE4:   CALL     NUFQ    ;user control
-        CALL     QBRAN
-        .word    SEE1
-        JP     DROP
-.endif ; WANT_SEE 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       WORDS   ( -- )
