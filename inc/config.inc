@@ -52,8 +52,11 @@ STM8L151K6=1
 	UART_SR_TC=USART_SR_TC 
 
 	BLOCK_SIZE=128    
+	
 	.include "inc/stm8l151k6.inc"
 	.include "stm8l151k6-vec.asm"
 .ENDIF 
+	
+	.include "bios.asm"
 
 	
