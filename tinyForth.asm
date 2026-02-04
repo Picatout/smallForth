@@ -261,53 +261,51 @@ UEND:   .word      0
         call SWAPP ; ( -- na ca ) 
         call CHKIVEC ; ( -- na )
 ; reset UCP, CNTXT and LAST to word before this one 
-        CALL CELLM ; link field 
-        CALL DUPP 
-        CALL CPP 
-        CALL STORE ; now UCP point to first deleted word lfa 
-        CALL AT    ; previous na 
-        CALL DUPP  ; na na  
-        CALL DUPP  ; na na na 
-        CALL CNTXT 
-        CALL STORE ; new context 
-        CALL LAST 
-        CALL STORE ; new last  
-; follow LINK chain from CNTXT to app_space 
-; count VARIABLES defined in app_space 
-; and ajust HERE 
-; it tart with CNTXT na on stack   
-        CALL ZERO ; na count 
-        CALL SWAPP ; count na 
+        CALL DUPP  ; na na 
+        CALL CELLM ; na link  
+        CALL DUPP  ; na link link   
+        CALL CPP   ; na link link cp 
+        CALL STORE ; na link   now UCP point to first deleted word link 
+        CALL AT    ; na prev_na
+        CALL DUPP  ; na prev_na prev_na   
+        CALL CNTXT ; na prev_na prev_na cntxt  
+        CALL STORE ; na prev_na 
+        CALL LAST  ; na prev_na last 
+        CALL STORE ; na 
+; follow LINK chain from 'na' back to app_space 
+; if code at ca is CALL DOVAR  
+; reset HERE to pfa value 
 FORGET1: 
-        CALL DUPP  ; count na na 
-        _DOLIT app_space 
+        CALL DUPP  ; na na 
+        _DOLIT app_space  
         CALL UGREAT  ; na > app_space?
         CALL QBRAN 
         .WORD FORGET4  ; no then done 
-        CALL DUPP   ; count na na 
-        CALL NAMET  ; count na na -- count na ca  
+        CALL DUPP   ; na na 
+        CALL NAMET  ; na ca  
         CALL ONEP   ; skip over CALL  
+        CALL DUPP   
         CALL AT     ; get routine address 
         _DOLIT DOVAR
-        CALL EQUAL    
-        CALL QBRAN     ; adr = DOVAR
+        CALL EQUAL    ; adr = DOVAR ?
+        CALL QBRAN     
         .WORD FORGET2  ; not a VARIABLE  
-        CALL SWAPP 
-        CALL ONEP   ; increment count 
-        CALL SWAPP
+;reset HERE 
+        CALL CELLP 
+        CALL AT 
+        CALL VPP 
+        CALL STORE
+        JRA  FORGET3 
 FORGET2:
+        _DROP 
+FORGET3:         
         CALL CELLM  ; link field  
         CALL AT     ; previous word  na  
         CALL DUPP 
         CALL TBRAN 
         .WORD FORGET1 
 FORGET4:
-        _DROP ; count 
-        CALL CELLS ; count*2  
-        _DOLIT VAR_BASE
-        CALL PLUS 
-        CALL VPP 
-        CALL STORE
+        _DROP ; na  
         CALL UPDATPTR 
         call ZERO  
         CALL UPDATRUN  
@@ -2912,8 +2910,6 @@ QUIT2:  CALL     QUERY   ;get input
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEFER,5,"DEFER"
         CALL   CREAT    
-        CALL   COMPI 
-        .WORD  DOVAR
         CALL   HERE 
         CALL   DUPP 
         CALL   CELLP ; allot vector space  
@@ -3472,6 +3468,10 @@ IMM01:  CALL	LAST
         CALL     TOKEN
         CALL     SNAME
         CALL     OVERT         
+        CALL     COMPI 
+        .WORD    DOVAR
+        CALL     HERE 
+        CALL     COMMA
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3492,15 +3492,11 @@ IMM01:  CALL	LAST
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VARIA,8,"VARIABLE"
         CALL     CREAT
-        CALL     COMPI 
-        .WORD    DOVAR  
         CALL     HERE  
-        CALL     DUPP 
-        CALL     COMMA 
         CALL     CELLP  ; move VP 1 cell up 
         CALL     VPP 
         CALL     STORE 
-        JRA complete 
+        JRA      complete 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONSTANT  ( n -- ; <string> )
@@ -3508,10 +3504,12 @@ IMM01:  CALL	LAST
 ;       n CONSTANT name 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CONSTANT,8,"CONSTANT"
-        CALL   CREAT 
-        CALL   COMPI 
-        .WORD  DOCONST  
-        CALL   COMMA 
+        CALL     TOKEN
+        CALL     SNAME
+        CALL     OVERT         
+        CALL     COMPI  
+        .WORD    DOCONST 
+        CALL     COMMA
 complete:
         _DOLIT   RET_CODE 
         CALL     CCOMMA 
