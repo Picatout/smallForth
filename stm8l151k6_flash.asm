@@ -171,7 +171,8 @@ iap_locked:
 ; EEP-CNTXT ( -- u )
 ; return EEP_CNTXT pointer
 ;---------------------------------
-	_HEADER EEPCNTXT,9,"EEP-CNTXT"
+;	_HEADER EEPCNTXT,9,"EEP-CNTXT"
+EEPCNTXT:
 	subw x,#CELLL 
 	ldw y,#EEP_CNTXT  
 	ldw (x),y 
@@ -181,7 +182,8 @@ iap_locked:
 ; EEP-RUN ( -- u )
 ; return EEP_RUN pointer
 ;-----------------------------------
-	_HEADER EEPRUN,7,"EEP-RUN"
+;	_HEADER EEPRUN,7,"EEP-RUN"
+EEPRUN:
 	subw x,#CELLL 
 	ldw y,#EEP_RUN 
 	ldw (x),y 
@@ -192,7 +194,8 @@ iap_locked:
 ; EEP-CP ( -- u )
 ; return EEP_CP pointer 
 ;------------------------------------
-	_HEADER EEPCP,6,"EEP-CP"
+;	_HEADER EEPCP,6,"EEP-CP"
+EEPCP:
 	subw x,#CELLL 
 	ldw y,#EEP_CP  
 	ldw (x),y 
@@ -202,7 +205,8 @@ iap_locked:
 ; EEP-VP ( -- u )
 ; return EEP_VP pointer 
 ;-------------------------------------
-	_HEADER EEPVP,6,"EEP-VP"
+;	_HEADER EEPVP,6,"EEP-VP"
+EEPVP:
 	subw x,#CELLL 
 	ldw y,#EEP_VP  
 	ldw (x),y 
@@ -214,7 +218,8 @@ iap_locked:
 ; store autorun code address in 
 ; EEPROM 
 ;---------------------------------
-	_HEADER UPDATRUN,9,"UPDAT-RUN"
+;	_HEADER UPDATRUN,9,"UPDAT-RUN"
+UPDATRUN: 
 	ldw y, EEP_RUN
 	cpw y,(x)
 	jreq 9$ 

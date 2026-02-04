@@ -2228,6 +2228,7 @@ CHAR2:  CALL     DONXT
         .word    CHAR1
         RET
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TYPE    ( b u -- )
 ;       Output u characters from b.
@@ -2290,6 +2291,8 @@ DOTQP:
         CALL     COUNT
         JP       TYPES
 
+.IF 0 ;*************************
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .R      ( n +n -- )
 ;       Display an integer in a field
@@ -2303,6 +2306,8 @@ DOTQP:
         CALL     SUBB
         CALL     SPACS
         JP     TYPES
+
+.ENDIF ;**********************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       U.R     ( u +n -- )
@@ -3851,8 +3856,7 @@ COLD1:  CALL     DOLIT
         CALL     LOAD_EEP
         CALL     UPDATPTR
         ; set autorun to HI  
-        CALL DOLIT 
-        .WORD HI    ; default startup application  
+        _DOLIT HI    ; default startup application  
         CALL UPDATRUN  
         JRA COLD9
 COLD3: ; load system variables from EEPROM 
