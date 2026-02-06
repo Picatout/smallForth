@@ -776,24 +776,6 @@ ZEQU1:
         ADDW X,#2
         RET
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       UM+     ( u u -- udsum )
-;       Add two unsigned single
-;       and return a double sum.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER UPLUS,3,"UM+"
-        LDW Y,X
-        LDW Y,(2,Y)
-        LDW YTEMP,Y
-        LDW Y,X
-        LDW Y,(Y)
-        ADDW Y,YTEMP
-        LDW (2,X),Y
-        CLRW Y  
-        RLCW Y 
-        LDW (X),Y  
-        RET 
-
 ;; System and user variables
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1009,43 +991,6 @@ QDUP1:  RET
         NEGW Y
         LDW (X),Y
         RET
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       DNEGATE ( d -- -d )
-;       Two's complement of double.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DNEGA,7,"DNEGATE"
-        LDW Y,X
-	LDW Y,(Y)
-        CPLW Y
-        PUSHW Y      ; Y >R 
-        LDW Y,X
-        LDW Y,(2,Y)
-        CPLW Y
-        ADDW Y,#1
-        LDW (2,X),Y
-        POPW Y       ; R> Y  
-        JRNC DN1 
-        INCW Y
-DN1:    LDW (X),Y
-        RET
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       S>D ( n -- d )
-; convert single integer to double 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER STOD,3,"S>D"
-        SUBW X,#CELLL 
-        CLR (X) 
-        CLR (1,X) 
-        LDW Y,X 
-        LDW Y,(2,Y)
-        JRPL 1$
-        LDW Y,#-1 
-        LDW (X),Y 
-1$:     RET 
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       -       ( n1 n2 -- n1-n2 )
@@ -1277,6 +1222,26 @@ MMSMb:
         ADDW SP,#2*CELLL ; drop quotient and DP from rstack 
         RET 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       DNEGATE ( d -- -d )
+;       Two's complement of double.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DNEGA,7,"DNEGATE"
+        LDW Y,X
+	LDW Y,(Y)
+        CPLW Y
+        PUSHW Y      ; Y >R 
+        LDW Y,X
+        LDW Y,(2,Y)
+        CPLW Y
+        ADDW Y,#1
+        LDW (2,X),Y
+        POPW Y       ; R> Y  
+        JRNC DN1 
+        INCW Y
+DN1:    LDW (X),Y
+        RET
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
@@ -1678,42 +1643,6 @@ RSHIFT4:
         ADDW SP,#2*CELLL ; R: DP n -- 
         RET 
                 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       2!      ( d a -- )
-;       Store  double integer 
-;       to address a.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DSTOR,2,"2!"
-        LDW Y,X 
-        PUSHW X 
-        LDW X,(X) ; a 
-        LDW Y,(2,Y) ; dhi 
-        LDW (X),Y 
-        LDW Y,(1,SP)  
-        LDW Y,(4,Y) ; dlo 
-        LDW (2,X),Y  
-        POPW X 
-        ADDW X,#3*CELLL 
-        RET 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       2@      ( a -- d )
-;       Fetch double integer 
-;       from address a.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DAT,2,"2@"
-        ldw y,x 
-        subw x,#CELLL 
-        ldw y,(y) ;address 
-        pushw y  
-        ldw y,(y) ; dhi 
-        ldw (x),y 
-        popw y 
-        ldw y,(2,y) ; dlo 
-        ldw (2,x),y 
-        ret 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       COUNT   ( b -- b+ n )
 ;       Return count byte of a string
@@ -2053,7 +1982,6 @@ SIGN1:  RET
 DGTQ1:  CALL     DUPP
         CALL     RFROM
         JP     ULESS
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  NUMBER? ( a -- n T | a F )
@@ -3540,40 +3468,6 @@ DOCONST:
         popw y  
         jp (2,y)
 
-;----------------------------------
-; create double constant 
-; 2CONSTANT ( d -- ; <string> )
-;----------------------------------
-        _HEADER DCONST,9,"2CONSTANT"
-        CALL TOKEN
-        CALL SNAME 
-        CALL OVERT 
-        CALL COMPI 
-        .word DO_DCONST
-        CALL COMMA
-        CALL COMMA  
-        _DOLIT   RET_CODE 
-        CALL     CCOMMA 
-        CALL UPDATPTR 
-        RET    
-    
-;----------------------------------
-; runtime for DCONST 
-; stack double constant 
-; DO-DCONST ( -- d )
-;-----------------------------------
-;       _HEADER DO_DCONST,9,"DO-DCONST"
-DO_DCONST:
-    popw y 
-    ldw YTEMP,y 
-    subw x,#2*CELLL 
-    ldw y,(y)
-    ldw (x),y 
-    ldw y,YTEMP 
-    ldw y,(2,y)
-    ldw (2,x),y 
-    ret 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;          TOOLS 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3789,7 +3683,8 @@ PRINT_VERSION:
 ;       hi      ( -- )
 ;       Display sign-on message.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER HI,2,"HI"
+;        _HEADER HI,2,"HI"
+HI: 
         CALL     CR
         CALL     DOTQP   
         .byte      9
@@ -3844,9 +3739,10 @@ LOAD_EEP:
 ;       COLD    ( -- )
 ;       The hilevel cold start s=ence.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER COLD,4,"COLD"
+;        _HEADER COLD,4,"COLD"
+COLD:
 ; initialize user variables from UZERO table. 
-COLD1:  CALL     DOLIT
+        CALL     DOLIT
         .word      UZERO
 	CALL     DOLIT
         .word      UPP
@@ -3878,6 +3774,10 @@ COLD9:
         .include "stm8l151k6_flash.asm"
 .endif 
 
+.if WANT_DOUBLE 
+        .include "double.asm" 
+.endif 
+
 .if WANT_SCALING_CONST 
         .include "const_ratio.asm"
 .endif
@@ -3887,7 +3787,7 @@ COLD9:
 LASTN =	LINK   ;last name defined
 
 ; application code begin here
-	.bndry 128 ; align on flash block  
+	.bndry 16 ; align on flash block  
 app_space: 
 .word 0,0,0,0
 
