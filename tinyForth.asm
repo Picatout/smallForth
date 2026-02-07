@@ -3050,6 +3050,7 @@ STRCQ:
         CALL     SWAPP
         JP       FSTOR
 
+.IF 0 ;**********************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AHEAD       ( -- A )
 ;       Compile a forward branch
@@ -3061,6 +3062,7 @@ STRCQ:
         CALL     CPHERE
         CALL     ZERO 
         JP     COMMA
+.ENDIF ;***************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       WHILE       ( a -- A a )
@@ -3090,6 +3092,7 @@ STRCQ:
         CALL   SWAPP
         JP     FSTOR
 
+.IF 0 ;*********************************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AFT         ( a -- a A )
 ;       Jump to THEN in a FOR-AFT-THEN-NEXT 
@@ -3100,6 +3103,7 @@ STRCQ:
         CALL     AHEAD
         CALL     CPHERE
         JP     SWAPP
+.ENDIF ;*****************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ABORT"      ( -- ; <string> )
@@ -3613,7 +3617,8 @@ TNAM4:  CALL     DDROP
 ;       .ID     ( na -- )
 ;        Display  name at address.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DOTID,3,".ID"
+;        _HEADER DOTID,3,".ID"
+DOTID: 
         CALL     QDUP    ;if zero no name
         CALL     QBRAN
         .word      DOTI1

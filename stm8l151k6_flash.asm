@@ -234,7 +234,8 @@ UPDATRUN:
 ; store link address of dictionary head 
 ; in EEPROM. 
 ;----------------------------------
-	_HEADER UPDATCNTXT,11,"UPDAT-CNTXT"
+;	_HEADER UPDATCNTXT,11,"UPDAT-CNTXT"
+UPDATCNTXT:
 	_ldyz UCNTXT 
 	cpw y,EEP_CNTXT 
 	jreq 9$ 
@@ -250,7 +251,8 @@ UPDATRUN:
 ; store top FLASH address 
 ; in EEPROM 
 ;---------------------------------
-	_HEADER UPDATCP,8,"UPDAT-CP"
+;	_HEADER UPDATCP,8,"UPDAT-CP"
+UPDATCP:
 	_ldyz UCP 
 	cpw y,EEP_CP
 	jreq 9$
@@ -266,7 +268,8 @@ UPDATRUN:
 ; store top variables address
 ; in EEPROM 
 ;----------------------------------
-	_HEADER UPDATVP,8,"UPDAT-VP"
+;	_HEADER UPDATVP,8,"UPDAT-VP"
+UPDATVP:
 	_ldyz UVP 
 	cpw y,#EEP_VP 
 	jreq 9$ 
