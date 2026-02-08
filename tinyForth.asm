@@ -29,7 +29,7 @@
 ;  memory if there is not compilation error.
 ;--------------------------------------------------------------
 	.module TINYFORTH
-         .optsdcc -mstm8
+         .optsdcc -mstm8ABORQ
 	.nlist
         .include "inc/config.inc"
 	.list
@@ -127,10 +127,9 @@ UCNTXT = UHLD+2   ; context, dictionary first link
 UVP = UCNTXT+2    ; variable pointer in RAM 
 UCP = UVP+2       ; code pointer in FLASH 
 ULAST = UCP+2     ; last dictionary pointer 
-UOFFSET = ULAST+2 ; distance between [CP] and HERE to adjust jump address at compile time.
 
 ;******  System Variables  ******
-XTEMP	=	UOFFSET +2;address called by CREATE
+XTEMP	=	ULAST +2 ;address called by CREATE
 YTEMP	=	XTEMP+2	;address called by CREATE
 PROD1 = XTEMP	;space for UM*
 PROD2 = PROD1+2
@@ -225,16 +224,8 @@ UEND:   .word      0
 ; AUTORUN app_name 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER AUTORUN,7,"AUTORUN"
-        call TOKEN 
-        call DUPP 
-        call QBRAN 
-        .word FORGET2
-        call NAMEQ
-        call QDUP 
-        call QBRAN 
-        .word FORGET2
-        _DROP 
-        JP UPDATRUN 
+        CALL    TICK  
+        JP      UPDATRUN 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; FORGET  <name>
@@ -244,12 +235,10 @@ UEND:   .word      0
 ;; must be resetted also.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FORGET,6,"FORGET"
-        CALL TOKEN
-        CALL NAMEQ  ; a -- ca na | a F 
-        CALL QDUP 
-        CALL QBRAN 
-        .WORD FORGET5
-; only forget users words -- ca na  
+        CALL  TICK  
+; only forget users words -- ca
+        CALL    DUPP 
+        CALL    TNAME 
         call DUPP ; ( ca na na )
         call DOLIT 
         .word app_space ; ca na na as 
@@ -310,10 +299,6 @@ FORGET4:
         call ZERO  
         CALL UPDATRUN  
         RET         
-FORGET5:
-        CALL ABORQ 
-        .BYTE 5 
-        .ASCII " what"
 FORGET6: ; tried to forget system word 
         call ABORQ
         .byte 10
@@ -327,10 +312,12 @@ FORGET6: ; tried to forget system word
         ldw y,x 
         addw x,#CELLL
         ldw y,(y)
-        ld a,yh 
-        ld SEEDX,a 
-        ld a,yl 
-        ld SEEDY,a 
+        SCF 
+        RLCW  Y
+        _stryz SEEDX  
+        rlcw y 
+        CPLW  Y  
+        _stryz SEEDY  
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -980,6 +967,20 @@ QDUP1:  RET
         CPLW Y
         LDW (X),Y
         RET
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;   ~ ( 0|n<>0 -- T|F )
+; invert boolean value 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER TILDE,1,"~"
+        LDW Y,X 
+        LDW Y,(Y)
+        JREQ 1$ 
+        CLRW Y 
+        JRA 2$ 
+1$:     LDW Y,#-1
+2$:     LDW (X),Y 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NEGATE  ( n -- -n )
@@ -2831,7 +2832,7 @@ QUIT2:  CALL     QUERY   ;get input
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER COMPTICK,COMPO+IMEDD+3,"[']"
         CALL TICK 
-        CALL COMMA 
+        CALL LITER  
         RET 
 
 
@@ -3023,6 +3024,17 @@ STRCQ:
         CALL     CPHERE
         CALL     ZERO 
         JP     COMMA
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       ~IF      ( -- A )
+;       Begin a conditional branch.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER TILDEIF,COMPO+IMEDD+3,"~IF"
+        CALL     COMPI
+        .WORD    TBRAN
+        CALL     CPHERE
+        CALL     ZERO 
+        JP       COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       THEN        ( A -- )
@@ -3757,7 +3769,9 @@ COLD:
         CALL     LOAD_EEP
         CALL     UPDATPTR
         ; set autorun to HI  
-        _DOLIT HI    ; default startup application  
+        LDW      Y,EEP_RUN
+        JRNE     COLD9
+        _DOLIT   HI    ; default startup application  
         CALL UPDATRUN  
         JRA COLD9
 COLD3: ; load system variables from EEPROM 
