@@ -3413,6 +3413,7 @@ DOCONST:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER UTYPE,5,"_TYPE"
 UTYPE: 
+.IF 0
         CALL     TOR     ;start count down loop
         JRA     UTYP2   ;skip first pass
 UTYP1:  CALL     DUPP
@@ -3426,6 +3427,26 @@ UTYP1:  CALL     DUPP
 UTYP2:  CALL     DONXT
         .word      UTYP1   ;loop till done
         JP     DROP
+.ELSE 
+        LDW     Y,X 
+        LDW     Y,(2,Y)
+1$:
+        LD      A,(1,X)
+        JREQ    9$ 
+        LD      A,(Y)
+        cp      A,#SPC 
+        JRPL    2$ 
+        LD      A,#SPC 
+        JRA     3$ 
+2$:     CP      A,#127 
+        JRMI    3$
+        LD      A,#SPC 
+3$:     CALL    putc 
+        INCW    Y 
+        DEC     (1,X)
+        JRA     1$ 
+9$:     JP      DDROP 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       dm+     ( a u -- a )
