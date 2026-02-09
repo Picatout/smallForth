@@ -2115,7 +2115,7 @@ CHAR2:  CALL     DONXT
         CALL    putc 
         LD      A,#LF 
         JP      putc 
-        
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       do$     ( -- a )
 ;       Return  address of a compiled
@@ -3557,53 +3557,31 @@ TNAM3:  CALL     SWAPP
 TNAM4:  CALL     DDROP
         JP     ZERO 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       .ID     ( na -- )
-;        Display  name at address.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER DOTID,3,".ID"
-DOTID: 
-        CALL     QDUP    ;if zero no name
-        CALL     QBRAN
-        .word      DOTI1
-        CALL     COUNT
-        CALL     DOLIT
-        .word      0x1F
-        CALL     ANDD    ;mask lexicon bits
-        JP     UTYPE
-DOTI1:  CALL     DOTQP
-        .byte      9
-        .ascii     " noName"
-        RET
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       WORDS   ( -- )
 ;       Display names in vocabulary.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER WORDS,5,"WORDS"
-.IF 0 
-        CALL     CR
-        CALL     CNTXT   ;only in context
-WORS1:  CALL     AT
-        CALL     QDUP    ;?at end of list
-        CALL     QBRAN
-        .word      WORS2
-        CALL     DUPP
-        CALL     SPACE
-        CALL     DOTID   ;display a name
-        CALL     CELLM
-        JRA      WORS1
-WORS2:  RET
-.ELSE 
-NA=1 ; name field 
-        SUB     SP,#2 
-        LD      A,#CRR 
-        CALL    putc 
+NA=1 ; name field
+LLEN=3 ; line length
+SLEN=4 ; string length 
+VSIZE=4   
+        SUB     SP,#VSIZE
         LDW     Y,UCNTXT 
+0$: 
+        CLR     (LLEN,SP)  
+        CALL    CR  
 1$:     LDW     (NA,SP),Y 
         LD      A,(Y)
-        AND     A,#0X1F 
+        AND     A,#0X1F
+        LD      (SLEN,SP),A 
+        INC     A 
+        ADD     A,(LLEN,SP) 
+        CP      A,#78 
+        JRPL    0$
+        LD      (LLEN,SP),A   
         INCW    Y  
+        LD      A,(SLEN,SP)
         CALL    prt_cstr
         LD      A,#SPC 
         CALL    putc  
@@ -3611,11 +3589,9 @@ NA=1 ; name field
         SUBW    Y,#2
         LDW     Y,(Y)
         JRNE     1$
-        ADDW     SP,#2
+        ADDW     SP,#VSIZE 
         RET  
-.ENDIF 
         
-;; Hardware reset
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    PRINT_VERSION ( c1 c2 -- )
