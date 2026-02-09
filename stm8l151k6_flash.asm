@@ -163,9 +163,7 @@ iap_locked:
 ;-----------------------------------
 	_HEADER EEPROM,6,"EEPROM"
     ldw y,#EEPROM_BASE
-    subw x,#CELLL 
-    ldw (x),y 
-    ret
+    JP	DPUSH 
 
 ;---------------------------------
 ; EEP-CNTXT ( -- u )
@@ -173,10 +171,8 @@ iap_locked:
 ;---------------------------------
 ;	_HEADER EEPCNTXT,9,"EEP-CNTXT"
 EEPCNTXT:
-	subw x,#CELLL 
 	ldw y,#EEP_CNTXT  
-	ldw (x),y 
-	ret 
+	JP	DPUSH 
 
 ;----------------------------------
 ; EEP-RUN ( -- u )
@@ -184,11 +180,8 @@ EEPCNTXT:
 ;-----------------------------------
 ;	_HEADER EEPRUN,7,"EEP-RUN"
 EEPRUN:
-	subw x,#CELLL 
 	ldw y,#EEP_RUN 
-	ldw (x),y 
-	ret 
-
+	JP	DPUSH 
 
 ;------------------------------------
 ; EEP-CP ( -- u )
@@ -196,10 +189,8 @@ EEPRUN:
 ;------------------------------------
 ;	_HEADER EEPCP,6,"EEP-CP"
 EEPCP:
-	subw x,#CELLL 
 	ldw y,#EEP_CP  
-	ldw (x),y 
-	ret 
+	JP	DPUSH 
 
 ;------------------------------------
 ; EEP-VP ( -- u )
@@ -207,11 +198,9 @@ EEPCP:
 ;-------------------------------------
 ;	_HEADER EEPVP,6,"EEP-VP"
 EEPVP:
-	subw x,#CELLL 
 	ldw y,#EEP_VP  
-	ldw (x),y 
-	ret 
-
+	JP	DPUSH 
+	
 ;---------------------------------
 ; UPDAT-RUN ( a -- )
 ; update EEP_RUN 

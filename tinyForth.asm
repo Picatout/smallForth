@@ -304,6 +304,7 @@ FORGET6: ; tried to forget system word
         .byte 10
         .ascii " Protected"
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    SEED ( n -- )
 ; Initialize PRNG seed with n 
@@ -384,6 +385,7 @@ FORGET6: ; tried to forget system word
         ldw (x),y 
         addw sp,#VSIZE 
 	ret 
+.ENDIF 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
