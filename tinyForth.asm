@@ -1546,21 +1546,6 @@ RSHIFT4:
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       >CHAR   ( c -- c )
-;       Filter non-printing characters.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TCHAR,5,">CHAR"
-        ld a,(1,x)
-        cp a,#32  
-        jrmi 1$ 
-        cp a,#127 
-        jrpl 1$ 
-        ret 
-1$:     ld a,#'_ 
-        ld (1,x),a 
-        ret 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DEPTH   ( -- n )
 ;       Return  depth of  data stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3420,6 +3405,7 @@ DOCONST:
 ;;          TOOLS 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       _TYPE   ( b u -- )
 ;       Display a string. Filter
@@ -3431,7 +3417,10 @@ UTYPE:
         JRA     UTYP2   ;skip first pass
 UTYP1:  CALL     DUPP
         CALL     CAT
-        CALL     TCHAR
+        CALL     BLANK  
+        CALL     MAX 
+        _DOLIT   127 
+        CALL     MIN 
         CALL     EMIT    ;display only printable
         CALL     ONEP    ;increment address
 UTYP2:  CALL     DONXT
