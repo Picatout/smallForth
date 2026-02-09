@@ -94,7 +94,8 @@
 
     ; drop TOS 
     .macro _DROP 
-    ADDW X,#CELLL  
+    INCW  X 
+    INCW  X  
     .endm 
   
    ; drop a double 

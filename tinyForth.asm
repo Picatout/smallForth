@@ -131,7 +131,7 @@ ULAST = UCP+2     ; last dictionary pointer
 ;******  System Variables  ******
 XTEMP	=	ULAST +2 ;address called by CREATE
 YTEMP	=	XTEMP+2	;address called by CREATE
-PROD1 = XTEMP	;space for UM*
+PROD1 = YTEMP+2	;space for UM*
 PROD2 = PROD1+2
 PROD3 = PROD2+2
 CARRY = PROD3+2
@@ -569,6 +569,8 @@ BRAN:
         CLR (X)
         RET     
 
+.IF 0 ;**************************
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       RP@     ( -- a )
 ;       Push current RP to data stack.
@@ -587,8 +589,10 @@ BRAN:
         LDW Y,X
         LDW Y,(Y)
         LDW SP,Y
-        ADDW X,#CELLL ; a was not dropped, Picatout 2020-05-24
+        _DROP 
         JP [YTEMP]
+
+.ENDIF ;***************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       R>      ( -- w )
@@ -615,13 +619,13 @@ BRAN:
 ;       Push data stack to return stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TOR,COMPO+2,">R"
-        POPW Y    ;save return addr
-        LDW YTEMP,Y
-        LDW Y,X
-        LDW Y,(Y)  ; W
-        PUSHW Y    ;W >R 
-        ADDW X,#2
-        JP [YTEMP]
+        LDW Y,(1,SP)
+        PUSHW Y 
+        LDW Y,X 
+        LDW Y,(Y)
+        LDW (3,SP),Y 
+        _DROP 
+        RET  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SP@     ( -- a )
@@ -644,7 +648,8 @@ BRAN:
 ;       Discard top stack item.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DROP,4,"DROP"
-        _DROP      
+        INCW X 
+        INCW X      
         RET     
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -916,18 +921,19 @@ QDUP1:  RET
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       +       ( w w -- sum )
+;       +       ( n1 n2 -- sum )
 ;       Add top two items.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PLUS,1,"+"
         LDW Y,X
         LDW Y,(Y)
-        LDW YTEMP,Y
-        ADDW X,#2
+        PUSHW Y      ; R: n2 
+        ADDW X,#CELLL ; -- n1 
         LDW Y,X
         LDW Y,(Y)
-        ADDW Y,YTEMP
-        LDW (X),Y
+        ADDW Y,(1,SP)  ; n1+n2  
+        ADDW SP,#CELLL ; R: -- 
+        LDW  (X),Y     ; -- sum 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -974,12 +980,13 @@ TILDE1:
         _HEADER SUBB,1,"-"
         LDW Y,X
         LDW Y,(Y) ; n2 
-        LDW YTEMP,Y 
-        ADDW X,#CELLL 
+        PUSHW Y   ; R: -- n2 
+        ADDW X,#CELLL ; -- n1 
         LDW Y,X
         LDW Y,(Y) ; n1 
-        SUBW Y,YTEMP ; n1-n2 
-        LDW (X),Y
+        SUBW Y,(1,SP) ; n1-n2 
+        LDW (X),Y     ; -- diff 
+        ADDW SP,#CELLL ; R: -- 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1129,6 +1136,7 @@ MIN1:	ADDW X,#2
 ; ref: https://github.com/TG9541/stm8ef/pull/406        
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER UMMOD,6,"UM/MOD"
+.IF 1
         LDW     Y,X             ; stack pointer to Y
         LDW     X,(X)           ; un
         LDW     YTEMP,X         ; save un
@@ -1177,6 +1185,45 @@ MMSMb:
         LDW     Y,YTEMP         ; remainder onto stack
         LDW     (2,X),Y
         RET
+.ELSE 
+; 2026-02-09, I don't like use of YTEMP use local variables instead. JD   
+XSAVE=1
+DIVISOR=3 
+VSIZE=4 
+        SUB     SP,#VSIZE ; space for local variables  
+        LDW     Y,X 
+        LDW     Y,(Y) ;DIVISOR 
+        _DROP  ; -- udl udh 
+        TNZW    Y 
+        JREQ    9$; if divisor==0 exit 
+; shift divisor until most significant 1 is at bit 7 
+1$:     SLLW    Y 
+        JRNC    1$
+        RRCW    Y 
+        LDW     (DIVISOR,SP),Y  
+        LDW     (XSAVE,SP),X  ; save DSTACK pointer 
+        LDW     Y,X 
+        LDW     Y,(2,Y) ; udl 
+        LDW     X,(X)   ; udh 
+        LD      A,#32   ; loop count 
+2$:     SUBW    X,(DIVISOR,SP)
+        JRNC    3$ 
+        ADDW    X,(DIVISOR,SP)
+        SCF     
+3$:     CCF     
+        RLCW    Y
+        RLCW    X 
+        DEC     A 
+        JRNE    2$
+        LDW     (DIVISOR,SP),X     
+        LDW     X,(XSAVE,SP)
+        LDW     (X),Y ; quotient 
+        LDW     Y,(DIVISOR,SP) ; 
+        LDW     (2,X),Y ; remainder 
+9$: 
+        ADDW    SP,#VSIZE       ; drop local variables  
+        RET 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   U/MOD ( u1 u2 -- ur uq )
@@ -1553,9 +1600,10 @@ RSHIFT4:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEPTH,5,"DEPTH"
         LDW Y,SP0    ;save data stack ptr
-	LDW XTEMP,X
-        SUBW Y,XTEMP     ;#bytes = SP0 - X
+	PUSHW  X 
+        SUBW Y,(1,SP)     ;#bytes = SP0 - X
         SRAW Y    ;Y = #stack items
+        ADDW    SP,#2 
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1569,10 +1617,11 @@ RSHIFT4:
 ; 0 PICK must be equivalent to DUP 
         INCW Y 
         SLAW Y
-        LDW XTEMP,X
-        ADDW Y,XTEMP
+        PUSHW X 
+        ADDW Y,(1,SP)
         LDW Y,(Y)
         LDW (X),Y
+        ADDW  SP,#2 
         RET
 
 ;; Memory access
@@ -2654,9 +2703,9 @@ EVAL2:  _DROP
 ;       and start text interpreter.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER QUIT,4,"QUIT"
-        CALL     DOLIT
-        .word      RPP
-        CALL     RPSTO   ;reset return stack pointer
+;reset return stack 
+        LDW     Y,#RPP 
+        LDW     SP,Y 
 QUIT1:  CALL     LBRAC   ;start interpretation
 QUIT2:  CALL     QUERY   ;get input
         CALL     EVAL
@@ -3198,6 +3247,7 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER JSRC,5,^/"CALL,"/
 JSRC: 
+.IF 0
         LDW Y,#DROP 
         LDW YTEMP,Y 
         LDW Y,X 
@@ -3224,6 +3274,7 @@ JSRC1: ; check for DDROP
         _DOLIT 2*CELLL 
         JP  COMMA 
 JSRC2: 
+.ENDIF 
         _DOLIT  CALLL     ;CALL
         CALL     CCOMMA
         JP       COMMA
