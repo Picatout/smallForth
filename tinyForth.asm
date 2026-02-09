@@ -391,8 +391,9 @@ FORGET6: ; tried to forget system word
 ;; get millisecond counter 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER MSEC,4,"MSEC"
-        subw x,#CELLL 
         ldw y,MS 
+DPUSH: ; push Y on parameter stack 
+        subw x,#CELLL 
         ldw (x),y 
         ret 
 
@@ -426,15 +427,10 @@ FORGET6: ; tried to forget system word
 ; check for TIMER exiparition 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIMEOUTQ,8,"TIMEOUT?"
-        clr a
-        subw x,#CELLL 
-        ldw y,CNTDWN 
-        jrne 1$ 
-        cpl a 
-1$:     ld (1,x),a 
-        ld (x),a 
-        ret         
-
+        SUBW    X,#CELLL 
+        _ldyz   CNTDWN 
+        JP      TILDE1  
+ 
 ;;;;;;;;;;;;;;;;;;;;;
 ; reboot MCU 
 ; REBOOT ( -- )
@@ -577,9 +573,7 @@ BRAN:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RPAT,3,"RP@"
         LDW Y,SP    ;save return addr
-        SUBW X,#2
-        LDW (X),Y
-        RET     
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       RP!     ( a -- )
@@ -612,9 +606,7 @@ BRAN:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RAT,2,"R@"
         ldw y,(3,sp)
-        subw x,#CELLL 
-        ldw (x),y 
-        ret 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >R      ( w -- )
@@ -635,9 +627,7 @@ BRAN:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SPAT,3,"SP@"
 	LDW Y,X
-        SUBW X,#2
-	LDW (X),Y
-        RET     
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SP!     ( a -- )
@@ -652,7 +642,7 @@ BRAN:
 ;       Discard top stack item.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DROP,4,"DROP"
-        ADDW X,#2     
+        _DROP      
         RET     
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -661,10 +651,8 @@ BRAN:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DUPP,3,"DUP"
 	LDW Y,X
-        SUBW X,#2
 	LDW Y,(Y)
-	LDW (X),Y
-        RET     
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SWAP    ( w1 w2 -- w2 w1 )
@@ -732,7 +720,7 @@ ZEQU1:
         LD A,(1,X)
         AND A,(3,X)
         LD (3,X),A
-        ADDW X,#2
+        ADDW X,#CELLL 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -746,7 +734,7 @@ ZEQU1:
         LD A,(1,X)
         OR A,(3,X)
         LD (3,X),A
-        ADDW X,#2
+        ADDW X,#CELLL 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -760,7 +748,7 @@ ZEQU1:
         LD A,(1,X)
         XOR A,(3,X)
         LD (3,X),A
-        ADDW X,#2
+        ADDW X,#CELLL 
         RET
 
 ;; System and user variables
@@ -791,9 +779,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER INN,3,">IN"
 	LDW Y,#UINN 
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP      DPUSH
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       #TIB    ( -- a )
@@ -802,9 +788,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NTIB,4,"#TIB"
 	LDW Y,#UCTIB 
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP      DPUSH 
 
 ; systeme variable 
 
@@ -814,9 +798,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TEVAL,5,"'EVAL"
 	LDW Y,#UINTER 
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       HLD     ( -- a )
@@ -825,9 +807,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER HLD,3,"HLD"
 	LDW Y,#UHLD 
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONTEXT ( -- a )
@@ -835,9 +815,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CNTXT,7,"CONTEXT"
 	LDW Y,#UCNTXT
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       VP      ( -- a )
@@ -845,9 +823,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VPP,2,"VP"
 	LDW Y,#UVP 
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CP    ( -- a )
@@ -855,9 +831,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CPP,2,"CP"
         ldw y,#UCP 
-        subw x,#CELLL 
-        ldw (x),y 
-        ret                
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       LAST    ( -- a )
@@ -866,9 +840,7 @@ ZEQU1:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER LAST,4,"LAST"
 	LDW Y,#ULAST 
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP      DPUSH 
 
 ;; Common functions
 
@@ -880,8 +852,7 @@ ZEQU1:
         LDW Y,X
 	LDW Y,(Y)
         JREQ     QDUP1
-	SUBW X,#CELLL 
-        LDW (X),Y
+        JP      DPUSH 
 QDUP1:  RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -925,7 +896,7 @@ QDUP1:  RET
 ;       Discard two items on stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DDROP,5,"2DROP"
-        ADDW X,#4
+        ADDW X,#2*CELLL 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -975,6 +946,7 @@ QDUP1:  RET
         _HEADER TILDE,1,"~"
         LDW Y,X 
         LDW Y,(Y)
+TILDE1: 
         JREQ 1$ 
         CLRW Y 
         JRA 2$ 
@@ -1562,20 +1534,16 @@ RSHIFT4:
 ;       Return 32,  blank character.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BLANK,2,"BL"
-        SUBW X,#2
 	LDW Y,#32
-        LDW (X),Y
-        RET
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;         0     ( -- 0)
 ;         Return 0.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ZERO,1,"0"
-        SUBW X,#CELLL  
-	CLR (X)
-        CLR (1,X)
-        RET
+        CLRW    Y 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >CHAR   ( c -- c )
@@ -1601,9 +1569,7 @@ RSHIFT4:
 	LDW XTEMP,X
         SUBW Y,XTEMP     ;#bytes = SP0 - X
         SRAW Y    ;Y = #stack items
-	SUBW X,#2
-        LDW (X),Y     ; if neg, underflow
-        RET
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PICK    ( ... +n -- ... w )
@@ -1655,30 +1621,25 @@ RSHIFT4:
         ld a,(y)  ; count 
         incw y 
         ldw (x),y 
-        subw x,#CELLL 
-        ld (1,x),a 
-        clr (x)
-        ret 
+        clrw  y 
+        ld yl,a
+        jp      DPUSH  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       HERE    ( -- a )
 ;       Return  top of  variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER HERE,4,"HERE"
-      	ldw y,UVP 
-        subw x,#CELLL 
-        ldw (x),y 
-        ret 
+      	LDW     Y,UVP 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; CP-HERE ( -- a)
 ; return code space top address 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CPHERE,7,"CP-HERE"
-        SUBW    X,#CELLL 
         LDW     Y,UCP 
-        LDW     (X),Y 
-        RET 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PAD     ( -- a )
@@ -1697,9 +1658,7 @@ RSHIFT4:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIB,3,"TIB"
         LDW     Y,UTIB 
-        SUBW    X,#CELLL 
-        LDW     (X),Y 
-        RET 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       @EXECUTE        ( a -- )
@@ -2084,14 +2043,11 @@ NUMQ6:
 ; return a flag .
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER KEYQ,4,"KEY?"
-        subw x,#CELLL 
         clrw y 
         call qchar 
         jreq 1$
         cplw y 
-1$:         
-        ldw (x),y 
-        ret 
+1$:     JP      DPUSH     
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2101,11 +2057,9 @@ NUMQ6:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER KEY,3,"KEY"
         call getc 
-        subw x,#CELLL 
         clrw y
         ld yl ,a         
-        ldw (x),y
-        ret 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       EMIT    ( c -- )
@@ -2116,32 +2070,14 @@ NUMQ6:
 	ADDW	X,#CELLL
         JP      putc  
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       NUF?    ( -- t )
-;       Return false if no input,
-;       else pause and if CR return true.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER NUFQ,4,"NUF?"
-        subw    x,#CELLL 
-        clr     (x)
-        clr     (1,x)
-        CALL    qchar 
-        tnz     a 
-        jreq    9$ 
-        call    getc 
-        sub     a,#CRR 
-        ld      (1,x),a 
-9$:     ret
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SPACE   ( -- )
 ;       Send  blank character to
 ;       output device.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SPACE,5,"SPACE"
-        CALL     BLANK
-        JP     EMIT
+        LD      A,#SPC 
+        JP      putc 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SPACES  ( +n -- )
@@ -2163,13 +2099,11 @@ CHAR2:  CALL     DONXT
 ;       Output u characters from b.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TYPES,4,"TYPE"
-        CALL     TOR
-        JRA     TYPE2
-TYPE1:  CALL     COUNT 
-        CALL     EMIT
-TYPE2:  _DONXT  TYPE1
-        _DROP
-        RET 
+        LD      A,(1,X)
+        LDW     Y,X 
+        LDW     Y,(2,Y)
+        CALL    prt_cstr
+        JP      DDROP 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CR      ( -- )
@@ -2177,11 +2111,11 @@ TYPE2:  _DONXT  TYPE1
 ;       and a line feed.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CR,2,"CR"
-        _DOLIT  CRR 
-        CALL    EMIT
-        _DOLIT  LF
-        JP      EMIT
-
+        LD      A,#CRR
+        CALL    putc 
+        LD      A,#LF 
+        JP      putc 
+        
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       do$     ( -- a )
 ;       Return  address of a compiled
@@ -2207,7 +2141,7 @@ DOSTR:
 ;       _HEADER STRQP,COMPO+3,"$\"|"
 STRQP:
         CALL     DOSTR
-        RET
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ."|     ( -- )
@@ -2405,6 +2339,7 @@ PARS8:  CALL     OVER
         CALL     INN
         JP       PSTOR
 
+.IF 0 ;**************************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .(      ( -- )
 ;       Output following string up to next ) .
@@ -2414,6 +2349,7 @@ PARS8:  CALL     OVER
         .word     41	; ")"
         CALL     PARSE
         JP     TYPES
+.ENDIF ;************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       (       ( -- )
@@ -2968,10 +2904,8 @@ STRCQ:
 ;       of innermost FOR-NEXT  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER IFETCH,1,"I"
-        subw x,#CELLL 
         ldw y,(3,sp)
-        ldw (x),y 
-        ret 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       J ( -- n )
@@ -2979,10 +2913,8 @@ STRCQ:
 ;   of outer FOR-NEXT  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER JFETCH,1,"J"
-        SUBW X,#CELLL 
         LDW Y,(5,SP)
-        LDW (X),Y 
-        RET 
+        JP      DPUSH
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       BEGIN   ( -- a )
@@ -3335,8 +3267,8 @@ JSRC2:
 ; return interrput code address 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ICOLON,2,"I:"
-        SUBW    X,#CELLL 
         LDW     Y,UCP 
+        SUBW    X,#CELLL 
         LDW     (X),Y  ; ca of interrupt 
         JP      RBRAC  
 
@@ -3649,6 +3581,7 @@ DOTI1:  CALL     DOTQP
 ;       Display names in vocabulary.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER WORDS,5,"WORDS"
+.IF 0 
         CALL     CR
         CALL     CNTXT   ;only in context
 WORS1:  CALL     AT
@@ -3659,22 +3592,30 @@ WORS1:  CALL     AT
         CALL     SPACE
         CALL     DOTID   ;display a name
         CALL     CELLM
-        CALL     BRAN
-        .word      WORS1
+        JRA      WORS1
 WORS2:  RET
-
+.ELSE 
+NA=1 ; name field 
+        SUB     SP,#2 
+        LD      A,#CRR 
+        CALL    putc 
+        LDW     Y,UCNTXT 
+1$:     LDW     (NA,SP),Y 
+        LD      A,(Y)
+        AND     A,#0X1F 
+        INCW    Y  
+        CALL    prt_cstr
+        LD      A,#SPC 
+        CALL    putc  
+        LDW     Y,(NA,SP)
+        SUBW    Y,#2
+        LDW     Y,(Y)
+        JRNE     1$
+        ADDW     SP,#2
+        RET  
+.ENDIF 
         
 ;; Hardware reset
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  COPYRIGTH
-; print copyright notice 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-COPYRIGHT:
-    CALL DOTQP 
-    .byte  34
-    .ascii "Copyright Jacques Deschenes, 2026\n"
-    RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    PRINT_VERSION ( c1 c2 -- )
@@ -3682,9 +3623,6 @@ COPYRIGHT:
 ;    c1 major 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 PRINT_VERSION:
-     CALL DOTQP 
-     .byte 9
-     .ascii " version "
      CALL BDIGS 
      CALL DIGS 
      CALL DIGS 
@@ -3702,17 +3640,18 @@ PRINT_VERSION:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER HI,2,"HI"
 HI: 
-        CALL     CR
         CALL     DOTQP   
-        .byte      9
-        .ascii     "tinyForth"
+        .byte      18 
+        .ascii     "tinyForth version "
 	_DOLIT VER 
         _DOLIT MINOR 
         CALL PRINT_VERSION
         CALL    DOTQP
-        .byte 15
+        .byte 15+34
         .ascii  " on stm8l151k6\n"
-        JP COPYRIGHT
+        .ascii "Copyright Jacques Deschenes, 2026\n"
+        RET 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       'BOOT   ( -- a )
