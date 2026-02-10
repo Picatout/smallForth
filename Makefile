@@ -52,6 +52,7 @@ clear_eevars:
 	@echo "and reset options to default"
 	@echo "****************************"
 	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s eeprom -b 16 -w zero.bin  
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -b 16 -s eeprom -v zero.bin  
 
 .PHONY: erase 
 erase: clear_eevars 
@@ -69,6 +70,7 @@ flash: clear_eevars $(LIB)
 	@echo "flash program "
 	@echo "***************"
 	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -w $(BUILD)$(NAME).ihx 
+	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -v $(BUILD)$(NAME).ihx 
 
 compile: $(MAIN_FILE)  $(SRC) $(INCLUDES)
 	@echo ""

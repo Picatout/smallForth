@@ -1136,7 +1136,6 @@ MIN1:	ADDW X,#2
 ; ref: https://github.com/TG9541/stm8ef/pull/406        
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER UMMOD,6,"UM/MOD"
-.IF 1
         LDW     Y,X             ; stack pointer to Y
         LDW     X,(X)           ; un
         LDW     YTEMP,X         ; save un
@@ -1185,45 +1184,6 @@ MMSMb:
         LDW     Y,YTEMP         ; remainder onto stack
         LDW     (2,X),Y
         RET
-.ELSE 
-; 2026-02-09, I don't like use of YTEMP use local variables instead. JD   
-XSAVE=1
-DIVISOR=3 
-VSIZE=4 
-        SUB     SP,#VSIZE ; space for local variables  
-        LDW     Y,X 
-        LDW     Y,(Y) ;DIVISOR 
-        _DROP  ; -- udl udh 
-        TNZW    Y 
-        JREQ    9$; if divisor==0 exit 
-; shift divisor until most significant 1 is at bit 7 
-1$:     SLLW    Y 
-        JRNC    1$
-        RRCW    Y 
-        LDW     (DIVISOR,SP),Y  
-        LDW     (XSAVE,SP),X  ; save DSTACK pointer 
-        LDW     Y,X 
-        LDW     Y,(2,Y) ; udl 
-        LDW     X,(X)   ; udh 
-        LD      A,#32   ; loop count 
-2$:     SUBW    X,(DIVISOR,SP)
-        JRNC    3$ 
-        ADDW    X,(DIVISOR,SP)
-        SCF     
-3$:     CCF     
-        RLCW    Y
-        RLCW    X 
-        DEC     A 
-        JRNE    2$
-        LDW     (DIVISOR,SP),X     
-        LDW     X,(XSAVE,SP)
-        LDW     (X),Y ; quotient 
-        LDW     Y,(DIVISOR,SP) ; 
-        LDW     (2,X),Y ; remainder 
-9$: 
-        ADDW    SP,#VSIZE       ; drop local variables  
-        RET 
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   U/MOD ( u1 u2 -- ur uq )
@@ -1416,7 +1376,7 @@ SLMOD8:
         ldw (x),y  ; udh 
         ldw y,(UD3,sp)
         ldw (2,x),y  ; udl  
-        addw sp,#4 ; drop local variable 
+        addw sp,#4 ; drop local variableS 
         ret  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1458,12 +1418,14 @@ MSTA1:	RET
         CALL     TOR
         CALL     MSTAR
         CALL     RFROM
-        JP     MSMOD
+        JP       MSMOD
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       */      ( n1 n2 n3 -- q )
-;       Multiply n1 by n2, then divide
-;       by n3. Return quotient only.
+; Multiply n1 by n2
+; keep product as double 
+; then divide by n3.
+; Return quotient only.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STASL,2,"*/"
         CALL	SSMOD
@@ -1836,7 +1798,7 @@ PACKS:
         CALL     SWAPP
         CALL     UMMOD
         CALL     SWAPP
-        JP     DIGIT
+        JP       DIGIT
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       <#      ( -- )
