@@ -1185,26 +1185,7 @@ MMSMb:
         LDW     (2,X),Y
         RET
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   U/MOD ( u1 u2 -- ur uq )
-;   unsigned divide u1/u2 
-;   return remainder and quotient 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER USLMOD,5,"U/MOD"
-        LDW Y,X 
-        LDW Y,(Y)  ; dividend 
-        PUSHW X    ; DP >R 
-        LDW X,(2,X) ; divisor 
-        DIVW X,Y 
-        PUSHW X     ; quotient 
-        LDW X,(3,SP) ; DP 
-        LDW (2,X),Y ; remainder 
-        LDW Y,(1,SP) ; quotient 
-        LDW (X),Y 
-        ADDW SP,#2*CELLL ; drop quotient and DP from rstack 
-        RET 
-
-
+.IF 1 ;*************************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DNEGATE ( d -- -d )
 ;       Two's complement of double.
@@ -1224,8 +1205,28 @@ MMSMb:
         INCW Y
 DN1:    LDW (X),Y
         RET
+.ENDIF ;***************************
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;   U/MOD ( u1 u2 -- ur uq )
+;   unsigned divide u1/u2 
+;   return remainder and quotient 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER USLMOD,5,"U/MOD"
+        LDW Y,X 
+        LDW Y,(Y)  ; dividend 
+        PUSHW X    ; DP >R 
+        LDW X,(2,X) ; divisor 
+        DIVW X,Y 
+        PUSHW X     ; quotient 
+        LDW X,(3,SP) ; DP 
+        LDW (2,X),Y ; remainder 
+        LDW Y,(1,SP) ; quotient 
+        LDW (X),Y 
+        ADDW SP,#2*CELLL ; drop quotient and DP from rstack 
+        RET 
 
+.IF 1 ;******************************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
 ;       M/MOD   ( d n -- r q )
 ;       Signed floored divide of double by
@@ -1258,11 +1259,13 @@ MMOD2:	CALL	RFROM
         CALL	NEGAT
         JP	SWAPP
 MMOD3:	RET
+.ENDIF ;********************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       /MOD    ( n1 n2 -- r q )
-;       Signed divide n1/n2. 
-;       Return mod and quotient.
+; Signed divide n1/n2. 
+; Return mod and quotient.
+; quotient rounded toward zero 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SLMOD,4,"/MOD"
         LD A,(X)
@@ -1270,30 +1273,29 @@ MMOD3:	RET
         LD A,(2,X)
         PUSH A    ; n1 sign 
         CALL ABSS 
-        CALL TOR  ; 
+        CALL TOR  ; R: n2sign n1sign abs(n2)
         CALL ABSS 
-        CALL RAT   
-        CALL USLMOD 
-        LD A,(3,SP)
-        OR A,(4,SP)
+        CALL RAT   ; -- abs(n1) abs(n2)
+        CALL USLMOD ; -- ur uq 
+        LD A,(3,SP) ; n1sign 
+        OR A,(4,SP) ; n1sing or n2sign 
         JRPL SLMOD8 ; both positive nothing to change 
-        LD A,(3,SP)
-        XOR A,(4,SP)
-        JRPL SLMOD1
+        LD A,(3,SP)  ; dividend sign 
+        XOR A,(4,SP) ; divisor  sign 
+        JRPL SLMOD1  ; both same sign  
 ; dividend and divisor are opposite sign          
         CALL NEGAT ; negative quotient
         CALL OVER 
         CALL ZEQUAL 
         _TBRAN SLMOD8 
-        CALL ONEM   ; add one to quotient 
-        CALL RAT 
-        CALL ROT 
-        CALL SUBB  ; corrected_remainder=divisor-remainder 
-        CALL SWAPP
-SLMOD1:
+        ; remainder sign of dividend 
+        LD A,(3,SP)
+        JRPL SLMOD8 
+        JRA  SLMOD2 
+SLMOD1: ; n1 n2 same sign then q positive and r sign of divisor  
         LD A,(4,SP) ; divisor sign 
         JRPL SLMOD8 
-        CALL TOR 
+SLMOD2: CALL TOR 
         CALL NEGAT ; if divisor negative negate remainder 
         CALL RFROM 
 SLMOD8: 
@@ -1302,7 +1304,7 @@ SLMOD8:
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       MOD     ( n n -- r )
+;       MOD     ( n1 n2 -- r )
 ;       Signed divide. Return mod only.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER MODD,3,"MOD"

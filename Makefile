@@ -52,7 +52,6 @@ clear_eevars:
 	@echo "and reset options to default"
 	@echo "****************************"
 	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -u -s eeprom -b 16 -w zero.bin  
-	$(FLASH) -c $(PROGRAMMER) -p $(MCU) -b 16 -s eeprom -v zero.bin  
 
 .PHONY: erase 
 erase: clear_eevars 
