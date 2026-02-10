@@ -129,19 +129,16 @@ UCP = UVP+2       ; code pointer in FLASH
 ULAST = UCP+2     ; last dictionary pointer 
 
 ;******  System Variables  ******
-XTEMP	=	ULAST +2 ;address called by CREATE
-YTEMP	=	XTEMP+2	;address called by CREATE
+XTEMP = ULAST +2 ; temporary storage  
+YTEMP = XTEMP+2  ; temporary storage 
 PROD1 = YTEMP+2	;space for UM*
 PROD2 = PROD1+2
-PROD3 = PROD2+2
-CARRY = PROD3+2
-SP0	= CARRY+2	;initial data stack pointer
-RP0	= SP0+2		;initial return stack pointer
-MS    =   RP0+2         ; millisecond counter 
-CNTDWN =  MS+2          ; count down timer 
-SEEDX = CNTDWN+2        ; PRNG seed X 
-SEEDY = SEEDX+2         ; PRNG seed Y 
-RX_QUEUE = SEEDY+2      ; UART receive circular queue. 
+SP0  = PROD2+2	 ;initial data stack pointer
+RP0  =  SP0+2	 ;initial return stack pointer
+MS   =   RP0+2   ; millisecond counter 
+CNTDWN =  MS+2   ; count down timer 
+SEEDY = CNTDWN+2 ; PRNG seed 
+RX_QUEUE = SEEDY+2 ; UART receive circular queue. 
 RX_HEAD = RX_QUEUE+RX_QUEUE_SIZE ;  
 RX_TAIL = RX_HEAD+1 
 
