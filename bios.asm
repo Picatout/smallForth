@@ -83,16 +83,19 @@ UartRxHandler: ; console receive char
 	ld RX_TAIL,a 
 5$:	iret 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; power up entry points and COLD start data
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 reset:
+
 ; clear all RAM
 	ldw X,#RAM_END
 1$:
 	clr (X)
 	decw x 
         jrne 1$
-; set SEEDX and SEEDY to 1 
-        inc SEEDX+1 
+; set SEEDY to $0101  
+        inc SEEDY  
         inc SEEDY+1          
 
 ; initialize stacks 

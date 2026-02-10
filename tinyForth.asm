@@ -304,7 +304,7 @@ FORGET6: ; tried to forget system word
         .byte 10
         .ascii " Protected"
 
-.IF 0
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    SEED ( n -- )
 ; Initialize PRNG seed with n 
@@ -313,80 +313,59 @@ FORGET6: ; tried to forget system word
         ldw y,x 
         addw x,#CELLL
         ldw y,(y)
-        SCF 
-        RLCW  Y
-        _stryz SEEDX  
-        rlcw y 
-        CPLW  Y  
         _stryz SEEDY  
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    RANDOM ( u1 -- u2 )
 ; Pseudo random number betwen 0 and u1-1
-;  XOR32 algorithm 
+;  XOR16 algorithm 
+;  SY ^= SY<<7 
+;  SY ^= SY>>9
+;  SY ^= SY<<8 
+;  u2 = SY%u1 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RANDOM,6,"RANDOM"
-;local variable 
-        SPSAVE=1
-        VSIZE=2 
-        sub sp,#VSIZE
-        ldw (SPSAVE,sp),x  
-; XTEMP=(SEEDX<<5)^SEEDX 
-        ldw y,x 
-        ldw y,(y)
-        ldw YTEMP,y 
-	ldw x,SEEDX 
-	sllw x 
-	sllw x 
-	sllw x 
-	sllw x 
-	sllw x 
-	ld a,xh 
-	xor a,SEEDX 
-	ld XTEMP,a 
-	ld a,xl 
-	xor a,SEEDX+1 
-	ld XTEMP+1,a 
-; SEEDX=SEEDY 
-	ldw x,SEEDY 
-	ldw SEEDX,x  
-; SEEDY=SEEDY^(SEEDY>>1)
-	srlw x 
-	ld a,xh 
-	xor a,SEEDY 
-	ld SEEDY,a  
-	ld a,xl 
-	xor a,SEEDY+1 
-	ld SEEDY+1,a 
-; XTEMP>>3 
-	ldw x,XTEMP 
-	srlw x 
-	srlw x 
-	srlw x 
-; x=XTEMP^x 
-	ld a,xh 
-	xor a,XTEMP 
-	ld xh,a 
-	ld a,xl 
-	xor a,XTEMP+1  
-	ld xl,a 
-; SEEDY=x^SEEDY 
-	xor a,SEEDY+1
-	ld xl,a 
-	ld a,xh 
-	xor a,SEEDY
-	ld xh,a 
-	ldw SEEDY,x 
-; return SEEDY modulo YTEMP  
-	ldw y,YTEMP  
-	divw x,y 
-	ldw x,(SPSAVE,sp)
-        ldw (x),y 
-        addw sp,#VSIZE 
-	ret 
-.ENDIF 
+        _ldyz  SEEDY 
+        LD   A,#7 
+1$:
+        SLLW  Y 
+        DEC A 
+        JRNE 1$
+        CALL  XORW_Y
+        _stryz SEEDY 
+        LD A,#9 
+2$:     SRLW Y 
+        DEC A 
+        JRNE 2$ 
+        CALL XORW_Y
+        _stryz SEEDY 
+        LD A,#8 
+3$:     SLLW Y 
+        DEC A 
+        JRNE 3$ 
+        CALL XORW_Y 
+        _stryz SEEDY 
+        LDW Y,X 
+        LDW Y,(Y)
+        PUSHW X 
+        _ldxz SEEDY 
+        DIVW X,Y 
+        POPW X 
+        LDW (X),Y 
+        RET  
 
+;----------------------------
+;  XOR Y WITH SEEDY 
+;----------------------------
+XORW_Y: 
+        LD A,YL 
+        XOR A,SEEDY+1 
+        LD YL,A 
+        LD A,YH 
+        XOR A,SEEDY 
+        LD  YH,A 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; MSEC ( -- u )
@@ -1433,6 +1412,7 @@ MSTA1:	RET
         CALL	SSMOD
         CALL	SWAPP
         JP	DROP
+
 
 ;; Miscellaneous
 
