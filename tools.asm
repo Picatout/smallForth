@@ -18,7 +18,9 @@
         JREQ 2$ 
         CALL CELLP 
         JRA 1$ 
-2$:	POP A 
+2$:	POP A
+        LDW Y,LASTN 
+        CALL RSTVEC 
         JP reboot 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -344,15 +346,16 @@ SEE9:
         _HEADER RDOT,2,"R."
         CALL CR
         CALL RPAT
-        CALL ONEP
         CALL CELLP
-        _DOLIT RAM_END-1  
+        _DOLIT RAM_END   
 1$:
         CALL DDUP 
-        CALL GREAT    
+        CALL EQUAL     
         CALL TBRAN 
         .WORD 9$ 
-        CALL DUPP 
+        CALL DUPP
+        CALL ONEM
+
         CALL AT 
         CALL HDOT
         CALL CELLM   

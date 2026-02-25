@@ -30,10 +30,7 @@
 ;--------------------------------------------------------------
 	.module SMALLFORTH
          .optsdcc -mstm8
-	.nlist
         .include "inc/config.inc"
-	.list
-	.page
 
 ;===============================================================
 ;  Adaption to NUCLEO-8S208RB by Picatout
@@ -246,7 +243,7 @@ UEND:   .word      0
 ; ( ca na -- )        
 ;reset ivec with address >= ca
         call SWAPP ; ( -- na ca ) 
-        call CHKIVEC ; ( -- na )
+        call RSTVEC ; ( -- na )
 ; reset UCP, CNTXT and LAST to word before this one 
         CALL DUPP  ; na na 
         CALL CELLM ; na link  
@@ -3392,191 +3389,6 @@ DOCONST:
         popw y  
         jp (2,y)
 
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;          TOOLS 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       _TYPE   ( b u -- )
-;       Display a string. Filter
-;       non-printing characters.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER UTYPE,5,"_TYPE"
-UTYPE: 
-        LDW     Y,X 
-        LDW     Y,(2,Y)
-1$:
-        LD      A,(1,X)
-        JREQ    9$ 
-        LD      A,(Y)
-        CP      A,#SPC 
-        JRMI    2$ 
-        CP      A,#127 
-        JRMI    3$
-2$:     LD      A,#SPC 
-3$:     CALL    putc 
-        INCW    Y 
-        DEC     (1,X)
-        JRA     1$ 
-9$:     JP      DDROP 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       dm+     ( a u -- a )
-;       Dump u bytes from ,
-;       leaving a+u on  stack.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER DUMPP,3,"DM+"
-DUMPP: 
-        CALL     OVER
-        CALL     DOLIT
-        .word      4
-        CALL     UDOTR   ;display address
-        CALL     SPACE
-        CALL     TOR     ;start count down loop
-        JRA     PDUM2   ;skip first pass
-PDUM1:  CALL     DUPP
-        CALL     CAT
-        CALL     SPACE
-        LD       A,(1,X)
-        CALL     PRT_HEX_BYTE 
-        ADDW     X,#CELLL        
-        CALL     ONEP    ;increment address
-PDUM2:  CALL     DONXT
-        .word    PDUM1   ;loop till done
-        RET
-
-;----------------------------
-; print byte in hexadecimal  
-; 2 characters wide
-; input:
-;    A   byte to print 
-;----------------------------
-PRT_HEX_BYTE:
-        PUSH    A 
-        SWAP    A 
-        CALL    PRT_DIGIT 
-        POP     A
-PRT_DIGIT:
-        AND      A,#0XF 
-        ADD      A,#'0
-        CP       A,#'9+1
-        JRMI     1$ 
-        ADD      A,#7 
-1$:     CALL     putc 
-        RET 
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       DUMP    ( a u -- )
-;       Dump u bytes from a,
-;       in a formatted manner.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DUMP,4,"DUMP"
-        CALL     BASE
-        CALL     AT
-        CALL     TOR
-        CALL     HEX     ;save radix, set hex
-        CALL     DOLIT
-        .word      16
-        CALL     SLASH   ;change count to lines
-        CALL     TOR     ;start count down loop
-DUMP1:  CALL     CR
-        CALL     DOLIT
-        .word      16
-        CALL     DDUP
-        CALL     DUMPP   ;display numeric
-        CALL     ROT
-        CALL     ROT
-        CALL     SPACE
-        CALL     SPACE
-        CALL     UTYPE   ;display printable characters
-        CALL     DONXT
-        .word      DUMP1   ;loop till done
-DUMP3:  _DROP
-        CALL     RFROM
-        CALL     BASE
-        JP     STORE   ;restore radix
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       .S      ( ... -- ... )
-;        Display  contents of stack.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DOTS,2,".S"
-        CALL     CR
-        CALL     DEPTH   ;stack depth
-        CALL     TOR     ;start count down loop
-        JRA     DOTS2   ;skip first pass
-DOTS1:  CALL     RAT
-	CALL     PICK
-        CALL     DOT     ;index stack, display contents
-DOTS2:  CALL     DONXT
-        .word      DOTS1   ;loop till done
-        CALL     DOTQP
-        .byte      5
-        .ascii     " <sp "
-        RET
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       >NAME   ( ca -- na | F )
-;       Convert code address
-;       to a name address.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TNAME,5,">NAME"
-        CALL     CNTXT   ;vocabulary link
-TNAM2:  CALL     AT
-        CALL     DUPP    ;?last word in a vocabulary
-        CALL     QBRAN
-        .word      TNAM4
-        CALL     DDUP
-        CALL     NAMET
-        CALL     XORR    ;compare
-        CALL     QBRAN
-        .word      TNAM3
-        CALL     CELLM   ;continue with next word
-        JRA     TNAM2
-TNAM3:  CALL     SWAPP
-        JP     DROP
-TNAM4:  CALL     DDROP
-        JP     ZERO 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       WORDS   ( -- )
-;       Display names in vocabulary.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER WORDS,5,"WORDS"
-NA=1 ; name field
-LLEN=3 ; line length
-SLEN=4 ; string length 
-VSIZE=4   
-        SUB     SP,#VSIZE
-        LDW     Y,UCNTXT 
-0$: 
-        CLR     (LLEN,SP)  
-        CALL    CR  
-1$:     LDW     (NA,SP),Y 
-        LD      A,(Y)
-        AND     A,#0X1F
-        LD      (SLEN,SP),A 
-        INC     A 
-        ADD     A,(LLEN,SP) 
-        CP      A,#78 
-        JRPL    0$
-        LD      (LLEN,SP),A   
-        INCW    Y  
-        LD      A,(SLEN,SP)
-        CALL    prt_cstr
-        LD      A,#SPC 
-        CALL    putc  
-        LDW     Y,(NA,SP)
-        SUBW    Y,#2
-        LDW     Y,(Y)
-        JRNE     1$
-        ADDW     SP,#VSIZE 
-        RET  
-.ENDIF         
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    PRINT_VERSION ( c1 c2 -- )
 ;    c2 minor 
@@ -3689,6 +3501,17 @@ COLD9:
         JP       QUIT    ;start interpretation
 
 
+        .include "flash.asm"
+	.include "bios.asm"
+	.include "tools.asm"
+
+.if WANT_DOUBLE 
+        .include "double.asm" 
+.endif 
+
+.if WANT_SCALING_CONST 
+        .include "const_ratio.asm"
+.endif
 
 ;===============================================================
 

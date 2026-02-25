@@ -331,70 +331,38 @@ VSIZE=6 ; local variables space on stack
 10$:
 	ret 
 
-.IF 0
-;-----------------------------
-;   RESET ( -- )
-; reset system to original 
-; state removing all user 
-; modification.
-;-----------------------------
-	_HEADER SYS_RST,5,"RESET"
-	call unlock_iap 
-	ldw y,#EEPROM_BASE  
-1$:	bset FLASH_CR2,#FLASH_CR2_WPRG
-	clr (y)
-	clr (1,y)
-	clr (2,y)
-	clr (3,y)
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	addw y,#4
-	cpw y,#EEPROM+EEPROM_RES 
-	jrmi 1$ 
-	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
-	_DOLIT #app_space
-	CALL CHKIVEC 
-	JP reboot 
-.ENDIF 
 
 ;------------------------------
-; CHKIVEC ( ca -- )
+; RST-VEC ( ca -- )
 ; all interrupt vector with 
 ; an address >= a are resetted 
 ; to default
 ;------------------------------
 VECTOR_SIZE=4 
-CHKIVEC:
-	call unlock_iap 
-	ldw y,x 
-	ldw y,(y)
-	_stryz UTMP
-	addw x,#CELLL ; drop a 
-	pushw x 
-	ldw x,#0x8000 ; vector table address 
-1$: 
-	addw x,#VECTOR_SIZE  ; next vector 
-    cpw x,#VECTOR_USART1_RX ; protected 
-	jreq 1$ 
-	cpw x,#VECTOR_TIM4 ; protected 
-	jreq 1$  
-	cpw x,#0x8080 ; all vectors done 
-	jreq 9$  ; done 
-	ldw y,x   
-	ldw y,(2,y) ; handler address 
-	cpw y,UTMP  ; bound address 
-	jrmi 1$ 
-	ldw  y,#NotHandledInterrupt
-	cpw y,(2,x)
-	jreq 1$ ; already default handler 
-; set vector to default handler 
-	ld a,yh 
-	ld (2,x),a 
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	ld a,yl 
-	ld (3,x),a 
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
-	jra 1$
-9$: popw x 
-	_lock_iap 
-	ret 
+RSTVEC:
+	CALL TOR       ; R: ca 
+	_DOLIT 0x8008  ; INT 0 
+1$: ; S: va  R: ca 
+	CALL DUPP  ; va va 
+	CALL CELLP 
+	CALL AT    ; va ia 
+	CALL RAT   ; va ia ca 
+	CALL ULESS 
+	CALL TBRAN 
+	.WORD 2$   ; keep this one 
+; reset this vector -- va 
+	_DOLIT NotHandledInterrupt
+	CALL OVER   ; va a va 
+	CALL CELLP 
+	CALL FSTOR 
+2$:  ; -- va  R: ca 
+	_DOLIT VECTOR_SIZE  
+	CALL  PLUS  ; va + 4 
+	CALL DUPP   ; va va 
+	_DOLIT 0x8080 ; va va 0x8080 
+	CALL ULESS   
+	CALL TBRAN 
+	.WORD 1$ 
+	CALL RFROM    ; va ca 
+	_DDROP        
+	RET 
