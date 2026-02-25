@@ -1,0 +1,4 @@
+connect.sh
+build/*.lk
+build/*.lst 
+build/*.map
