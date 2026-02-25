@@ -1,0 +1,65 @@
+ASxxxx Linker V03.00/V05.40 + sdld,  page 1.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+.  .ABS.                            00000000    00000000 =           0. bytes (ABS,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+     00000000  .__.ABS.                           SMALLFORTH
+     00000000  l_DATA                          
+     00000000  l_DATA0                         
+     00000000  l_SSEG                          
+     00000000  l__CODE                         
+     00000000  s_DATA0                         
+     00000000  s_SSEG                          
+     00000000  s_SSEG1                         
+     00000000  s__CODE                         
+     00000001  s_DATA                          
+     00000150  l_SSEG1                         
+     0000028A  l_HOME                          
+     00001988  l_CODE                          
+     00008000  s_HOME                          
+     0000828A  s_CODE                          
+ASxxxx Linker V03.00/V05.40 + sdld,  page 2.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+HOME                                00008000    0000028A =         650. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00/V05.40 + sdld,  page 3.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+SSEG1                               00000000    00000150 =         336. bytes (ABS,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00/V05.40 + sdld,  page 4.
+Hexadecimal  [32-Bits]
+
+Area                                    Addr        Size        Decimal Bytes (Attributes)
+--------------------------------        ----        ----        ------- ----- ------------
+CODE                                0000828A    00001988 =        6536. bytes (REL,CON)
+
+      Value  Global                              Global Defined In Module
+      -----  --------------------------------   ------------------------
+ASxxxx Linker V03.00/V05.40 + sdld,  page 5.
+
+Files Linked                              [ module(s) ]
+
+build/stm8l151k6/smallForth.rel           [ SMALLFORTH ]
+
+ASxxxx Linker V03.00/V05.40 + sdld,  page 6.
+
+User Base Address Definitions
+
+HOME = 0x8000
+DATA = 0x0001
+
+
