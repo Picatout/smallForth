@@ -1,5 +1,6 @@
 connect.sh
 build/stm8l151k6/*.lk
 build/stm8l151k6/*.lst
-build/stm8l151k6/*.mapbuild/stm8l151k6/*.rel
+build/stm8l151k6/*.map
+build/stm8l151k6/*.rel
 build/stm8l151k6/*.rst
