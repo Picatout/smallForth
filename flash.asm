@@ -1,1019 +1,400 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Copyright Jacques Deschênes 2019,2020,2021 
-;; This file is part of stm32_eforth  
-;;
-;;     stm8_eforth is free software: you can redistribute it and/or modify
-;;     it under the terms of the GNU General Public License as published by
-;;     the Free Software Foundation, either version 3 of the License, or
-;;     (at your option) any later version.
-;;
-;;     stm32_eforth is distributed in the hope that it will be useful,
-;;     but WITHOUT ANY WARRANTY;; without even the implied warranty of
-;;     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;;     GNU General Public License for more details.
-;;
-;;     You should have received a copy of the GNU General Public License
-;;     along with stm32_eforth.  If not, see <http:;;www.gnu.org/licenses/>.
-;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;
+; flash and 
+; eeprom programming 
+;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  routines to write to FLASH, EEPROM 
-;  and OPTION 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-;--------------------------------
-; initialize PTRH 
-; P!  ( u -- )
-;---------------------------------
-    .word LINK 
-    LINK=.
-    .byte 2 
-    .ascii "P!"
-PTRSTOR:
-    ldw y,x
-    ldw y,(y)
-    _stryz PTRH 
-    addw x,#CELLL 
-    ret 
-
-;-----------------------------------
-; return EEPROM base address 
-; as a double 
-;  EEPROM  ( -- u )
-;-----------------------------------
-    .word LINK 
-	LINK=.
-    .byte 6 
-    .ascii "EEPROM"
-EEPROM: 
-    ldw y,#EEPROM_BASE
-    subw x,#CELLL 
-    ldw (x),y 
-    ret
+;-----------------------------------------
+;  FD! ( d a -- )
+;  store a double in FLASH || eeprom
+;  'a' must be aligned on 32 bits boundary  
+;-----------------------------------------
+       _HEADER FDSTOR,3,"FD!"
+       call unlock_iap  
+1$:    bset FLASH_CR2,#FLASH_CR2_WPRG
+       ldw y,x 
+       ldw y,(y) ; write address 
+       addw x,#CELLL 
+       ld a,(x)
+       ld (y),a 
+       ld a,(1,x)
+       ld (1,y),a 
+       ld a,(2,x)
+       ld (2,y),a 
+       ld a,(3,x)
+       ld (3,y),a 
+       btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
+       addw x,#2*CELLL ; drop double 
+       _lock_iap 
+	   ret  
 
 ;---------------------------------
-; return APP_LAST pointer
-; EEP-LAST ( -- u )
-;---------------------------------
-	.word LINK 
-	LINK=.
-	.byte 8 
-	.ascii "EEP-LAST"
-EEPLAST:
-	subw x,#CELLL 
-	ldw y,#APP_LAST 
-	ldw (x),y 
-	ret 
-
+;   F!  ( w a -- )
+;   store word in FLASH
+;  IAP must be unlocked 
 ;----------------------------------
-; return APP_RUN pointer
-; EEP-RUN ( -- u )
-;-----------------------------------
-	.word LINK 
-	LINK=.
-	.byte 7
-	.ascii "EEP-RUN"
-EEPRUN:
-	subw x,#CELLL 
-	ldw y,#APP_RUN 
-	ldw (x),y 
-	ret 
-
-;------------------------------------
-; return APP_CP pointer 
-; EEP-CP ( -- u )
-;------------------------------------
-	.word LINK
-	LINK=.
-	.byte 6 
-	.ascii "EEP-CP"
-EEPCP:
-	subw x,#CELLL 
-	ldw y,#APP_CP  
-	ldw (x),y 
-	ret 
-
-;------------------------------------
-; return APP_VP pointer 
-; EEP-VP ( -- ud )
-;-------------------------------------
-	.word LINK
-	LINK=.
-	.byte 6
-	.ascii "EEP-VP"
-EEPVP:
-	subw x,#CELLL 
-	ldw y,#APP_VP  
-	ldw (x),y 
-	ret 
-
-;----------------------------------
-; update APP_LAST with LAST 
-; UPDAT-LAST ( -- )
-;----------------------------------
-	.word LINK 
-	LINK=.
-	.byte 10
-	.ascii "UPDAT-LAST"
-UPDATLAST:
-	call LAST
-	call AT  
-	call EEPLAST
-	jp EESTORE 
-
-;---------------------------------
-; update APP_RUN 
-; UPDAT-RUN ( a -- )
-;---------------------------------
-	.word LINK
-	LINK=.
-	.byte 9
-	.ascii "UPDAT-RUN"
-UPDATRUN:
-	call EEPRUN
-	jp EESTORE 
-	
-;---------------------------------
-; update APP_CP with CP 
-; UPDAT-CP ( -- )
-;---------------------------------
-	.word LINK 
-	LINK=.
-	.byte 8 
-	.ascii "UPDAT-CP"
-UPDATCP:
-	call CPP 
-	call AT 
-	call EEPCP 
-	jp EESTORE 
-
-;----------------------------------
-; update APP_VP with VP 
-; UPDAT-VP ( -- )
-;----------------------------------
-	.word LINK
-	LINK=.
-	.byte 8 
-	.ascii "UPDAT-VP" 
-UPDATVP:
-	call VPP 
-	call AT
-	call EEPVP 
-	jp EESTORE
-	
-;----------------------------------
-; UNLOCK EEPROM/OPT for writing/erasing
-; wait endlessly for FLASH_IAPSR_DUL bit.
-;  UNLKEE   ( -- )
-;----------------------------------
-    .word LINK 
-LINK=.
-    .byte 6 
-    .ascii "UNLKEE"
-UNLKEE:
-;	mov FLASH_CR2,#0 
-;	mov FLASH_NCR2,#0xFF 
-	mov FLASH_DUKR,#FLASH_DUKR_KEY1
-    mov FLASH_DUKR,#FLASH_DUKR_KEY2
-	btjf FLASH_IAPSR,#FLASH_IAPSR_DUL,.
-	ret
-
-;----------------------------------
-; UNLOCK FLASH for writing/erasing
-; wait endlessly for FLASH_IAPSR_PUL bit.
-; UNLKFL  ( -- )
-;----------------------------------
-    .word LINK 
-LINK=. 
-    .byte 6 
-    .ascii "UNLKFL"    
-UNLKFL:
-;	mov FLASH_CR2,#0 
-;	mov FLASH_NCR2,#0xFF 
-	mov FLASH_PUKR,#FLASH_PUKR_KEY1
-	mov FLASH_PUKR,#FLASH_PUKR_KEY2
-	btjf FLASH_IAPSR,#FLASH_IAPSR_PUL,.
-	ret
-
-;-----------------------------
-; UNLOCK FLASH or EEPROM 
-; according to PTRH address 
-;  UNLOCK ( -- )
-;-----------------------------
-	.word LINK 
-	LINK=.
-	.byte 6
-	.ascii "UNLOCK"
-UNLOCK:
-; put addr[15:0] in Y, for bounds check.
-	ldw y,PTRH   ; Y=addr15:0
-; check addr[23:16], if <> 0 then it is extened flash memory
-	tnz PTRH 
-	jrne 4$
-    cpw y,#FLASH_BASE
-    jruge 4$
-	cpw y,#EEPROM_BASE  
-    jrult 9$
-	cpw y,#OPTION_END 
-	jrugt 9$
-	call UNLKEE
-	ret 
-4$: call UNLKFL
-9$: ret 
-
-;-------------------------
-; LOCK write access to 
-; FLASH and EEPROM 
-; LOCK ( -- )
-;-------------------------
-	.word LINK 
-	LINK=.
-	.byte 4 
-	.ascii "LOCK" 
-LOCK: 
-	bres FLASH_IAPSR,#FLASH_IAPSR_PUL
-	bres FLASH_IAPSR,#FLASH_IAPSR_DUL
-	ret 
-
-;-------------------------
-; increment PTR 
-; INC-PTR ( -- )
-;-------------------------
-	.word LINK 
-	LINK=. 
-	.byte 8 
-	.ascii "INC-PTR" 
-INC_PTR:
-	_ldyz PTRH 
-	incw y 
-	_stryz PTRH 
-    ret 
-
-;------------------------------
-; add u to PTR 
-; PTR+ ( u -- )
-;------------------------------
-	.word LINK 
-	LINK=.
-	.byte 4 
-	.ascii "PTR+"
-PTRPLUS:
-	ldw y,x 
-	addw x,#CELLL
-	ldw y,(y) 
-	addw y,PTRH  
-	_stryz PTRH   
-1$: ret 
-
-;----------------------------
-; write a byte at address pointed 
-; by PTR and increment PTR.
-; Expect pointer already initialized 
-; and memory unlocked 
-; WR-BYTE ( c -- )
-;----------------------------
-	.word LINK 
-	LINK=. 
-	.byte 7 
-	.ascii "WR-BYTE" 
-WR_BYTE:
-	ld a,(1,x)
-	addw x,#CELLL 
-	ld [PTRH],a
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	jp INC_PTR 
-
-;---------------------------------------
-; write a word at address pointed 
-; by PTRH and increment PTRH 
-; Expect pointer already initialzed 
-; and memory unlocked 
-; WR-WORD ( w -- )
-;---------------------------------------
-	.word LINK 
-	LINK=.
-	.byte 7 
-	.ascii "WR-WORD" 
-WR_WORD:
-	ldw y,x
-	ldw y,(y)
-	addw x,#CELLL 
-	ld a,yh 
-	ld [PTRH],a
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	call INC_PTR 
-	ld a,yl 
-	ld [PTRH],a
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	jp INC_PTR 
-
-;---------------------------------------
-; write a byte to FLASH or EEPROM/OPTION  
-; EEC!  (c u -- )
-;---------------------------------------
-    .word LINK 
-	LINK=.
-    .byte 4 
-    .ascii "EEC!"
-	; local variables 
-	BTW = 1   ; byte to write offset on stack
-    OPT = 2 
-	VSIZE = 2
-EECSTORE:
-	sub sp,#VSIZE
-    call PTRSTOR
-	ld a,(1,x)
-	cpl a 
-	ld (BTW,sp),a ; byte to write 
-	clr (OPT,sp)  ; OPTION flag
-	call UNLOCK 
-	; check if option
-	tnz PTRH 
-	jrne 2$
-	ldw y,PTRH 
-	cpw y,#OPTION_BASE
-	jrmi 2$
-	cpw y,#OPTION_END+1
-	jrpl 2$
-	cpl (OPT,sp)
-	; OPTION WRITE require this UNLOCK 
-    bset FLASH_CR2,#FLASH_CR2_OPT
-;    bres FLASH_NCR2,#FLASH_CR2_OPT 
-2$: 
-	call WR_BYTE 	
-	tnz (OPT,sp)
-	jreq 3$ 
-    ld a,(BTW,sp)
-    clrw y
-	ld yl,a 
-	subw x,#CELLL 
-	ldw (x),y 
-	call WR_BYTE
-3$: 
-	call LOCK 
-	addw sp,#VSIZE 
-    ret
-
-;------------------------------
-; write integer in FLASH|EEPROM
-; EE! ( n u -- )
-;------------------------------
-	.word LINK 
-	LINK=.
-	.byte 3 
-	.ascii "EE!"
-EESTORE:
-	call PTRSTOR 
-	call UNLOCK 
+	_HEADER FSTOR,2,"F!"
+	call unlock_iap 
 	ldw y,x 
 	ldw y,(y)
-	pushw y 
-	swapw y 
-	ldw (x),y 
-	call WR_BYTE 
-	popw y 
-	subw x,#CELLL
-	ldw (x),y 
-	call WR_BYTE
-	jp LOCK 
-
-
-;----------------------------
-; Erase flash memory row 
-; stm8l151k6 as 128 bytes rows
-; ROW-ERASE ( u -- )
-;----------------------------
-	.word LINK 
-	LINK=. 
-	.byte 9 
-	.ascii "ROW-ERASE" 
-row_erase:
-	call PTRSTOR
-;code must be execute from RAM 
-;copy routine to PAD 
-	subw x,#CELLL 
-	ldw y,#row_erase_proc
-	ldw (x),y 
-	call PAD 
-	ldw y,#row_erase_proc_end 
-	subw y,#row_erase_proc
-	subw x,#CELLL 
-	ldw (x),y 
-	call CMOVE 
-block_erase:
-	ldw y,PTRH
-	cpw y,#app_space 
-	jrpl erase_flash 
-; erase EEPROM block
-	cpw y,#EEPROM_BASE 
-	jruge 1$
-	ret ; bad address 
-1$: cpw y,#EEPROM_END 
-	jrule 2$ 
-	ret ; bad address 
-2$:	
-	call UNLKEE 
-	jra proceed_erase
-; erase flash block:
-erase_flash:
-	call UNLKFL 
-proceed_erase:
-	call PAD 
-	ldw y,x
-	ldw y,(y)
-	addw x,#CELLL  
-	call (y) 
-	bres FLASH_IAPSR,#FLASH_IAPSR_DUL
-	ret 
-
-; this routine is to be copied to PAD 
-row_erase_proc:
-	mov FLASH_CR2,#(1<<FLASH_CR2_ERASE) 
-;	mov FLASH_NCR2,#~(1<<FLASH_CR2_ERASE)
-	clr a 
-	clrw y 
-	ld ([PTRH],y),a
-    incw y
-	ld ([PTRH],y),a
-    incw y
-	ld ([PTRH],y),a
-    incw y
-	ld ([PTRH],y),a
-	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
-	ret
-row_erase_proc_end:
-
-;-----------------------------------
-; block programming must be 
-; executed from RAM 
-; initial contidions: 
-; 		memory unlocked
-;       PTRH initialized 
-; input: 
-;    x   buffer address 
-;-----------------------------------
-	BCNT=1 
-copy_buffer:
-	push #BLOCK_SIZE  
-;enable block programming 
-	bset FLASH_CR2,#FLASH_CR2_PRG 
-;	bres FLASH_NCR2,#FLASH_CR2_PRG
-	clrw y
-1$:	ld a,(x)
-	ld ([PTRH],y),a
-	incw x 
-	incw y 
-	dec (BCNT,sp)
-	jrne 1$
-; wait EOP bit 
+	ld a,(2,x)
+	ld (y),a
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.  
+	ld a,(3,x)
+	ld (1,y),a 
 	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
-	pop a ; remove BCNT from stack 
-	ret 
-copy_buffer_end:
-
-;-------------------------
-; move program_row to RAM 
-; in TIB 
-;------------------------
-copy_prog_to_ram:
-	subw x,#6
-	ldw y,#copy_buffer 
-	ldw (4,x),y 
-	ldw y,#TIBBASE
-	ldw (2,x),y 
-	ldw y,#copy_buffer_end 
-	subw y,#copy_buffer  
-	ldw (x),y 
-	call CMOVE 
+	addw x,#2*CELLL 
+	_lock_iap 
 	ret 
 
-
-;-----------------------------
-; write a row in FLASH/EEPROM 
-; WR-ROW ( a u -- )
-; a -> address 128 byte buffer to write 
-; u ->  row address in FLASH|EEPROM 
-;-----------------------------
-	.word LINK 
-	LINK=.
-	.byte 6 
-	.ascii "WR-ROW"
-write_row:
-	call PTRSTOR
-; align to FLASH block 
-	ld a,#0x80 
-	and a,PTRL 
-	ld PTRL,a  
-	call copy_prog_to_ram
-	call UNLOCK
+;---------------------------------
+;  FC! ( b a -- )
+; write byte to FLASH 
+;---------------------------------	 
+	_HEADER FCSTOR,3,"FC!"
+	call unlock_iap  
 	ldw y,x 
 	ldw y,(y)
-	addw x,#CELLL 
-	pushw x 
-	ldw x,y ; buffer address in x 
-	call TIBBASE
-	call LOCK
-	popw x 
+	ld a,(3,x)
+	ld (y),a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	addw x,#2*CELLL 
+	_lock_iap 
 	ret 
 
-;-------------------------------------
-; change value of OPTION register 
-; SET-OPT (c n -- ) 
-; c new value.
-; n OPT  number {1..7}
-;--------------------------------------
-		.word LINK 
-		LINK=.
-		.byte 7 
-		.ascii "SET-OPT" 
-set_option: 
+.IF 0 ;**************************
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; ERASE   ( n -- )
+; Erase EEPROM, FLASH memory BLOCK 
+; if 1 <= n < 7  erase EEPROM block 
+; if 64 <= n < 256 erase FLASH block 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER ERASE,5,"ERASE"
 		ldw y,x 
 		ldw y,(y)
-		jreq 1$
-		cpw y,#7 
-		jrule 2$ 
-; invalid OPTION number 		
-1$:		addw x,#2*CELLL
-		ret
-2$:		sllw y 
-		addw y,#OPTION_BASE-1
-		ldw (x),y 
-		subw x,#CELLL 
-		clrw y 
-		ldw (x),y 
-		call EECSTORE
-		ret 
+		_DROP
+		ld  a,#FLASH_BLOCK 
+		mul y,a  
+		cpw y,#8*FLASH_BLOCK  
+		jrmi 1$  
+		addw y,#FLASH_BASE
+		cpw y,#app_space
+		jrmi 9$ ; protected   
+		jra 2$
+1$:     addw y,#EEPROM_BASE  
+		cpw y,#128 
+		jrmi 9$ ; EEROM block zero protected 
+2$:     
+		call unlock_iap 
+		bset FLASH_CR2,#FLASH_CR2_ERASE
+		clr (y)
+		clr (1,y)
+		clr (2,y)
+		clr (3,y)
+		btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,. 
+		_lock_iap 
+9$:		
+		RET 
 
-.if STM8L151K6
-clear_l151k6_opt:
-	
-	ret 
-.endif 
+.ENDIF ;**************************
 
-;--------------------------------------
-; reset system to its original state 
-; before any user modification
-; PRISTINE ( -- )
+.IF 0 ;****************************
+
+;-------------------------
+;  EE! ( w a -- )
+;  store w in EEPROM 
+;-------------------------
+	_HEADER EESTOR,3,"EE!"
+	btjf FLASH_IAPSR,#FLASH_IAPSR_DUL,iap_locked 
+	jra write_word 
+
+;------------------------
+; EEC! ( b a -- )
+;------------------------
+	_HEADER EECSTOR,4,"EEC!"
+	btjf FLASH_IAPSR,#FLASH_IAPSR_DUL,iap_locked 
+	jra write_byte 
+
+;-----------------------------------
+; can't write to FLASH or EEPROM 
+; In Application Programming locked 
+;----------------------------------
+iap_locked:
+        call ABORQ
+        .byte 19
+        .ascii " failed! IAP locked"
+
+.ENDIF ;***********************
+
+;-----------------------------------
+;  EEPROM  ( -- u )
+; return EEPROM base address 
+;-----------------------------------
+	_HEADER EEPROM,6,"EEPROM"
+    ldw y,#EEPROM_BASE
+    JP	DPUSH 
+
+;---------------------------------
+; EEP-CNTXT ( -- u )
+; return EEP_CNTXT pointer
+;---------------------------------
+;	_HEADER EEPCNTXT,9,"EEP-CNTXT"
+EEPCNTXT:
+	ldw y,#EEP_CNTXT  
+	JP	DPUSH 
+
+;----------------------------------
+; EEP-RUN ( -- u )
+; return EEP_RUN pointer
+;-----------------------------------
+;	_HEADER EEPRUN,7,"EEP-RUN"
+EEPRUN:
+	ldw y,#EEP_RUN 
+	JP	DPUSH 
+
+;------------------------------------
+; EEP-CP ( -- u )
+; return EEP_CP pointer 
+;------------------------------------
+;	_HEADER EEPCP,6,"EEP-CP"
+EEPCP:
+	ldw y,#EEP_CP  
+	JP	DPUSH 
+
+;------------------------------------
+; EEP-VP ( -- u )
+; return EEP_VP pointer 
 ;-------------------------------------
-	.word LINK  
-	LINK=.
-	.byte 8 
-	.ascii "PRISTINE"
-pristine:
-;;; erase EEPROM
-	call EEPROM 
-1$:	call DUPP  
-	call row_erase
-	ldw y,x 
-	ldw y,(y)
-	addw y,#BLOCK_SIZE
-	ldw (x),y
-	cpw y,#EEPROM_END 
-	jrult 1$
-	addw x,#CELLL 
-;;; reset OPTION to default values
-.if STM8L151K6
-	callr clear_l151k6_opt
-.endif 
-;;; erase first row of app_space 		
-	subw x,#CELLL 
-	ldw y,#app_space
-	ldw (x),y  
-	call row_erase 
-; reset interrupt vectors 0..29 for stm8l151k6  
-	subw x,#CELLL 
-	clrw y  
-4$:	ldw (x),y  ; ( n -- ) int# 
-	call DUPP  
-	call reset_vector
-	ldw y,x 
-	ldw y,(y)
-	incw y   ; next vector 
-	cpw y,#30
-	jrult 4$
-	jp NonHandledInterrupt ; reset MCU
-
-;------------------------------
-; reset an interrupt vector 
-; to its initial value 
-; i.e. NonHandledInterrupt
-; RST-IVEC ( n -- )
-;-----------------------------
-	.word LINK 
-	LINK=. 
-	.byte 8 
-	.ascii "RST-IVEC"
-reset_vector:
-	ldw y,x
-	addw x,#CELLL 
-	ldw y,(y)
-	cpw y,#25 ; timer4 preserved 
-	jreq 9$
-	cpw y,#27 ; usart1 rx preserved 
+;	_HEADER EEPVP,6,"EEP-VP"
+EEPVP:
+	ldw y,#EEP_VP  
+	JP	DPUSH 
+	
+;---------------------------------
+; UPDAT-RUN ( a -- )
+; update EEP_RUN 
+; store autorun code address in 
+; EEPROM 
+;---------------------------------
+;	_HEADER UPDATRUN,9,"UPDAT-RUN"
+UPDATRUN: 
+	ldw y, EEP_RUN
+	cpw y,(x)
 	jreq 9$ 
-	cpw y,#29 ; last vector
-	jrugt 9$  
-	sllw y 
-	sllw y 
-	addw y,#0x8008 ; irq0 address 
-	ldw YTEMP,y
-	subw x,#2*CELLL 
-	ldw (x),y 
-	ldw y,#0x8200 
-	ldw (2,x),y
-	call EESTORE
-	subw x,#2*CELLL
-	ldw y,YTEMP 
-	addw y,#2 
-	ldw (x),y
-	ldw y,#NonHandledInterrupt
-	ldw (2,x),y 
-	call EESTORE
-9$:	ret 
+	call EEPRUN ; ( adr ee_adr -- )
+	call FSTOR  
+9$:	 
+	ret 
 
+;----------------------------------
+; UPDAT-CNTXT ( -- )
+; update EEP_CNTXT with UCNTXT 
+; store link address of dictionary head 
+; in EEPROM. 
+;----------------------------------
+;	_HEADER UPDATCNTXT,11,"UPDAT-CNTXT"
+UPDATCNTXT:
+	_ldyz UCNTXT 
+	cpw y,EEP_CNTXT 
+	jreq 9$ 
+	call CNTXT 
+	call AT      ; ( adr -- )
+	call EEPCNTXT ; ( adr ee_adr -- )
+	jp FSTOR 
+9$: ret 
+
+;---------------------------------
+; UPDAT-CP ( -- )
+; update EEP_CP with CP 
+; store top FLASH address 
+; in EEPROM 
+;---------------------------------
+;	_HEADER UPDATCP,8,"UPDAT-CP"
+UPDATCP:
+	_ldyz UCP 
+	cpw y,EEP_CP
+	jreq 9$
+	call CPP 
+	call AT     ; ( adr -- )
+	call EEPCP  ; ( adr ee_adr -- )
+	jp FSTOR 
+9$: ret 
+
+;----------------------------------
+; UPDAT-VP ( -- )
+; update EEP_VP  
+; store top variables address
+; in EEPROM 
+;----------------------------------
+;	_HEADER UPDATVP,8,"UPDAT-VP"
+UPDATVP:
+	_ldyz UVP 
+	cpw y,#EEP_VP 
+	jreq 9$ 
+	call HERE    
+	call EEPVP  ; ( adr ee_adr -- )
+	jp FSTOR
+9$: ret 
+
+;---------------------------------
+;  UPDAT-EEPTR ( -- )
+;  update system pointers saved 
+;  in EEPROM 
+;----------------------------------
+	_HEADER UPDATPTR,11,"UPDAT-EEPTR"
+	call UPDATCNTXT 
+	call UPDATCP 
+	call UPDATVP 
+	ret 
+
+;----------------------------
+;  FCPY ( src dest cnt -- )
+;  copies 'cnt' bytes to 
+;  FLASH || EEPROM
+;----------------------------
+SRC=1  ; source address 
+DEST=3  ; destination address 
+CNT=5  ; bytes count
+VSIZE=6 ; local variables space on stack  
+	_HEADER FCPY,4,"FCPY"
+	ldw y,x
+	ldw y,(y) ; CNT 
+	jrne 0$
+; CNT==0 drop and leave 
+	addw x,#3*CELLL 
+	jp 10$ 
+0$: ; push arguments on R: SRC DEST CNT  
+	pushw y ; R: CNT  
+	ldw y,x 
+	ldw y,(2,y)
+	pushw y  ; R: CNT DEST 
+	ldw y,x 
+	ldw y,(4,y) 
+	pushw y ; R: CNT DEST SRC
+	addw x,#3*CELLL ; drop parameters now on R:   
+1$: ; copy loop 
+	ldw Y, (CNT,sp)
+	jreq 9$  ; nothing left, done 
+	cpw y,#4
+	jrmi 3$ 
+; CNT>=4 
+	ld a,(DEST+1,SP)
+	and a,#3 
+	jrne 3$
+	subw x,#3*CELLL 
+; push a double from SRC 
+	ldw y,(SRC,SP) ; addr 
+	ldw y,(y) ; high word  
+	ldw (2,x),y 
+	ldw y,(SRC,SP)
+	ldw y,(2,Y) ; low word 
+	ldw (4,x),y
+; push DEST 	
+	ldw y,(DEST,sp)
+	ldw (x),y 
+	call FDSTOR 
+; increment SRC,DEST	
+	ldw y,(SRC,SP)
+	addw y,#4 
+	ldw (SRC,SP),Y 
+	ldw Y,(DEST,SP)
+	addw y,#4 
+	ldw (DEST,SP),Y 
+; decrement CNT 	
+	ldw y,(CNT,SP) 
+	subw y,#4 
+	ldw (CNT,SP),Y 
+	jra 1$
+3$: ; DEST not aligned or less than 4 bytes left  
+	subw x,#2*CELLL 
+	ldw y,(SRC,SP)
+	ld a,(y)
+	clrw y 
+	ld yl,a 
+	ldw (2,x),y  
+	ldw y,(DEST,sp) 
+	ldw (x),y 
+	call FCSTOR 
+	ldw y,(SRC,SP)
+	incw y 
+	ldw (SRC,SP),Y 
+	ldw y,(DEST,SP)
+	incw y 
+	ldw (DEST,SP),Y 
+	ldw y,(CNT,SP)
+	decw y 
+	ldw (CNT,SP),Y 
+	jra 1$
+9$:	
+	addw sp,#VSIZE ; drop local variables 
+10$:
+	ret 
+
+.IF 0
+;-----------------------------
+;   RESET ( -- )
+; reset system to original 
+; state removing all user 
+; modification.
+;-----------------------------
+	_HEADER SYS_RST,5,"RESET"
+	call unlock_iap 
+	ldw y,#EEPROM_BASE  
+1$:	bset FLASH_CR2,#FLASH_CR2_WPRG
+	clr (y)
+	clr (1,y)
+	clr (2,y)
+	clr (3,y)
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	addw y,#4
+	cpw y,#EEPROM+EEPROM_RES 
+	jrmi 1$ 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
+	_DOLIT #app_space
+	CALL CHKIVEC 
+	JP reboot 
+.ENDIF 
 
 ;------------------------------
+; CHKIVEC ( ca -- )
 ; all interrupt vector with 
 ; an address >= a are resetted 
 ; to default
-; CHKIVEC ( a -- )
 ;------------------------------
-	.word LINK 
-	LINK=.
-	.byte 7
-	.ascii "CHKIVEC"
-;local variables 
-	SSP=1
-	CADR=3
-	OFS=5
-	VSIZE=6  
+VECTOR_SIZE=4 
 CHKIVEC:
-	sub sp,#VSIZE ;alloc local variables 
+	call unlock_iap 
 	ldw y,x 
 	ldw y,(y)
-	ldw (CADR,sp),y ; ca 
-	ldw (SSP,sp),x 
-	ldw x,#0x800a ; irq0 address 
-	ldw PTRH,X
-	ldw x,#-4 
-1$:	addw x,#4
-	cpw x,#30*4 ; irq0-29 
-	jreq 9$
-	ldw y,x  
-	ld a,([PTRH],y)
-	cp a,(CADR,sp)
-	jrult 1$
-	incw y 
-	ld a,([PTRH],y)
-	cp a,(CADR+1,sp) 
-	jrult 1$ 
-	ldw (OFS,sp),x 
-	srlw x
-	srlw x 
-	ldw y,x 
-	ldw x,(SSP,sp)
-	ldw (x),y
-	call reset_vector
-	ldw x,(OFS,sp) 
+	_stryz UTMP
+	addw x,#CELLL ; drop a 
+	pushw x 
+	ldw x,#0x8000 ; vector table address 
+1$: 
+	addw x,#VECTOR_SIZE  ; next vector 
+    cpw x,#VECTOR_USART1_RX ; protected 
+	jreq 1$ 
+	cpw x,#VECTOR_TIM4 ; protected 
+	jreq 1$  
+	cpw x,#0x8080 ; all vectors done 
+	jreq 9$  ; done 
+	ldw y,x   
+	ldw y,(2,y) ; handler address 
+	cpw y,UTMP  ; bound address 
+	jrmi 1$ 
+	ldw  y,#NotHandledInterrupt
+	cpw y,(2,x)
+	jreq 1$ ; already default handler 
+; set vector to default handler 
+	ld a,yh 
+	ld (2,x),a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	ld a,yl 
+	ld (3,x),a 
+	btjf FLASH_IAPSR,#FLASH_IAPSR_EOP,.
+	btjf FLASH_IAPSR,#FLASH_IAPSR_HVOFF,.
 	jra 1$
-9$:	ldw x,(SSP,sp) 
-	addw x,#CELLL 
-	addw sp,#VSIZE ; drop local variables  
+9$: popw x 
+	_lock_iap 
 	ret 
-
-;------------------------------
-; set interrupt vector 
-; SET-IVEC ( u n -- )
-;  u  Handler address
-;  n  vector # 0 .. 29 
-;-----------------------------
-	.word LINK
-	LINK=.
-	.byte 8 
-	.ascii "SET-IVEC" 
-set_vector:
-    ldw y,x 
-	addw x,#CELLL 
-	ldw y,(y) ; vector #
-	cpw y,#29 ; last vector
-	jrule 2$
-	addw x,#2*CELLL 
-	ret
-2$:	sllw y 
-	sllw y 
-	addw y,#0X8008 ; IRQ0 vector address 
-	ldw YTEMP,y ; vector address 
-	ld a,#0x82 
-	ld yh,a 
-	ld a,(1,x) ; isr address bits 23..16 
-	ld yl,a 
-;  write 0x82 + most significant byte of int address	
-	subw x,#3*CELLL 
-	ldw (4,x),y 
-	ldw y,YTEMP
-	ldw (2,x),y ; vector address 
-	clrw y 
-	ldw (x),y   ; as a double 
-	call EESTORE 
-	ldw y,x 
-	ldw y,(2,y) ; bits 15..0 int vector 
-	subw x,#3*CELLL 
-	ldw (4,x),y 
-	ldw y,YTEMP 
-	addw y,#2 
-	ldw (2,x),y 
-	clrw y 
-	ldw (x),y 
-	call EESTORE
-	addw x,#2*CELLL  
-9$: ret 
-
-
-;------------------------
-; Compile word to flash
-; EE, (w -- )
-;-----------------------
-	.word LINK
-	LINK=.
-	.byte 3
-	.ascii "EE,"
-EE_COMMA:
-	subw x,#2*CELLL 
-	ldw y,UCP
-	pushw y 
-	ldw (2,x),y 
-	clrw y 
-	ldw (x),y
-	call EESTORE
-	popw y 
-	addw y,#2
-	ldw UCP,y
-	ret 
-
-
-;-------------------------
-; Compile byte to flash 
-; EEC, ( c -- )	
-;-------------------------
-	.word LINK 
-	LINK=.
-	.byte 4 
-	.ascii "EEC,"
-EE_CCOMMA:
-	subw x,#2*CELLL 
-	ldw y,UCP
-	pushw y 
-	ldw (2,x),y 
-	clrw y 
-	ldw (x),y
-	call EECSTORE
-	popw y 
-	incw y 
-	ldw UCP,y
-	ret 
-
-
-;--------------------------
-; copy FLASH block to ROWBUF
-; ROW>BUF ( ud -- )
-;--------------------------
-	.word LINK 
-	LINK=.
-	.byte 7 
-	.ascii "ROW>BUF"
-ROW2BUF: 
-	call PTRSTOR 
-	ld a,#BLOCK_SIZE
-	push a 
-	and a,PTRL ; block align 
-	ld PTRL,a
-	ldw y,#ROWBUFF 
-1$: ldf a,[PTRH]
-	ld (y),a
-	call INC_PTR
-	incw y 
-	dec (1,sp)
-	jrne 1$ 
-	pop a 
-	ret 
-
-
-;---------------------------
-; copy ROWBUFF to flash 
-; BUF>ROW ( ud -- )
-; ud is row address as double 
-;---------------------------
-	.word LINK 
-	LINK=.
-	.byte 7 
-	.ascii "BUF>ROW" 
-BUF2ROW:
-	call TBUF ; ( ud rb -- )
-	call ROT 
-	call ROT  ; ( rb ud -- )
-	call write_row 
-	ret 
-
-;---------------------------------
-; how many byte free in that row 
-; RFREE ( a -- n )
-; a is least byte of target address
-;----------------------------------
-	.word LINK 
-	LINK=.
-	.byte 5 
-	.ascii "RFREE"
-RFREE:
-	ld a,(1,x)
-	and a,#BLOCK_SIZE-1 
-	ld YTEMP,a 
-	ld a,#BLOCK_SIZE 
-	sub a,YTEMP 
-	clrw y 
-	ld yl,a
-	ldw (x),y 
-	ret 
-
-;---------------------------------
-; write u bytes to flash/EEPROM 
-; constraint to row limit 
-; RAM>EE ( ud a u -- u2 )
-; ud flash address 
-; a ram address 
-; u bytes count
-; return u2 bytes written  
-;-------------------------------
-	.word LINK 
-	LINK=. 
-	.byte 6
-	.ascii "RAM>EE"
-	
-RAM2EE:
-; copy ud on top 
-	ldw y,x 
-	ldw y,(6,y) ; LSW of ud  
-	ldw YTEMP,y 
-	ldw y,x 
-	ldw y,(4,y)  ; MSW of ud 
-	subw x,#2*CELLL 
-	ldw (x),y 
-	ldw y,YTEMP 
-	ldw (2,x),y 
-	call ROW2BUF 
-	ldw y,x 
-	ldw y,(6,y)
-	pushw y ; udl 
-	ld a,yl
-	and a,#BLOCK_SIZE-1 
-	clrw y 
-	ld yl,a 
-	addw y,#ROWBUFF 
-	subw x,#CELLL 
-	ldw (x),y  
-	call SWAPP ;  ( ud a ra u -- )
-	call RFROM  
-	call RFREE 
-	call MIN
-	call DUPP 
-	call TOR  
-	call CMOVE
-	call BUF2ROW 
-	call RFROM 
-	ret 
-
-
-;--------------------------
-; expand 16 bit address 
-; to 32 bit address 
-; FADDR ( a -- ud )
-;--------------------------
-	.word LINK 
-	LINK=. 
-	.byte 5 
-	.ascii "FADDR"
-FADDR:
-	jp ZERO 
-
-
-;--------------------------
-; FMOVE ( -- cp+ )
-; 
-; move new colon definition to FLASH 
-; using WR-ROW for efficiency 
-; preserving bytes already used 
-; in the current block. 
-; At this point the compiler as completed
-; in RAM and pointers CP and CNTXT updated.
-; CNTXT point to nfa of new word and  
-; CP is after last compiled word so 
-; CP-CNTXT+2=count to write 
-;--------------------------
-	_HEADER FMOVE,5,"FMOVE"
-	call CPP
-	call AT  
-	call DUPP ; ( udl udl -- )
-	call CNTXT 
-	call AT 
-	call DOLIT 
-	.word 2 
-	call SUBB ; ( udl udl a -- )
-	call SWAPP 
-	call ROT  ; ( udl ud a -- )
-	call DUPP 
-	call TOR    ; R: a 
-FMOVE2: 
-	call HERE 
-	call RAT 
-	call SUBB ; (udl ud a wl -- )
-next_row:
-	call DUPP 
-	call TOR  ; ( udl ud a wl -- ) R: a wl
-	call RAM2EE ; ( udl a u -- udl u2 ) u2 is byte written to FLASH 
-	call DUPP 
-	call TOR
-	call PLUS  ; ( udl+ ) 
-	call DUPP 
-	call ZERO   ; ( udl+ ud -- )
-	call RFROM  ; ( udl+ ud u2  R: a wl ) 
-	call RFROM  ; ( udl+ ud u2 wl R: a ) 
-	call OVER   ; ( udl+ ud u2 wl u2 -- )
-	call SUBB  ; ( udl+ ud u2 wl- R: a )
-	call DUPP 
-	call QBRAN
-	.word fmove_done 
-	call SWAPP  ; ( udl+ ud wl- u2 R: a )
-	call RFROM ; ( udl+ ud wl- u2 a -- ) 
-	call PLUS  ; ( udl+2 ud wl- a+ )
-	call DUPP 
-	call TOR   ; ( udl+2 ud wl- a+ ) R: a+
-	call SWAPP 
-	call BRAN
-	.word next_row  
-fmove_done:	
-	call RFROM  ; ( -- udl+ ud u2 wl- a  )
-	addw x,#5*CELLL ; (  -- cp+ ) new CP 
- 	ret  
-
-;------------------------------------------
-; adjust pointers after **FMOVE** operetion.
-; UPDAT-PTR ( cp+ -- )
-; cp+ is new CP position after FMOVE 
-;-------------------------------------------
-	.word LINK 
-	LINK=.
-	.byte 9
-	.ascii "UPDAT-PTR" 
-UPDATPTR:
-;reset VP to previous position  
-	call EEPVP 
-	_DROP 
-	call AT
-	call VPP 
-	call STORE
-;update CONTEXT and LAST 
-	call EEPCP 
-	_DROP
-	call AT
-	call DOLIT 
-	.word 2 
-	call PLUS 
-	call DUPP 
-	call CNTXT 
-	call STORE
-	call LAST
-	call STORE 
-	call UPDATLAST 
-;update CP 
-	call CPP 
-	call STORE
-	call UPDATCP 
-	ret 
-
-;-----------------------------
-; move interrupt sub-routine
-; in flash memory
-;----------------------------- 
-	.word LINK 
-	LINK=. 
-	.byte 6
-	.ascii "IFMOVE" 
-IFMOVE:
-	call TFLASH 
-	CALL AT 
-	CALL QBRAN 
-	.word no_move 
-	call CPP 
-	call AT 
-	call DUPP ; ( udl udl -- )
-	call EEPVP 
-	_DROP
-	call AT  ; ( udl udl a )
-	call TOR 
-	call FADDR
-	call RAT ; ( udl ud a -- ) R: a 
-	jp FMOVE2 
-
-

@@ -59,8 +59,19 @@ STM8L151K6=1
 	
 	.include "inc/stm8l151k6.inc"
 	.include "stm8l151k6-vec.asm"
+	.include "stm8l156k6_iap.asm"
+    .include "stm8l151k6_flash.asm"
 .ENDIF 
 	
 	.include "bios.asm"
+	.include "tools.asm"
+
+.if WANT_DOUBLE 
+        .include "double.asm" 
+.endif 
+
+.if WANT_SCALING_CONST 
+        .include "const_ratio.asm"
+.endif
 
 	

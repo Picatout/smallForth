@@ -2,13 +2,13 @@
 ##  tinyForth make file
 ##################################
 
-NAME=tinyForth
+NAME=smallForth
 # toolchain
 SDAS=sdasstm8
 SDCC=sdcc
 CFLAGS=-mstm8 -lstm8  -Iinc
 # sources files 
-MAIN_FILE=tinyForth.asm
+MAIN_FILE=ForthCore.asm
 INC=inc/
 INCLUDES=$(INC)config.inc $(INC)stm8l151k6.inc 
 BUILD=build/$(MCU)/

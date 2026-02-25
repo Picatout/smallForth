@@ -34,7 +34,7 @@ TIBBASE =       DATSTK-TIB_SIZE         ; transaction input buffer addr. 128 byt
 ; non handled interrupt reset MCU
 ; do nothing 
 ;--------------------------------
-NonHandledInterrupt:
+NotHandledInterrupt:
        iret 
 
 ;--------------------------------
@@ -70,6 +70,12 @@ UartRxHandler: ; console receive char
         clr FLASH_IAPSR
 	_swreset 	
 2$:
+        cp a,#CTRL_C
+        jrne 3$
+        LDW X,#ABORT 
+        LDW (8,SP),X 
+        IRET 
+3$:
 	push a 
 	ld a,#RX_QUEUE
 	add a,RX_TAIL 
