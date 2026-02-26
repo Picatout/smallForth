@@ -3,23 +3,8 @@
 ;  words 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Enable interrupts 
-; EI ( -- )
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER EI,2,"EI"
-        rim 
-        ret 
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-; Disable interrupts
-; DI ( -- )
-;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DI,2,"DI"
-        sim 
-        ret 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       I:  ( -- ca )
+;       I:  ( n --  )
 ; Start interrupt service 
 ; routine definition
 ; those definition have 
@@ -33,9 +18,9 @@
         JP      RBRAC  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       I; ( ca -- int-vec )
+;       I; ( vector ca --  )
 ;  Terminate an ISR definition 
-;  return interrupt vector as double 
+;  write interrupt vector  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
        _HEADER ISEMI,2+IMEDD+COMPO,^/"I;"/
         _DOLIT  IRET_CODE  
@@ -44,24 +29,38 @@
         CALL    AT 
         CALL    EEPCP
         CALL    FSTOR
-        SUBW    X,#CELLL  
-        LDW     Y,#IRET_CODE<<8 
-        ldw     (X),Y
+        CALL    SWAPP  ; CA VECTOR 
+        CALL    VECADR 
+        CALL    CELLP  
+        CALL    FSTOR 
         JP      LBRAC 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; I-RST  ( n -- )
+;; reset inteerupt vector to defalut 
+;; value 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER IRESET,5,"I-RST" 
+        CALL VECADR
+        CALL CELLP 
+        LDW   Y,#NotHandledInterrupt
+        CALL  DPUSH
+        CALL  SWAPP 
+        JP    FSTOR
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  ADR-VEC ( n -- adr )
+;  VEC-ADR ( n -- adr )
 ;  return address of interrupt 
 ;  vector 'n' 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER ADRVEC,7,"ADR-VEC"
+        _HEADER VECADR,7,"VEC-ADR"
         LDW     Y,X
         LDW     Y,(Y)
         CPW     Y,#29  
         JRUGT   4$
         LD      A,#4 
         MUL     Y,A  
-        ADDW    Y,#FLASH_BASE
+        ADDW    Y,#VECTOR_INT0 
         LDW     (X),Y 
         RET 
 4$:      
@@ -69,3 +68,37 @@
        .byte    10
        .ascii " bad vector"
 
+;------------------------------
+; RST-VEC ( ca -- )
+; all interrupt vector with 
+; an address >= ca are resetted 
+; to default
+;------------------------------
+VECTOR_SIZE=4 
+RSTVEC:
+	CALL TOR       ; R: ca 
+	_DOLIT VECTOR_INT0   
+1$: ; S: va  R: ca 
+	CALL DUPP  ; va va 
+	CALL CELLP 
+	CALL AT    ; va ia 
+	CALL RAT   ; va ia ca 
+	CALL ULESS 
+	CALL TBRAN 
+	.WORD 2$   ; keep this one 
+; reset this vector -- va 
+	_DOLIT NotHandledInterrupt
+	CALL OVER   ; va a va 
+	CALL CELLP 
+	CALL FSTOR 
+2$:  ; -- va  R: ca 
+	_DOLIT VECTOR_SIZE  
+	CALL  PLUS  ; va + 4 
+	CALL DUPP   ; va va 
+	_DOLIT 0x8080 ; va va 0x8080 
+	CALL ULESS   
+	CALL TBRAN 
+	.WORD 1$ 
+	CALL RFROM    ; va ca 
+	_DDROP        
+	RET 

@@ -19,7 +19,9 @@
         CALL CELLP 
         JRA 1$ 
 2$:	POP A
-        LDW Y,LASTN 
+        _DROP 
+        LDW Y,#app_space 
+        CALL DPUSH 
         CALL RSTVEC 
         JP reboot 
 

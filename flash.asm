@@ -330,39 +330,3 @@ VSIZE=6 ; local variables space on stack
 	addw sp,#VSIZE ; drop local variables 
 10$:
 	ret 
-
-
-;------------------------------
-; RST-VEC ( ca -- )
-; all interrupt vector with 
-; an address >= a are resetted 
-; to default
-;------------------------------
-VECTOR_SIZE=4 
-RSTVEC:
-	CALL TOR       ; R: ca 
-	_DOLIT 0x8008  ; INT 0 
-1$: ; S: va  R: ca 
-	CALL DUPP  ; va va 
-	CALL CELLP 
-	CALL AT    ; va ia 
-	CALL RAT   ; va ia ca 
-	CALL ULESS 
-	CALL TBRAN 
-	.WORD 2$   ; keep this one 
-; reset this vector -- va 
-	_DOLIT NotHandledInterrupt
-	CALL OVER   ; va a va 
-	CALL CELLP 
-	CALL FSTOR 
-2$:  ; -- va  R: ca 
-	_DOLIT VECTOR_SIZE  
-	CALL  PLUS  ; va + 4 
-	CALL DUPP   ; va va 
-	_DOLIT 0x8080 ; va va 0x8080 
-	CALL ULESS   
-	CALL TBRAN 
-	.WORD 1$ 
-	CALL RFROM    ; va ca 
-	_DDROP        
-	RET 
