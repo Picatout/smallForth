@@ -165,30 +165,6 @@ DOTS2:  CALL     DONXT
         .ascii     " <sp "
         RET
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       >NAME   ( ca -- na | F )
-;       Convert code address
-;       to a name address.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER TNAME,5,">NAME"
-TNAME:
-        CALL     CNTXT   ;vocabulary link
-TNAM2:  CALL     AT
-        CALL     DUPP    ;?last word in a vocabulary
-        CALL     QBRAN
-        .word      TNAM4
-        CALL     DDUP
-        CALL     NAMET
-        CALL     XORR    ;compare
-        CALL     QBRAN
-        .word      TNAM3
-        CALL     CELLM   ;continue with next word
-        JRA     TNAM2
-TNAM3:  CALL     SWAPP
-        JP     DROP
-TNAM4:  CALL     DDROP
-        JP     ZERO 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       WORDS   ( -- )
 ;       Display names in vocabulary.
