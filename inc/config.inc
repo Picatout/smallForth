@@ -59,8 +59,9 @@ STM8L151K6=1
 	
 	.include "inc/stm8l151k6.inc"
 	.include "stm8l151k6-vec.asm"
-	.include "stm8l151k6_iap.asm"
 .ENDIF 
+	.include "bios.asm"
+
 	
 
 	

@@ -755,7 +755,7 @@ ZEQU1:
 ; systeme variable 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       "EVAL   ( -- a )
+;       'EVAL   ( -- a )
 ;       Execution vector of EVAL.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TEVAL,5,"'EVAL"
@@ -1082,6 +1082,7 @@ MIN1:	ADDW X,#2
 
 ;; Divide
 
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       UM/MOD  ( udl udh un -- ur uq )
 ;       Unsigned divide of a double by a
@@ -1139,6 +1140,7 @@ MMSMb:
         LDW     Y,YTEMP         ; remainder onto stack
         LDW     (2,X),Y
         RET
+.ENDIF 
 
 .IF 1 ;*************************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2356,8 +2358,7 @@ PARS8:  CALL     OVER
 ;       Convert code address
 ;       to a name address.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER TNAME,5,">NAME"
-TNAME:
+        _HEADER TNAME,5,">NAME"
         CALL     CNTXT   ;vocabulary link
 TNAM2:  CALL     AT
         CALL     DUPP    ;?last word in a vocabulary
@@ -2741,6 +2742,7 @@ QUIT2:  CALL     QUERY   ;get input
         .word DOLIT 
         JP     COMMA
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; ['] <name>
 ; compile execution semantic of 
@@ -2750,7 +2752,7 @@ QUIT2:  CALL     QUERY   ;get input
         CALL TICK 
         CALL LITER  
         RET 
-
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DEFER <name>
@@ -3224,6 +3226,16 @@ JSRC2:
         JP       COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  STATE ( -- f )
+;;  return TRUE if TEVAL==INTER
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER STATE,5,"STATE"
+        CALL TEVAL 
+        _DOLIT INTER 
+        CALL EQUAL 
+        JP TILDE 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       :       ( -- ; <string> )
 ;       Start a new colon definition
 ;       using next word as its name.
@@ -3450,6 +3462,7 @@ COLD9:
         JP       QUIT    ;start interpretation
 
 
+	.include "stm8l151k6_iap.asm"
         .include "flash.asm"
         .include "interrupts.asm"
 	.include "tools.asm"
@@ -3461,7 +3474,6 @@ COLD9:
 .if WANT_SCALING_CONST 
         .include "const_ratio.asm"
 .endif
-	.include "bios.asm"
 
 ;===============================================================
 
