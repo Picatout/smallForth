@@ -19,7 +19,7 @@ FLASH=stm8flash
 
 .PHONY: all
 
-all: clean $(NAME).rel $(NAME).ihx  clear_eevars tinyForth 
+all: clean $(NAME).rel $(NAME).ihx  tinyForth clear_eevars  
 
 $(NAME).rel: $(MAIN_FILE) $(INCLUDES)
 	@echo
@@ -63,7 +63,7 @@ erase: clear_eevars
 build:
 	mkdir build
 
-flash: clear_eevars $(LIB)
+flash: $(LIB)
 	@echo ""
 	@echo "***************"
 	@echo "flash program "

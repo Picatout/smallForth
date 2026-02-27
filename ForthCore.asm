@@ -2601,11 +2601,12 @@ INTE1:
         CALL     QBRAN
         .word      DOTO1
         LDW      Y,UNEST 
-        JRNE     DOTO1 
+        JRNE     DOTO2 
         CALL     DOTQP
         .byte      3
         .ascii     " ok"
 DOTO1:  JP     CR
+DOTO2:  RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ?STACK  ( -- )
