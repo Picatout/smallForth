@@ -125,9 +125,10 @@ UVP = UCNTXT+2    ; variable pointer in RAM
 UCP = UVP+2       ; code pointer in FLASH 
 ULAST = UCP+2     ; last dictionary pointer 
 USTATE = ULAST+2  ; compile or interpret state flag 
+UNEST = USTATE+2  ; EVAL nesting level 
 
 ;******  System Variables  ******
-XTEMP = USTATE +2 ; temporary storage  
+XTEMP = UNEST + 2 ; temporary storage  
 YTEMP = XTEMP+2  ; temporary storage 
 PROD1 = YTEMP+2	;space for UM*
 PROD2 = PROD1+2
@@ -192,7 +193,8 @@ UZERO:
         .word      VAR_BASE ;UVP variables free space pointer 
         .word      app_space ;UCP FLASH free space pointer 
         .word      LASTN   ;ULAST
-        .word      0       ;USTATE  
+        .word      0       ;USTATE 
+        .word      0       ;UNEST  
 UEND:   .word      0
 
         LINK = 0  ; used by _HEADER macro 
@@ -2192,6 +2194,7 @@ DOT1:   CALL     STR
         CALL     SPACE
         JP     TYPES
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ?       ( a -- )
 ;       Display contents in memory cell.
@@ -2199,6 +2202,7 @@ DOT1:   CALL     STR
         _HEADER QUEST,1,"?"
         CALL     AT
         JRA     DOT
+.ENDIF 
 
 ;; Parsing
 
@@ -2521,8 +2525,6 @@ FIND5:  CALL     RFROM
 ;       jump to QUIT.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABORT,5,"ABORT"
-        CLR    USTATE 
-        CLR    USTATE+1
         CALL   PRESE
         JP     QUIT
 
@@ -2598,6 +2600,8 @@ INTE1:
         CALL     EQUAL
         CALL     QBRAN
         .word      DOTO1
+        LDW      Y,UNEST 
+        JRNE     DOTO1 
         CALL     DOTQP
         .byte      3
         .ascii     " ok"
@@ -2620,6 +2624,9 @@ DOTO1:  JP     CR
 ;       Interpret  input stream.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EVAL,4,"EVAL"
+        LDW     Y,UNEST
+        INCW    Y 
+        LDW     UNEST,Y 
 EVAL1:  CALL     TOKEN
         CALL     DUPP
         CALL     CAT     ;?input stream empty
@@ -2630,6 +2637,9 @@ EVAL1:  CALL     TOKEN
         CALL     QSTAC   ;evaluate input, check stack
         JRA     EVAL1 
 EVAL2:  _DROP
+        LDW     Y,UNEST 
+        DECW    Y 
+        LDW     UNEST,Y 
         JP       DOTOK
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2653,6 +2663,8 @@ EVAL2:  _DROP
 ;       and start text interpreter.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER QUIT,4,"QUIT"
+        LDW    Y,#0 
+        LDW    UNEST,Y 
 ;reset return stack 
         LDW     Y,#RPP 
         LDW     SP,Y 
