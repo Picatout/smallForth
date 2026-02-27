@@ -124,9 +124,10 @@ UCNTXT = UHLD+2   ; context, dictionary first link
 UVP = UCNTXT+2    ; variable pointer in RAM 
 UCP = UVP+2       ; code pointer in FLASH 
 ULAST = UCP+2     ; last dictionary pointer 
+USTATE = ULAST+2  ; compile or interpret state flag 
 
 ;******  System Variables  ******
-XTEMP = ULAST +2 ; temporary storage  
+XTEMP = USTATE +2 ; temporary storage  
 YTEMP = XTEMP+2  ; temporary storage 
 PROD1 = YTEMP+2	;space for UM*
 PROD2 = PROD1+2
@@ -191,7 +192,7 @@ UZERO:
         .word      VAR_BASE ;UVP variables free space pointer 
         .word      app_space ;UCP FLASH free space pointer 
         .word      LASTN   ;ULAST
-        .word      0       ;UOFFSET 
+        .word      0       ;USTATE  
 UEND:   .word      0
 
         LINK = 0  ; used by _HEADER macro 
@@ -2520,6 +2521,8 @@ FIND5:  CALL     RFROM
 ;       jump to QUIT.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABORT,5,"ABORT"
+        CLR    USTATE 
+        CLR    USTATE+1
         CALL   PRESE
         JP     QUIT
 
@@ -2576,6 +2579,8 @@ INTE1:
 ;       Start  text interpreter.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER LBRAC,IMEDD+1,"["
+        CLR    USTATE 
+        CLR    USTATE+1
         CALL   DOLIT
         .word  INTER
         CALL   TEVAL
@@ -3182,6 +3187,8 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
 ;       input stream.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RBRAC,1,"]"
+        LDW    Y,#-1 
+        LDW    USTATE,Y 
         CALL   DOLIT
         .word  SCOMP
         CALL   TEVAL
@@ -3226,14 +3233,14 @@ JSRC2:
         JP       COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;  STATE ( -- f )
-;;  return TRUE if TEVAL==INTER
+;;  STATE ( -- adr )
+;;  return system variable address 
+;;  containning COMPILE/INTERPRET flag 
+;;  0 == interpret 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STATE,5,"STATE"
-        CALL TEVAL 
-        _DOLIT INTER 
-        CALL EQUAL 
-        JP TILDE 
+        LDW Y,#USTATE
+        JP DPUSH   
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       :       ( -- ; <string> )
