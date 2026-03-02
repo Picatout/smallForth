@@ -22,6 +22,10 @@ EOL_CR=1
 EOL_LF=0 
 
 ; set to 1 to include 
+; tools.asm 
+WANT_TOOLS=1
+
+; set to 1 to include 
 ; scaling constants vocabulary
 ; file: const_ratio.asm 
 WANT_SCALING_CONST = 0

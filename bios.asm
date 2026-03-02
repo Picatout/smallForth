@@ -259,7 +259,8 @@ getline:
     ret 
 
 ;------------------------------
-; print counted string 
+; print counted string
+; replace non printable by space  
 ; input:
 ;    A   count 
 ;    Y   *str 

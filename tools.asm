@@ -47,6 +47,23 @@
         CALL SUBB 
         JP  DOT 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       U.R     ( u +n -- )
+;       Display an unsigned integer
+;       in n column, right justified.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER UDOTR,3,"U.R"
+        CALL     TOR
+        CALL     BDIGS
+        CALL     DIGS
+        CALL     EDIGS
+        CALL     RFROM
+        CALL     OVER
+        CALL     SUBB
+        CALL     SPACS
+        JP       TYPES
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       _TYPE   ( b u -- )
 ;       Display a string. Filter

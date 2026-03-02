@@ -392,8 +392,13 @@ DPUSH: ; push Y on parameter stack
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIMEOUTQ,8,"TIMEOUT?"
         SUBW    X,#CELLL 
-        _ldyz   CNTDWN 
-        JP      TILDE1  
+        LDW     Y,CNTDWN 
+        JREQ    1$
+        CLRW    Y 
+        JRA     2$
+1$:     CPLW    Y 
+2$:     LDW     (X),Y 
+        RET 
  
 ;;;;;;;;;;;;;;;;;;;;;
 ; reboot MCU 
@@ -645,35 +650,6 @@ BRAN:
         LDW (X),Y
         RET     
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       0<      ( n -- t )
-;       Return true if n is negative.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER ZLESS,2,"0<"
-        LD A,#0xFF
-        LDW Y,X
-        LDW Y,(Y)
-        JRMI     ZL1
-        CLR A   ;false
-ZL1:    LD     (X),A
-        LD (1,X),A
-	RET     
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       0= ( n -- f )
-;   n==0?
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER ZEQUAL,2,"0="
-        LD A,#0XFF 
-        LDW Y,X 
-        LDW Y,(Y)
-        JREQ ZEQU1 
-        LD A,#0 
-ZEQU1:  
-        LD (X),A 
-        LD (1,X),A         
-        RET 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AND     ( w w -- w )
 ;       Bitwise AND.
@@ -728,6 +704,7 @@ ZEQU1:
         LDW (X),Y
         RET
 
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TMP     ( -- a )
 ;       A temporary storage.
@@ -737,6 +714,7 @@ ZEQU1:
 	SUBW X,#2
         LDW (X),Y
         RET
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >IN     ( -- a )
@@ -838,6 +816,7 @@ QDUP1:  RET
         ldw (2,x),y
         ret 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    <ROT ( n1 n2 n3 -- n3 n1 n2 )
 ;    rotate left 3 top elements 
@@ -855,6 +834,7 @@ QDUP1:  RET
     POPW Y  ; R> Y 
     LDW (4,X),Y ; = n3 
     RET 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2DROP   ( w w -- )
@@ -905,6 +885,7 @@ QDUP1:  RET
         LDW (X),Y
         RET
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   ~ ( 0|n<>0 -- T|F )
 ; invert boolean value 
@@ -919,6 +900,7 @@ TILDE1:
 1$:     LDW Y,#-1
 2$:     LDW (X),Y 
         RET 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NEGATE  ( n -- -n )
@@ -958,6 +940,35 @@ TILDE1:
         NEGW     Y     ;else negate hi byte
         LDW (X),Y
 AB1:    RET
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       0<      ( n -- t )
+;       Return true if n is negative.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER ZLESS,2,"0<"
+        LD A,#0xFF
+        LDW Y,X
+        LDW Y,(Y)
+        JRMI     ZL1
+        CLR A   ;false
+ZL1:    LD     (X),A
+        LD (1,X),A
+	RET     
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       0= ( n -- f )
+;   n==0?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER ZEQUAL,2,"0="
+        LD A,#0XFF 
+        LDW Y,X 
+        LDW Y,(Y)
+        JREQ ZEQU1 
+        LD A,#0 
+ZEQU1:  
+        LD (X),A 
+        LD (1,X),A         
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       =       ( w w -- t )
@@ -1025,7 +1036,6 @@ UGREAT1:
         LD (1,X),A 
         RET 
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >   (n1 n2 -- f )
 ;  signed compare n1 n2 
@@ -1044,6 +1054,7 @@ GREAT1:
         LD (1,X),A 
         RET 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       MAX     ( n n -- n )
 ;       Return greater of two top items.
@@ -1069,6 +1080,7 @@ MAX1:   ADDW X,#2
         LDW (2,X),Y
 MIN1:	ADDW X,#2
 	RET     
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       WITHIN  ( u ul uh -- t )
@@ -1167,6 +1179,7 @@ DN1:    LDW (X),Y
         RET
 .ENDIF ;***************************
 
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   U/MOD ( u1 u2 -- ur uq )
 ;   unsigned divide u1/u2 
@@ -1185,8 +1198,9 @@ DN1:    LDW (X),Y
         LDW (X),Y 
         ADDW SP,#2*CELLL ; drop quotient and DP from rstack 
         RET 
+.ENDIF 
 
-.IF 1 ;******************************
+.IF 0 ;******************************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
 ;       M/MOD   ( d n -- r q )
 ;       Signed floored divide of double by
@@ -1221,6 +1235,7 @@ MMOD2:	CALL	RFROM
 MMOD3:	RET
 .ENDIF ;********************
 
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       /MOD    ( n1 n2 -- r q )
 ; Signed divide n1/n2. 
@@ -1261,7 +1276,7 @@ SLMOD2: CALL TOR
 SLMOD8: 
         ADDW SP,#4 
         RET 
-
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       MOD     ( n1 n2 -- r )
@@ -1351,6 +1366,7 @@ SLMOD8:
         _DROP 
         RET 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       M*      ( n n -- d )
 ;       Signed multiply. Return 
@@ -1370,7 +1386,9 @@ SLMOD8:
         .word	MSTA1
         JP	DNEGA
 MSTA1:	RET
+.ENDIF 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       */MOD   ( n1 n2 n3 -- r q )
 ;       Multiply n1 and n2, then divide
@@ -1393,6 +1411,7 @@ MSTA1:	RET
         CALL	SSMOD
         CALL	SWAPP
         JP	DROP
+.ENDIF 
 
 
 ;; Miscellaneous
@@ -2045,15 +2064,13 @@ NUMQ6:
 ;       Send n spaces to output device.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SPACS,6,"SPACES"
-        CALL     ZERO 
-        CALL     MAX
+        CLR     (X) ; maximum spaces 255 
         CALL     TOR
         JRA      CHAR2
 CHAR1:  CALL     SPACE
 CHAR2:  CALL     DONXT
         .word    CHAR1
         RET
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TYPE    ( b u -- )
@@ -2132,22 +2149,6 @@ DOTQP:
         JP     TYPES
 
 .ENDIF ;**********************
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       U.R     ( u +n -- )
-;       Display an unsigned integer
-;       in n column, right justified.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER UDOTR,3,"U.R"
-        CALL     TOR
-        CALL     BDIGS
-        CALL     DIGS
-        CALL     EDIGS
-        CALL     RFROM
-        CALL     OVER
-        CALL     SUBB
-        CALL     SPACS
-        JP       TYPES
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       U.      ( u -- )
@@ -2331,7 +2332,6 @@ PARS8:  CALL     OVER
 ;       end of line.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BKSLA,IMEDD+1,'\'
-
         mov UINN+1,UCTIB+1
         ret 
 
@@ -2772,6 +2772,7 @@ QUIT2:  CALL     QUERY   ;get input
         RET 
 .ENDIF 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DEFER <name>
 ; create word <name>
@@ -2849,6 +2850,7 @@ NOOP:
         CALL COMMA  ; JP addr  
         POPW Y 
         JP (2,Y) 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       $,"     ( -- )
@@ -3311,6 +3313,7 @@ IMM01:  CALL	LAST
         CALL     COMMA
         RET
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  >BODY ( ca -- pfa )
 ;  from ca goto data field address 
@@ -3321,7 +3324,8 @@ IMM01:  CALL	LAST
         _DOLIT 3
         CALL  PLUS 
         JP    AT 
-        
+.ENDIF 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       VARIABLE  ( -- ; <string> )
 ;       Compile a new variable
@@ -3487,7 +3491,8 @@ COLD9:
 	.include "stm8l151k6_iap.asm"
         .include "flash.asm"
         .include "interrupts.asm"
-.if 1
+
+.if WANT_TOOLS
 	.include "tools.asm"
 .endif 
 
