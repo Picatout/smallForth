@@ -200,7 +200,7 @@ UEND:   .word      0
         LINK = 0  ; used by _HEADER macro 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; AUTORUN name 
+; AUTORUN <name> 
 ; sélectionne l'application 
 ; qui démarre automatique lors 
 ; d'un COLD start 
@@ -300,7 +300,7 @@ FORGET6: ; tried to forget system word
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;    RANDOM ( u1 -- u2 )
+;    RAND ( u1 -- u2 )
 ; Pseudo random number betwen 0 and u1-1
 ;  XOR16 algorithm 
 ;  SY ^= SY<<7 
@@ -308,7 +308,7 @@ FORGET6: ; tried to forget system word
 ;  SY ^= SY<<8 
 ;  u2 = SY%u1 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER RANDOM,6,"RANDOM"
+        _HEADER RANDOM,4,"RAND"
         _ldyz  SEEDY 
         LD   A,#7 
 1$:
@@ -2957,6 +2957,7 @@ STRCQ:
         CALL     ZERO 
         JP     COMMA
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ~IF      ( -- A )
 ;       Begin a conditional branch.
@@ -2967,6 +2968,7 @@ STRCQ:
         CALL     CPHERE
         CALL     ZERO 
         JP       COMMA
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       THEN        ( A -- )
@@ -3485,7 +3487,9 @@ COLD9:
 	.include "stm8l151k6_iap.asm"
         .include "flash.asm"
         .include "interrupts.asm"
+.if 1
 	.include "tools.asm"
+.endif 
 
 .if WANT_DOUBLE 
         .include "double.asm" 
