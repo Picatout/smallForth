@@ -404,7 +404,8 @@ DPUSH: ; push Y on parameter stack
 ; reboot MCU 
 ; REBOOT ( -- )
 ;;;;;;;;;;;;;;;;;;;;;
-        _HEADER reboot,6,"REBOOT"
+;        _HEADER reboot,6,"REBOOT"
+reboot:
         clr FLASH_IAPSR 
         _swreset
 
@@ -876,7 +877,7 @@ QDUP1:  RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NOT     ( w -- w )
-;       One's complement of tos.
+;       One's complement.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER INVER,3,"NOT"
         LDW Y,X
@@ -904,7 +905,7 @@ TILDE1:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NEGATE  ( n -- -n )
-;       Two's complement of tos.
+;       Two's complement
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NEGAT,6,"NEGATE"
         LDW Y,X
@@ -964,7 +965,7 @@ ZL1:    LD     (X),A
         LDW Y,X 
         LDW Y,(Y)
         JREQ ZEQU1 
-        LD A,#0 
+        CPL  A  
 ZEQU1:  
         LD (X),A 
         LD (1,X),A         
@@ -1156,28 +1157,6 @@ MMSMb:
         LDW     (2,X),Y
         RET
 .ENDIF 
-
-.IF 1 ;*************************
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       DNEGATE ( d -- -d )
-;       Two's complement of double.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DNEGA,7,"DNEGATE"
-        LDW Y,X
-	LDW Y,(Y)
-        CPLW Y
-        PUSHW Y      ; Y >R 
-        LDW Y,X
-        LDW Y,(2,Y)
-        CPLW Y
-        ADDW Y,#1
-        LDW (2,X),Y
-        POPW Y       ; R> Y  
-        JRNC DN1 
-        INCW Y
-DN1:    LDW (X),Y
-        RET
-.ENDIF ;***************************
 
 .IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1511,6 +1490,7 @@ RSHIFT4:
         ldw (x),y 
         ret 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2/      ( n -- n )
 ;       divide  tos by 2.
@@ -1521,6 +1501,7 @@ RSHIFT4:
         SRAW Y
         LDW (X),Y
         RET
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       BL      ( -- 32 )
@@ -1549,24 +1530,6 @@ RSHIFT4:
         SRAW Y    ;Y = #stack items
         ADDW    SP,#2 
         JP      DPUSH 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       PICK    ( ... +n -- ... w )
-;       Copy  nth stack item to tos.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER PICK,4,"PICK"
-        LDW Y,X   ;D = n1
-        LDW Y,(Y)
-; modified for standard compliance          
-; 0 PICK must be equivalent to DUP 
-        INCW Y 
-        SLAW Y
-        PUSHW X 
-        ADDW Y,(1,SP)
-        LDW Y,(Y)
-        LDW (X),Y
-        ADDW  SP,#2 
-        RET
 
 ;; Memory access
 
@@ -2150,6 +2113,7 @@ DOTQP:
 
 .ENDIF ;**********************
 
+.IF 1 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       U.      ( u -- )
 ;       Display an unsigned integer
@@ -2161,7 +2125,9 @@ DOTQP:
         CALL     EDIGS
         CALL     SPACE
         JP     TYPES
+.ENDIF 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   H. ( n -- )
 ;   display n in hexadecimal 
@@ -2175,7 +2141,7 @@ DOTQP:
         CALL RFROM 
         CALL BASE 
         JP STORE 
-         
+.ENDIF          
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .       ( w -- )
@@ -3491,6 +3457,52 @@ COLD9:
 	.include "stm8l151k6_iap.asm"
         .include "flash.asm"
         .include "interrupts.asm"
+
+;-----------------------------
+;   RESET ( -- )
+; reset system to original 
+; state removing all user 
+; modification.
+;-----------------------------
+	_HEADER SYS_RST,5,"RESET"
+        PUSH #8 
+        _DOLIT EEPROM_BASE 
+1$:     CALL ZERO 	
+        CALL OVER 
+        CALL FSTOR 
+        DEC (1,SP)
+        JREQ 2$ 
+        CALL CELLP 
+        JRA 1$ 
+2$:	POP A
+        _DROP 
+        LDW Y,#app_space 
+        CALL DPUSH 
+        CALL RSTVEC 
+        JP reboot 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  FREE 
+;;  display free RAM and FLASH 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER FREE,4,"FREE"
+        CALL CR 
+        CALL DOTQP 
+        .BYTE 4
+        .ASCII "RAM:"
+        CALL TIB  
+        CALL PAD 
+        CALL SUBB 
+        CALL DOT
+        CALL CR  
+        CALL DOTQP 
+        .BYTE 6
+        .ASCII "FLASH:"
+        _DOLIT FLASH_SIZE+FLASH_BASE
+        CALL CPHERE  
+        CALL SUBB 
+        JP  DOT 
+
 
 .if WANT_TOOLS
 	.include "tools.asm"

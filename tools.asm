@@ -2,52 +2,7 @@
 ;; tools vocabulary ;;
 ;;;;;;;;;;;;;;;;;;;;;;
 
-;-----------------------------
-;   RESET ( -- )
-; reset system to original 
-; state removing all user 
-; modification.
-;-----------------------------
-	_HEADER SYS_RST,5,"RESET"
-        PUSH #8 
-        _DOLIT EEPROM_BASE 
-1$:     CALL ZERO 	
-        CALL OVER 
-        CALL FSTOR 
-        DEC (1,SP)
-        JREQ 2$ 
-        CALL CELLP 
-        JRA 1$ 
-2$:	POP A
-        _DROP 
-        LDW Y,#app_space 
-        CALL DPUSH 
-        CALL RSTVEC 
-        JP reboot 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;  FREE 
-;;  display free RAM and FLASH 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER FREE,4,"FREE"
-        CALL CR 
-        CALL DOTQP 
-        .BYTE 4
-        .ASCII "RAM:"
-        CALL TIB  
-        CALL PAD 
-        CALL SUBB 
-        CALL DOT
-        CALL CR  
-        CALL DOTQP 
-        .BYTE 6
-        .ASCII "FLASH:"
-        _DOLIT FLASH_SIZE+FLASH_BASE
-        CALL CPHERE  
-        CALL SUBB 
-        JP  DOT 
-
-
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       U.R     ( u +n -- )
 ;       Display an unsigned integer
@@ -63,6 +18,7 @@
         CALL     SUBB
         CALL     SPACS
         JP       TYPES
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       _TYPE   ( b u -- )
@@ -96,9 +52,9 @@ UTYPE:
 ;        _HEADER DUMPP,3,"DM+"
 DUMPP: 
         CALL     OVER
-        CALL     DOLIT
-        .word      4
-        CALL     UDOTR   ;display address
+;        CALL     DOLIT
+;        .word      4
+        CALL     PRT_HEX_WORD ;UDOTR   ;display address
         CALL     SPACE
         CALL     TOR     ;start count down loop
         JRA     PDUM2   ;skip first pass
@@ -112,6 +68,19 @@ PDUM1:  CALL     DUPP
 PDUM2:  CALL     DONXT
         .word    PDUM1   ;loop till done
         RET
+
+;---------------------------
+; print WORD in hexadecimal 
+; 4 characters wide 
+; input:
+;---------------------------
+PRT_HEX_WORD: ; ( w -- )
+        LDW Y,X 
+        LDW Y,(Y)
+        _DROP 
+        LD A,YH 
+        CALLR PRT_HEX_BYTE 
+        LD A,YL 
 
 ;----------------------------
 ; print byte in hexadecimal  
@@ -164,6 +133,24 @@ DUMP3:  _DROP
         CALL     RFROM
         CALL     BASE
         JP     STORE   ;restore radix
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       PICK    ( ... +n -- ... w )
+;       Copy  nth stack item to tos.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER PICK,4,"PICK"
+        LDW Y,X   ;D = n1
+        LDW Y,(Y)
+; modified for standard compliance          
+; 0 PICK must be equivalent to DUP 
+        INCW Y 
+        SLAW Y
+        PUSHW X 
+        ADDW Y,(1,SP)
+        LDW Y,(Y)
+        LDW (X),Y
+        ADDW  SP,#2 
+        RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .S      ( ... -- ... )
@@ -236,7 +223,8 @@ DOTID: ; ( adr -- )
 ;------------------------
 PRT_ADR: ; ( adr -- adr )
         CALL DUPP 
-        CALL HDOT 
+;        CALL HDOT 
+        CALL PRT_HEX_WORD  
         _DOLIT 2 
         CALL SPACS
         RET 
@@ -267,7 +255,7 @@ NO_NAME:
         CALL ONEP      ; -- xt+1 
         CALL DUPP      ; -- a a 
         CALL AT        ; -- a trgt 
-        CALL HDOT      ; -- a 
+        CALL PRT_HEX_WORD      ; -- a 
         CALL CELLP     ; -- xt+2 
         RET         
 
@@ -282,7 +270,7 @@ NO_NAME:
         CALL TNAME ; -- xt nf 
         CALL DUPP  ; -- xt nf nf
         CALL CELLM ; -- xt nf lnk 
-        CALL HDOT  
+        CALL PRT_HEX_WORD  
         _DOLIT 2 
         CALL SPACS 
         CALL DOTID ; -- xt 
@@ -330,7 +318,9 @@ SEE9:
         .ASCII ".BYTE "
         CALL DUPP 
         CALL CAT 
-        CALL HDOT 
+        LD A,(1,X)
+        _DROP 
+        CALL PRT_HEX_BYTE 
         CALL ONEP 
         JP SEE1  
 
@@ -352,13 +342,13 @@ SEE9:
         CALL ONEM
 
         CALL AT 
-        CALL HDOT
+        CALL PRT_HEX_WORD 
         CALL CELLM   
         JRA 1$
 9$:     CALL DOTQP
         .BYTE 3
         .ASCII " <R"
         _DROP 
-        CALL HDOT 
+        CALL PRT_HEX_WORD 
         CALL CR 
         RET 

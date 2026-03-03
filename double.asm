@@ -41,6 +41,25 @@
 
     .module DOUBLE 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       DNEGATE ( d -- -d )
+;       Two's complement of double.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DNEGA,7,"DNEGATE"
+        LDW Y,X
+	LDW Y,(Y)
+        CPLW Y
+        PUSHW Y      ; Y >R 
+        LDW Y,X
+        LDW Y,(2,Y)
+        CPLW Y
+        ADDW Y,#1
+        LDW (2,X),Y
+        POPW Y       ; R> Y  
+        JRNC DN1 
+        INCW Y
+DN1:    LDW (X),Y
+        RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2!      ( d a -- )
