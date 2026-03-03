@@ -930,6 +930,7 @@ TILDE1:
         ADDW SP,#CELLL ; R: -- 
         RET
 
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ABS     ( n -- n )
 ;       Return  absolute value of n.
@@ -941,6 +942,7 @@ TILDE1:
         NEGW     Y     ;else negate hi byte
         LDW (X),Y
 AB1:    RET
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       0<      ( n -- t )
@@ -1037,6 +1039,7 @@ UGREAT1:
         LD (1,X),A 
         RET 
 
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >   (n1 n2 -- f )
 ;  signed compare n1 n2 
@@ -1054,6 +1057,7 @@ GREAT1:
         LD (X),A 
         LD (1,X),A 
         RET 
+.ENDIF 
 
 .IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2182,26 +2186,27 @@ DOT1:   CALL     STR
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER PARS,5,"PARS$"
 PARS: 
+.IF 0
         CALL     TEMP
-        CALL     STORE
+        CALL     STORE  ; TEMP=c 
         CALL     OVER
-        CALL     TOR
-        CALL     DUPP
+        CALL     TOR    ; R: b 
+        CALL     DUPP   ; b u u 
         CALL     QBRAN
         .word    PARS8
-        CALL     ONEM
-        CALL     TEMP
-        CALL     AT
+        CALL     ONEM   ; b u-1
+        CALL     TEMP   
+        CALL     AT     ; b u c 
         CALL     BLANK
         CALL     EQUAL
         CALL     QBRAN
         .word      PARS3
-        CALL     TOR
+        CALL     TOR    ; b  R: b u 
 PARS1:  CALL     BLANK
         CALL     OVER
         CALL     CAT     ;skip leading blanks ONLY
-        CALL     SUBB
-        CALL     ZLESS
+        CALL     SUBB    ; 32 - c 
+        CALL     ZLESS   ; c < 32 ? 
         CALL     INVER
         CALL     QBRAN
         .word      PARS2
@@ -2212,7 +2217,8 @@ PARS1:  CALL     BLANK
         _DROP
         CALL     ZERO 
         JP     DUPP
-PARS2:  CALL     RFROM
+PARS2:  CALL     RFROM  ; b u R: b 
+; leading blank have been skipped
 PARS3:  CALL     OVER
         CALL     SWAPP
         CALL     TOR
@@ -2245,10 +2251,59 @@ PARS7:  CALL     OVER
         CALL     SUBB
         CALL     RFROM
         CALL     RFROM
-        JP     SUBB
-PARS8:  CALL     OVER
-        CALL     RFROM
-        JP     SUBB
+        JP       SUBB
+PARS8:  CALL     OVER   ; b u b 
+        CALL     RFROM  ; b u b b 
+        JP       SUBB   ; b u 0 
+.ELSE
+        BUFF=3 ; string buffer  
+        CHAR=2 ; target character 
+        SLEN=1 ; string length 
+        VSIZE=4  ; local var size 
+        SUB   SP,#VSIZE 
+        LD    A,(1,X)
+        LD    (CHAR,SP),A ; c 
+        LD    A,(3,X)
+        JREQ  6$ 
+        LD    (SLEN,SP),A ; u 
+        LDW   Y,X 
+        LDW   Y,(4,Y) ;b
+        LDW   (BUFF,SP),Y 
+0$: ; skip  all character <= SPACE 
+        LD    A,(Y)
+        CP    A,#SPC+1
+        JRPL  1$ 
+        INCW  Y 
+        DEC   (SLEN,SP)
+        JRNE  0$ 
+        LDW   (4,X),Y 
+        CLRW  Y 
+        LDW   (2,X),Y 
+        LDW   (X),Y 
+        JRA   9$
+1$:     LDW   (4,X),Y
+        LDW   (BUFF,SP),Y        
+2$:
+        LD    A,(Y)
+        CP    A,(CHAR,SP)
+        JREQ  4$ 
+        INCW  Y 
+        DEC   (SLEN,SP)
+        JRNE  2$ 
+4$:
+        LD   A,(3,X)
+        SUB   A,(SLEN,SP)
+        LD    (1,X),A 
+        SUBW  Y,(BUFF,SP)
+        LDW    (2,X),Y    ; b u 
+        JRA    9$ 
+6$:
+        CLRW  Y 
+        LDW   (X),Y
+9$:
+        ADDW  SP,#VSIZE
+        RET  
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PARSE   ( c -- b u ; <string> )
@@ -2563,7 +2618,7 @@ INTE1:
         _HEADER DOTOK,3,".OK"
         CALL     STATE 
         CALL     AT
-        CALL     QBRAN
+        CALL     TBRAN
         .word      DOTO1
 .IF 0
         LDW      Y,UNEST 

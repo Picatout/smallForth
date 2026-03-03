@@ -353,6 +353,7 @@ SEE9:
 
         CALL AT 
         CALL PRT_HEX_WORD 
+        CALL SPACE 
         CALL CELLM   
         JRA 1$
 9$:     CALL DOTQP
