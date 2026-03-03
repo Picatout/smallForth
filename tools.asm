@@ -179,8 +179,10 @@ DOTS2:  CALL     DONXT
 NA=1 ; name field
 LLEN=3 ; line length
 SLEN=4 ; string length 
-VSIZE=4   
+WC=5
+VSIZE=5   
         SUB     SP,#VSIZE
+        CLR     (WC,SP)
         LDW     Y,UCNTXT 
 0$: 
         CLR     (LLEN,SP)  
@@ -199,10 +201,18 @@ VSIZE=4
         CALL    prt_cstr
         LD      A,#SPC 
         CALL    putc  
+        INC     (WC,SP)
         LDW     Y,(NA,SP)
         SUBW    Y,#2
         LDW     Y,(Y)
         JRNE     1$
+;display words count 
+        CALL    CR
+        LD      A,(WC,SP)
+        CLRW    Y
+        LD      YL,A  
+        CALL    DPUSH 
+        CALL    DOT 
         ADDW     SP,#VSIZE 
         RET  
 

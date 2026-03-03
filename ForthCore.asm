@@ -1417,6 +1417,7 @@ MSTA1:	RET
         LDW (X),Y
         RET
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2*   ( n -- n )
 ;       Multiply tos by 2.
@@ -1428,6 +1429,7 @@ TWOSTAR:
         SLAW Y
         LDW (X),Y
         RET
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       1+      ( a -- a )
@@ -2559,15 +2561,14 @@ INTE1:
 ;       Display 'ok' while interpreting.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DOTOK,3,".OK"
-        CALL     DOLIT
-        .word      INTER
-        CALL     TEVAL
+        CALL     STATE 
         CALL     AT
-        CALL     EQUAL
         CALL     QBRAN
         .word      DOTO1
+.IF 0
         LDW      Y,UNEST 
         JRNE     DOTO2 
+.ENDIF         
         CALL     DOTQP
         .byte      3
         .ascii     " ok"
@@ -2591,9 +2592,11 @@ DOTO2:  RET
 ;       Interpret  input stream.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EVAL,4,"EVAL"
+.IF 0
         LDW     Y,UNEST
         INCW    Y 
         LDW     UNEST,Y 
+.ENDIF 
 EVAL1:  CALL     TOKEN
         CALL     DUPP
         CALL     CAT     ;?input stream empty
@@ -2604,9 +2607,11 @@ EVAL1:  CALL     TOKEN
         CALL     QSTAC   ;evaluate input, check stack
         JRA     EVAL1 
 EVAL2:  _DROP
+.IF 0
         LDW     Y,UNEST 
         DECW    Y 
         LDW     UNEST,Y 
+.ENDIF 
         JP       DOTOK
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
