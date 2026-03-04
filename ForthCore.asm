@@ -128,15 +128,12 @@ USTATE = ULAST+2  ; compile or interpret state flag
 UNEST = USTATE+2  ; EVAL nesting level 
 
 ;******  System Variables  ******
-XTEMP = UNEST + 2 ; temporary storage  
-YTEMP = XTEMP+2  ; temporary storage 
-PROD1 = YTEMP+2	;space for UM*
-PROD2 = PROD1+2
-SP0  = PROD2+2	 ;initial data stack pointer
+;XTEMP = UNEST + 2 ; temporary storage  
+YTEMP = UNEST+2  ; temporary storage 
+SP0  = YTEMP+2	 ;initial data stack pointer
 RP0  =  SP0+2	 ;initial return stack pointer
 MS   =   RP0+2   ; millisecond counter 
-CNTDWN =  MS+2   ; count down timer 
-SEEDY = CNTDWN+2 ; PRNG seed 
+SEEDY = MS+2 ; PRNG seed 
 RX_QUEUE = SEEDY+2 ; UART receive circular queue. 
 RX_HEAD = RX_QUEUE+RX_QUEUE_SIZE ;  
 RX_TAIL = RX_HEAD+1 
@@ -337,55 +334,41 @@ XORW_Y:
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; MSEC ( -- u )
+;; TIMER ( -- u )
 ;; get millisecond counter 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER MSEC,4,"MSEC"
+        _HEADER TIMER,5,"TIMER"
         ldw y,MS 
 DPUSH: ; push Y on parameter stack 
         subw x,#CELLL 
         ldw (x),y 
         ret 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;  TMR-RST ( -- )
+;; Reset to 0 MS variable 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER TMR_RST,7,"TMR-RST"
+        SIM
+        CLR     MS+1
+        CLR     MS 
+        RIM 
+        RET 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  PAUSE ( u -- )
+;  WAIT ( u -- )
 ; suspend execution for u msec 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER PAUSE,5,"PAUSE"
-        ldw y,x
-        ldw y,(y)
-        addw y,MS 
-1$:     wfi  
-        cpw y,MS  
-        jrne 1$        
-        addw x,#CELLL 
-        ret 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  TIMER ( u -- )  milliseconds
-; initialize count down timer 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TIMER,5,"TIMER"
-        ldw y,x
-        ldw y,(y) 
-        ldw CNTDWN,y
-        addw x,#CELLL 
-        ret 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  TIMEOUT? ( -- 0|-1 )
-; check for TIMER exiparition 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TIMEOUTQ,8,"TIMEOUT?"
-        SUBW    X,#CELLL 
-        LDW     Y,CNTDWN 
-        JREQ    1$
-        CLRW    Y 
-        JRA     2$
-1$:     CPLW    Y 
-2$:     LDW     (X),Y 
+        _HEADER WAIT,4,"WAIT"
+        LDW     Y,X 
+        LDW     Y,(Y)
+        _DROP  
+        CALL    TMR_RST 
+1$:     WFI 
+        CPW     Y,MS   
+        JRPL    1$  
         RET 
- 
+
 ;;;;;;;;;;;;;;;;;;;;;
 ; reboot MCU 
 ; REBOOT ( -- )
@@ -435,7 +418,7 @@ NEX1:
 ;       _HEADER QBRAN,COMPO+7,"?BRANCH"        
 QBRAN:	
         LDW Y,X
-	ADDW X,#CELLL 
+	_DROP 
 	LDW Y,(Y)
         JREQ     BRAN
 	POPW Y
@@ -448,7 +431,7 @@ QBRAN:
 ;        _HEADER TBRAN,COMPO+7,"TBRANCH"
 TBRAN: 
         LDW Y,X 
-        ADDW X,#2 
+        _DROP  
         LDW Y,(Y)
         JRNE BRAN 
         POPW Y 
@@ -470,7 +453,7 @@ BRAN:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EXECU,7,"EXECUTE"
         LDW Y,X
-	ADDW X,#CELLL 
+	_DROP 
 	LDW  Y,(Y)
         JP   (Y)
 
@@ -631,11 +614,9 @@ BRAN:
 ;       Copy second stack item to top.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER OVER,4,"OVER"
-        SUBW X,#2
-        LDW Y,X
-        LDW Y,(4,Y)
-        LDW (X),Y
-        RET     
+        LDW Y,X 
+        LDW Y,(2,Y)
+        JP  DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AND     ( w w -- w )
@@ -648,7 +629,7 @@ BRAN:
         LD A,(1,X)
         AND A,(3,X)
         LD (3,X),A
-        ADDW X,#CELLL 
+        _DROP 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -662,7 +643,7 @@ BRAN:
         LD A,(1,X)
         OR A,(3,X)
         LD (3,X),A
-        ADDW X,#CELLL 
+        _DROP 
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -676,7 +657,7 @@ BRAN:
         LD A,(1,X)
         XOR A,(3,X)
         LD (3,X),A
-        ADDW X,#CELLL 
+        _DROP 
         RET
 
 ;; System and user variables
@@ -687,9 +668,7 @@ BRAN:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BASE,4,"BASE"
 	LDW Y,#UBASE 
-	SUBW X,#2
-        LDW (X),Y
-        RET
+	JP  DPUSH 
 
 .IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -698,9 +677,7 @@ BRAN:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TEMP,3,"TMP"
 	LDW Y,#UTMP
-	SUBW X,#2
-        LDW (X),Y
-        RET
+        JP  DPUSH 
 .ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -825,7 +802,7 @@ QDUP1:  RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2DROP   ( w w -- )
-;       Discard two items on stack.
+;       Drop 2 cells 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DDROP,5,"2DROP"
         ADDW X,#2*CELLL 
@@ -833,17 +810,15 @@ QDUP1:  RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2DUP    ( w1 w2 -- w1 w2 w1 w2 )
-;       Duplicate top two items.
+;       Duplicate top two cells.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DDUP,4,"2DUP"
-        SUBW X,#2*CELLL 
-        LDW Y,X
-        LDW Y,(3*CELLL,Y)
-        LDW (CELLL,X),Y
-        LDW Y,X
-        LDW Y,(2*CELLL,Y)
-        LDW (X),Y
-        RET
+        LDW     Y,X 
+        LDW     Y,(2,Y)
+        CALL    DPUSH 
+        LDW     Y,X 
+        LDW     Y,(2,Y)
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       +       ( n1 n2 -- sum )
@@ -853,7 +828,7 @@ QDUP1:  RET
         LDW Y,X
         LDW Y,(Y)
         PUSHW Y      ; R: n2 
-        ADDW X,#CELLL ; -- n1 
+        _DROP        ; -- n1 
         LDW Y,X
         LDW Y,(Y)
         ADDW Y,(1,SP)  ; n1+n2  
@@ -871,23 +846,6 @@ QDUP1:  RET
         CPLW Y
         LDW (X),Y
         RET
-
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   ~ ( 0|n<>0 -- T|F )
-; invert boolean value 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TILDE,1,"~"
-        LDW Y,X 
-        LDW Y,(Y)
-TILDE1: 
-        JREQ 1$ 
-        CLRW Y 
-        JRA 2$ 
-1$:     LDW Y,#-1
-2$:     LDW (X),Y 
-        RET 
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NEGATE  ( n -- -n )
@@ -908,7 +866,7 @@ TILDE1:
         LDW Y,X
         LDW Y,(Y) ; n2 
         PUSHW Y   ; R: -- n2 
-        ADDW X,#CELLL ; -- n1 
+        _DROP     ; -- n1 
         LDW Y,X
         LDW Y,(Y) ; n1 
         SUBW Y,(1,SP) ; n1-n2 
@@ -967,7 +925,7 @@ ZEQU1:
         LD A,#0xFF  ;true
         LDW Y,X    
         LDW Y,(Y)   ; n2 
-        ADDW X,#CELLL 
+        _DROP 
         CPW Y,(X)   ; n1==n2
         JREQ EQ1 
         CLR A 
@@ -986,7 +944,7 @@ EQ1:    LD (X),A
         CPW Y,(X)   ; cpw u1  u2 
         JRULT     ULES1
         CLR A
-ULES1:  ADDW X,#CELLL 
+ULES1:  _DROP 
         LD (X),A
         LD (1,X),A
 	RET     
@@ -1003,7 +961,7 @@ ULES1:  ADDW X,#CELLL
         CPW Y,(X)  ; n1 < n2 ? 
         JRSLT     LT1
         CLR A
-LT1:    ADDW X,#CELLL 
+LT1:    _DROP 
         LD (X),A
         LD (1,X),A
 	RET     
@@ -1020,7 +978,7 @@ LT1:    ADDW X,#CELLL
         JRUGT UGREAT1 
         CLR A   
 UGREAT1:
-        ADDW X,#CELLL 
+        _DROP 
         LD (X),A 
         LD (1,X),A 
         RET 
@@ -1039,7 +997,7 @@ UGREAT1:
         JRSGT GREAT1 
         CLR  A
 GREAT1:
-        ADDW X,#CELLL 
+        _DROP 
         LD (X),A 
         LD (1,X),A 
         RET 
@@ -1056,7 +1014,7 @@ GREAT1:
         CPW Y,(2,X)   
         JRSLT  MAX1
         LDW (2,X),Y
-MAX1:   ADDW X,#2
+MAX1:   _DROP 
 	RET     
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1069,7 +1027,7 @@ MAX1:   ADDW X,#2
         CPW Y,(2,X) 
         JRSGT MIN1
         LDW (2,X),Y
-MIN1:	ADDW X,#2
+MIN1:	_DROP 
 	RET     
 .ENDIF 
 
@@ -1088,7 +1046,7 @@ MIN1:	ADDW X,#2
 
 ;; Divide
 
-.IF 1
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       UM/MOD  ( udl udh un -- ur uq )
 ;       Unsigned divide of a double by a
@@ -1726,8 +1684,6 @@ PACKS:
 ;       digit from n.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EXTRC,7,"EXTRACT"
-;        CALL     ZERO
-;        CALL     SWAPP
         CALL     USLMOD
         CALL     SWAPP
         JP       DIGIT

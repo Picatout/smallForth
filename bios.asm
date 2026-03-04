@@ -46,11 +46,6 @@ Timer4Handler:
         ldw x,MS 
         incw x 
         ldw MS,x
-        ldw x,CNTDWN 
-        jreq 1$
-        decw x 
-        ldw CNTDWN,x 
-1$:         
         iret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

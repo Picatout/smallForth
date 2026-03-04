@@ -1,5 +1,15 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-04
+* Renommé  __PAUSE__  en __WAIT__.
+* Éliminer __TIMER__ et __TIMEOUT?__ et renommé __MSEC__ en __TIMER__.
+* Éliminé la variable __CNTDWN__ et modifié __Timer4Handler__ en conséquence.
+* Ajout du mot __TMR-RST__ pour remettre à zéro le compteur de millisecondes.
+* Réécriture de __WAIT__.
+* Réécriture de __OVER__. 
+* Réécriture de __2DUP__. 
+* Désactivation de __UM/MOD__. 
+
 ### 2026-03-03
 * Désactivation du mot __2*__  dictonnaire rendu à 172 mots.
 * Remis le mot __EVAL__ à son état original en désactivant le code modifiant la variable __UNEST__. 
