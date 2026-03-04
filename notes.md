@@ -9,6 +9,11 @@
 * Réécriture de __OVER__. 
 * Réécriture de __2DUP__. 
 * Désactivation de __UM/MOD__. 
+* Effectué un commit à 10:13:16
+* Réécriture de __+!__. 
+* Réécriture de __PAD__. 
+* Réécriture de __@EXECUTE__. 
+* Modifié __STRCQ__ pour sauté le __"__ à la fin de la chaîne en incrémentant __UINN__. 
 
 ### 2026-03-03
 * Désactivation du mot __2*__  dictonnaire rendu à 172 mots.

@@ -447,16 +447,6 @@ BRAN:
 	LDW Y,(Y)
         JP  (Y)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       EXECUTE ( ca -- )
-;       Execute  word at ca.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER EXECU,7,"EXECUTE"
-        LDW Y,X
-	_DROP 
-	LDW  Y,(Y)
-        JP   (Y)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       !       ( w a -- )
 ;       Pop  data stack to memory.
@@ -1160,7 +1150,7 @@ MMOD2:	CALL	RFROM
 MMOD3:	RET
 .ENDIF ;********************
 
-.IF 1
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       /MOD    ( n1 n2 -- r q )
 ; Signed divide n1/n2. 
@@ -1201,7 +1191,6 @@ SLMOD2: CALL TOR
 SLMOD8: 
         ADDW SP,#4 
         RET 
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       MOD     ( n1 n2 -- r )
@@ -1487,19 +1476,12 @@ RSHIFT4:
 ;       address a.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PSTOR,2,"+!"
-        PUSHW X   ; R: DP 
-        LDW Y,X 
-        LDW X,(X) ; a 
-        LDW Y,(2,Y)  ; n 
-        PUSHW Y      ; R: DP n 
-        LDW Y,X 
-        LDW Y,(Y)
-        ADDW Y,(1,SP) ; *a + n 
-        LDW (X),Y 
-        LDW X,(3,SP) ; DP
-        ADDW X,#2*CELLL  ; ( n a -- )  
-        ADDW SP,#2*CELLL ; R: DP n -- 
-        RET 
+        CALL    DUPP 
+        CALL    TOR 
+        CALL    AT 
+        CALL    PLUS 
+        CALL    RFROM 
+        JP      STORE 
                 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       COUNT   ( b -- b+ n )
@@ -1538,9 +1520,9 @@ RSHIFT4:
 ;       above  code dictionary.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PAD,3,"PAD"
-        CALL     HERE
-        _DOLIT   80
-        JP     PLUS
+        LDW     Y,UVP 
+        ADDW    Y,#80 
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TIB     ( -- a )
@@ -1557,12 +1539,25 @@ RSHIFT4:
 ;       address a.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ATEXE,8,"@EXECUTE"
-        CALL     AT
-        CALL     QDUP    ;?address or zero
-        CALL     QBRAN
-        .word      EXE1
-        CALL     EXECU   ;execute if non-zero
-EXE1:   RET     ;do nothing if zero
+        LDW     Y,X 
+        _DROP 
+        LDW     Y,(Y)
+        LDW     Y,(Y)
+        JREQ    9$
+        JP      (Y)
+9$:     RET         
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       EXECUTE ( ca -- )
+;       Execute  word at ca.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER EXECU,7,"EXECUTE"
+        LDW Y,X
+	_DROP 
+	LDW  Y,(Y)
+        JP   (Y)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CMOVE   ( b1 b2 u -- )
@@ -1920,6 +1915,7 @@ NUMQ6:
 ; forth terminal 
 ; interface 
 ;;;;;;;;;;;;;;;;;;;;;;
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       KEY?      ( -- T | F )
 ; return a flag .
@@ -2066,22 +2062,6 @@ DOTQP:
         JP     TYPES
 .ENDIF 
 
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   H. ( n -- )
-;   display n in hexadecimal 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER HDOT,2,"H."
-        CALL BASE 
-        CALL AT 
-        CALL TOR 
-        CALL HEX 
-        CALL UDOT 
-        CALL RFROM 
-        CALL BASE 
-        JP STORE 
-.ENDIF          
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .       ( w -- )
 ;       Display an integer in free
@@ -2099,16 +2079,6 @@ DOTQP:
 DOT1:   CALL     STR
         CALL     SPACE
         JP     TYPES
-
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ?       ( a -- )
-;       Display contents in memory cell.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER QUEST,1,"?"
-        CALL     AT
-        JRA     DOT
-.ENDIF 
 
 ;; Parsing
 
@@ -2154,9 +2124,9 @@ PARS:
         DEC   (SLEN,SP)
         JRNE  2$ 
 4$:
-        LD   A,(3,X)
+        LD    A,(3,X)
         SUB   A,(SLEN,SP)
-        LD    (1,X),A 
+        LD    (1,X),A     ; delta 
         SUBW  Y,(BUFF,SP)
         LDW    (2,X),Y    ; b u 
         JRA    9$ 
@@ -2750,6 +2720,7 @@ STRCQ:
         CALL     DOLIT
         .word    '"'   
         CALL     PARSE
+        INC      UINN+1 ; skip le " final
         CALL     HERE
         CALL     PACKS   ;string to code dictionary
 ; copy string to FLASH memory at CPP        
