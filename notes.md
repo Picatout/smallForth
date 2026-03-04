@@ -13,7 +13,10 @@
 * Réécriture de __+!__. 
 * Réécriture de __PAD__. 
 * Réécriture de __@EXECUTE__. 
-* Modifié __STRCQ__ pour sauté le __"__ à la fin de la chaîne en incrémentant __UINN__. 
+* Modifié __STRCQ__ pour sauté le __"__ à la fin de la chaîne en incrémentant __UINN__.
+* Effectué un commit à 11:09:59.
+* Créaton de la routine __utoa__ dans le fichier [bios.asm](bios.asm) pour remplacer plusieurs mot du FORTH.
+* Sauver de l'espace en utilisant __utoa__ au lieu des mots __HOLD__, __&lt;#__, __#&gt;__, __#__, __EXTRACT__ et __SIGN__.
 
 ### 2026-03-03
 * Désactivation du mot __2*__  dictonnaire rendu à 172 mots.

@@ -25,15 +25,6 @@ EOL_LF=0
 ; tools.asm 
 WANT_TOOLS=1
 
-; set to 1 to include 
-; scaling constants vocabulary
-; file: const_ratio.asm 
-WANT_SCALING_CONST = 0
-
-; set to 1 to include 
-; double integer arithmetic 
-WANT_DOUBLE=0
-
 ; how many bytes are reserved 
 ; by system at EEPROM base.
 EEPROM_RES = 16 

@@ -272,3 +272,39 @@ prt_cstr:
         jrne 1$
 9$:     addw sp,#1
         ret 
+
+;--------------------------------
+; convert unsigned integer to 
+; string  
+; input:
+;   A    base 
+;   Y    uint16 
+; output:
+;   A    string length 
+;   Y    *string 
+;---------------------------------
+slen=2 
+div=1
+utoa:
+        pushw  x   ; save DP 
+        push   #0  ; slen 
+        push a     ; div 
+        ldw  x,UVP  
+        addw x,#80  ; string pointer
+1$:     ld   a,(div,sp)
+        div y,a 
+        cp a,#10
+        jrmi 4$ 
+        add a,#7 
+4$:     add a,#'0 
+        ld   (x),a
+        inc  (slen,sp) 
+        decw  x 
+        tnzw  y 
+        jrne 1$
+        incw x
+        ldw   y,x   ; *string 
+        ld   a,(slen,sp) ; string length 
+        addw  sp,#2  ; drop slen and div 
+        popw  x      ; restore DP 
+        ret 

@@ -1672,7 +1672,7 @@ PACKS:
         LD      (1,X),A 
         RET         
 
-
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       EXTRACT ( n base -- n c )
 ;       Extract least significant 
@@ -1756,6 +1756,7 @@ SIGN1:  RET
         CALL     PAD
         CALL     OVER
         JP     SUBB
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       STR     ( w -- b u )
@@ -1763,6 +1764,7 @@ SIGN1:  RET
 ;       to a numeric string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STR,3,"STR"
+.IF 0
         CALL     DUPP
         CALL     TOR
         CALL     ABSS
@@ -1771,6 +1773,30 @@ SIGN1:  RET
         CALL     RFROM
         CALL     SIGN
         JP     EDIGS
+.ELSE 
+        LD     A,(X)
+        PUSH   A 
+        JRPL    1$ 
+        CALL    ABSS     
+1$:             
+        ld      A,UBASE+1 ; base 
+        LDW     Y,X 
+        LDW     Y,(Y)  ; U 
+        CALL    utoa 
+        TNZ     (1,SP)
+        JRPL    2$ 
+        PUSH    A   
+        LD      A,#'- 
+        DECW    Y 
+        LD      (Y),A
+        POP     A 
+        INC     A    ; slen 
+2$:     ADDW    SP,#1  
+        LDW     (X),Y 
+        CLRW    Y 
+        LD      YL,A 
+        JP      DPUSH         
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       HEX     ( -- )
@@ -1792,6 +1818,7 @@ SIGN1:  RET
 
 ;; Numeric input, single precision
 
+.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DIGIT?  ( c base -- u t )
 ;       Convert a character to its numeric
@@ -1819,6 +1846,7 @@ SIGN1:  RET
 DGTQ1:  CALL     DUPP
         CALL     RFROM
         JP     ULESS
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  NUMBER? ( a -- n T | a F )
@@ -2048,18 +2076,26 @@ DOTQP:
 
 .ENDIF ;**********************
 
-.IF 1 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       U.      ( u -- )
 ;       Display an unsigned integer
 ;       in free format.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER UDOT,2,"U."
+.IF 0
         CALL     BDIGS
         CALL     DIGS
         CALL     EDIGS
         CALL     SPACE
         JP     TYPES
+.ELSE 
+        CALL    SPACE 
+        LD      A,UBASE+1 
+        LDW     Y,X 
+        LDW     Y,(Y)
+        _DROP 
+        CALL    utoa 
+        JP    prt_cstr 
 .ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3213,6 +3249,7 @@ DOCONST:
 ;    c1 major 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 PRINT_VERSION:
+.IF 0
      CALL BDIGS 
      CALL DIGS 
      CALL DIGS 
@@ -3221,8 +3258,23 @@ PRINT_VERSION:
      _DROP 
      CALL DIGS 
      CALL EDIGS 
-     CALL TYPES 
+     CALL TYPES
      RET  
+.ELSE 
+      LD        A,#10 
+      LDW       Y,X 
+      LDW       Y,(2,Y)
+      CALL      utoa 
+      CALL      prt_cstr
+      LD        A,#'.' 
+      CALL      putc 
+      LDW       Y,X 
+      LDW       Y,(Y)
+      _DDROP  
+      LD        A,#10 
+      CALL      utoa
+      JP        prt_cstr 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       hi      ( -- )
@@ -3372,14 +3424,6 @@ COLD9:
 .if WANT_TOOLS
 	.include "tools.asm"
 .endif 
-
-.if WANT_DOUBLE 
-        .include "double.asm" 
-.endif 
-
-.if WANT_SCALING_CONST 
-        .include "const_ratio.asm"
-.endif
 
 ;===============================================================
 
