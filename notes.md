@@ -14,3 +14,4 @@
 * Modification de __FORGET__.
 * Modification de __RSTVEC__
 * Réécriture de __HEX__ et __DECIMAL__ en assembleur.
+* Modifié  __EXTRACT__ pour utilisé __USLMOD__ au lieu de __UMMOD__. 

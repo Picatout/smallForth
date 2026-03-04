@@ -1148,7 +1148,6 @@ MMSMb:
         RET
 .ENDIF 
 
-.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;   U/MOD ( u1 u2 -- ur uq )
 ;   unsigned divide u1/u2 
@@ -1167,7 +1166,6 @@ MMSMb:
         LDW (X),Y 
         ADDW SP,#2*CELLL ; drop quotient and DP from rstack 
         RET 
-.ENDIF 
 
 .IF 0 ;******************************
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
@@ -1728,9 +1726,9 @@ PACKS:
 ;       digit from n.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EXTRC,7,"EXTRACT"
-        CALL     ZERO
-        CALL     SWAPP
-        CALL     UMMOD
+;        CALL     ZERO
+;        CALL     SWAPP
+        CALL     USLMOD
         CALL     SWAPP
         JP       DIGIT
 
@@ -1740,7 +1738,6 @@ PACKS:
 ;       output process.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BDIGS,2,"#<"
-
         CALL     PAD
         CALL     HLD
         JP     STORE
