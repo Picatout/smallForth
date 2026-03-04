@@ -219,19 +219,9 @@ UEND:   .word      0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FORGET,6,"FORGET"
         CALL  TICK  
-; only forget users words -- ca
         CALL    DUPP 
-        CALL    TNAME 
-        call DUPP ; ( ca na na )
-        call DOLIT 
-        .word app_space ; ca na na as 
-        call  ULESS 
-        call  TBRAN 
-        .word FORGET6 
-; ( ca na -- )        
-;reset ivec with address >= ca
-        call SWAPP ; ( -- na ca ) 
-        call RSTVEC ; ( -- na )
+        CALL    RSTVEC 
+        CALL    TNAME  ; na 
 ; reset UCP, CNTXT and LAST to word before this one 
         CALL DUPP  ; na na 
         CALL CELLM ; na link  
@@ -282,10 +272,6 @@ FORGET4:
         call ZERO  
         CALL UPDATRUN  
         RET         
-FORGET6: ; tried to forget system word 
-        call ABORQ
-        .byte 10
-        .ascii " Protected"
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -293,11 +279,11 @@ FORGET6: ; tried to forget system word
 ; Initialize PRNG seed with n 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SEED,4,"SEED"
-        ldw y,x 
-        addw x,#CELLL
-        ldw y,(y)
-        _stryz SEEDY  
-        ret 
+        LDW     Y,X 
+        _DROP 
+        LDW     Y,(Y)
+        LDW     SEEDY,Y 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    RAND ( u1 -- u2 )
@@ -418,7 +404,7 @@ reboot:
 ;       Push an inline literal.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 DOLIT:
-	SUBW X,#2
+	SUBW X,#CELLL
         ldw y,(1,sp)
         ldw y,(y)
         ldw (x),y
@@ -1727,17 +1713,14 @@ PACKS:
 ;       Convert digit u to a character.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DIGIT,5,"DIGIT"
-        CALL	DOLIT
-        .word	9
-        CALL	OVER
-        CALL	LESS
-        CALL	DOLIT
-        .word	7
-        CALL	ANDD
-        CALL	PLUS
-        CALL	DOLIT
-        .word	48	;'0'
-        JP	PLUS
+        LD      A,(1,X)
+        CP      A,#10 
+        JRMI    1$ 
+        ADD     A,#7
+1$:     ADD     A,#'0 
+        LD      (1,X),A 
+        RET         
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       EXTRACT ( n base -- n c )
@@ -1757,6 +1740,7 @@ PACKS:
 ;       output process.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BDIGS,2,"#<"
+
         CALL     PAD
         CALL     HLD
         JP     STORE
@@ -1767,13 +1751,13 @@ PACKS:
 ;       into output string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER HOLD,4,"HOLD"
-        CALL     HLD
-        CALL     AT
-        CALL     ONEM
-        CALL     DUPP
-        CALL     HLD
-        CALL     STORE
-        JP     CSTOR
+        LDW     Y,UHLD 
+        DECW    Y 
+        LDW     UHLD,Y 
+        LD      A,(1,X)
+        LD      (Y),A 
+        _DROP 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       #       ( u -- u )
@@ -1846,10 +1830,8 @@ SIGN1:  RET
 ;       numeric conversions.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER HEX,3,"HEX"
-        CALL     DOLIT
-        .word      16
-        CALL     BASE
-        JP     STORE
+        MOV     UBASE+1,#16
+        RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DECIMAL ( -- )
@@ -1857,10 +1839,8 @@ SIGN1:  RET
 ;       for numeric conversions.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DECIM,7,"DECIMAL"
-        CALL     DOLIT
-        .word      10
-        CALL     BASE
-        JP     STORE
+        MOV     UBASE+1,#10 
+        RET
 
 ;; Numeric input, single precision
 
@@ -1872,7 +1852,7 @@ SIGN1:  RET
         _HEADER DIGTQ,6,"DIGIT?"
         CALL     TOR
         CALL     DOLIT
-        .word     48	; "0"
+        .word    '0'
         CALL     SUBB
         CALL     DOLIT
         .word      9
@@ -2186,76 +2166,6 @@ DOT1:   CALL     STR
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER PARS,5,"PARS$"
 PARS: 
-.IF 0
-        CALL     TEMP
-        CALL     STORE  ; TEMP=c 
-        CALL     OVER
-        CALL     TOR    ; R: b 
-        CALL     DUPP   ; b u u 
-        CALL     QBRAN
-        .word    PARS8
-        CALL     ONEM   ; b u-1
-        CALL     TEMP   
-        CALL     AT     ; b u c 
-        CALL     BLANK
-        CALL     EQUAL
-        CALL     QBRAN
-        .word      PARS3
-        CALL     TOR    ; b  R: b u 
-PARS1:  CALL     BLANK
-        CALL     OVER
-        CALL     CAT     ;skip leading blanks ONLY
-        CALL     SUBB    ; 32 - c 
-        CALL     ZLESS   ; c < 32 ? 
-        CALL     INVER
-        CALL     QBRAN
-        .word      PARS2
-        CALL     ONEP
-        CALL     DONXT
-        .word      PARS1
-        CALL     RFROM
-        _DROP
-        CALL     ZERO 
-        JP     DUPP
-PARS2:  CALL     RFROM  ; b u R: b 
-; leading blank have been skipped
-PARS3:  CALL     OVER
-        CALL     SWAPP
-        CALL     TOR
-PARS4:  CALL     TEMP
-        CALL     AT
-        CALL     OVER
-        CALL     CAT
-        CALL     SUBB    ;scan for delimiter
-        CALL     TEMP
-        CALL     AT
-        CALL     BLANK
-        CALL     EQUAL
-        CALL     QBRAN
-        .word      PARS5
-        CALL     ZLESS
-PARS5:  CALL     QBRAN
-        .word      PARS6
-        CALL     ONEP
-        CALL     DONXT
-        .word      PARS4
-        CALL     DUPP
-        CALL     TOR
-        JRA     PARS7
-PARS6:  CALL     RFROM
-        _DROP
-        CALL     DUPP
-        CALL     ONEP
-        CALL     TOR
-PARS7:  CALL     OVER
-        CALL     SUBB
-        CALL     RFROM
-        CALL     RFROM
-        JP       SUBB
-PARS8:  CALL     OVER   ; b u b 
-        CALL     RFROM  ; b u b b 
-        JP       SUBB   ; b u 0 
-.ELSE
         BUFF=3 ; string buffer  
         CHAR=2 ; target character 
         SLEN=1 ; string length 
@@ -2303,7 +2213,6 @@ PARS8:  CALL     OVER   ; b u b
 9$:
         ADDW  SP,#VSIZE
         RET  
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PARSE   ( c -- b u ; <string> )
@@ -3238,39 +3147,11 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         JP     STORE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       CALL,    ( ca -- )
+;       CALL,    ( xt -- )
 ;       Compile a subroutine call.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;        _HEADER JSRC,5,^/"CALL,"/
 JSRC: 
-.IF 0
-        LDW Y,#DROP 
-        LDW YTEMP,Y 
-        LDW Y,X 
-        LDW Y,(Y)
-        CPW Y,YTEMP 
-        JRNE JSRC1         
-; replace CALL DROP BY  ADDW X,#CELLL 
-        ADDW X,#CELLL 
-        _DOLIT ADDWX ; opcode 
-        CALL   CCOMMA 
-        _DOLIT CELLL 
-        JP     COMMA 
-JSRC1: ; check for DDROP 
-        LDW Y,#DDROP 
-        LDW YTEMP,Y 
-        LDW Y,X 
-        LDW Y,(Y)
-        CPW Y,YTEMP 
-        JRNE JSRC2 
-; replace CALL DDROP BY ADDW X,#2*CELLL 
-        ADDW X,#CELLL 
-        _DOLIT ADDWX 
-        CALL  CCOMMA 
-        _DOLIT 2*CELLL 
-        JP  COMMA 
-JSRC2: 
-.ENDIF 
         _DOLIT  CALLL     ;CALL
         CALL     CCOMMA
         JP       COMMA

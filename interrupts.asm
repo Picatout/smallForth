@@ -69,20 +69,25 @@
        .ascii " bad vector"
 
 ;------------------------------
-; RST-VEC ( ca -- )
+; RST-VEC ( xt -- )
 ; all interrupt vector with 
-; an address >= ca are resetted 
+; an address >= xt are resetted 
 ; to default
 ;------------------------------
 VECTOR_SIZE=4 
 RSTVEC:
-	CALL TOR       ; R: ca 
+	CALL DUPP 
+        _DOLIT app_space
+        CALL ULESS 
+        CALL TBRAN 
+        .WORD 6$ 
+        CALL TOR       ; R: xt 
 	_DOLIT VECTOR_INT0   
-1$: ; S: va  R: ca 
+1$: ; S: va  R: xt 
 	CALL DUPP  ; va va 
 	CALL CELLP 
 	CALL AT    ; va ia 
-	CALL RAT   ; va ia ca 
+	CALL RAT   ; va ia xt 
 	CALL ULESS 
 	CALL TBRAN 
 	.WORD 2$   ; keep this one 
@@ -91,7 +96,7 @@ RSTVEC:
 	CALL OVER   ; va a va 
 	CALL CELLP 
 	CALL FSTOR 
-2$:  ; -- va  R: ca 
+2$:  ; -- va  R: xt  
 	_DOLIT VECTOR_SIZE  
 	CALL  PLUS  ; va + 4 
 	CALL DUPP   ; va va 
@@ -99,6 +104,10 @@ RSTVEC:
 	CALL ULESS   
 	CALL TBRAN 
 	.WORD 1$ 
-	CALL RFROM    ; va ca 
+	CALL RFROM    ; va xt  
 	_DDROP        
 	RET 
+6$: ; system interrupts protected 
+        call ABORQ
+        .byte 10
+        .ascii " Protected"

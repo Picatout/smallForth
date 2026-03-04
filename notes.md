@@ -9,4 +9,8 @@
 * commit __c1c16a646aec4eb87f454c733c017b4251a6e666__ effectué à 11:15:51
 * Corrigé bogue dans __.OK__ qui ne s'affichait plus.
 * Réécriture en assembleur de la routine __PARS__ pour sauver de l'espace.
- 
+* réécriture de __DIGIT__ en assembleur. 
+* Réécritue de __HOLD__ en assembleur. 
+* Modification de __FORGET__.
+* Modification de __RSTVEC__
+* Réécriture de __HEX__ et __DECIMAL__ en assembleur.
