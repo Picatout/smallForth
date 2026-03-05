@@ -253,26 +253,6 @@ getline:
     addw sp,#VSIZE 
     ret 
 
-;------------------------------
-; print counted string
-; replace non printable by space  
-; input:
-;    A   count 
-;    Y   *str 
-;------------------------------
-prt_cstr:
-        push a 
-        tnz (1,sp)
-        jreq 9$ 
-1$:
-        ld a,(y)
-        call putc 
-        incw y 
-        dec (1,sp)
-        jrne 1$
-9$:     addw sp,#1
-        ret 
-
 ;--------------------------------
 ; convert unsigned integer to 
 ; string  

@@ -2006,8 +2006,19 @@ CHAR2:  CALL     DONXT
         LD      A,(1,X)
         LDW     Y,X 
         LDW     Y,(2,Y)
-        CALL    prt_cstr
-        JP      DDROP 
+        _DDROP 
+PRINT:
+        push a 
+        tnz (1,sp)
+        jreq 9$ 
+1$:
+        ld a,(y)
+        call putc 
+        incw y 
+        dec (1,sp)
+        jrne 1$
+9$:     addw sp,#1
+        ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CR      ( -- )
@@ -2095,7 +2106,7 @@ DOTQP:
         LDW     Y,(Y)
         _DROP 
         CALL    utoa 
-        JP    prt_cstr 
+        JP    PRINT 
 .ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3265,7 +3276,7 @@ PRINT_VERSION:
       LDW       Y,X 
       LDW       Y,(2,Y)
       CALL      utoa 
-      CALL      prt_cstr
+      CALL      PRINT
       LD        A,#'.' 
       CALL      putc 
       LDW       Y,X 
@@ -3273,7 +3284,7 @@ PRINT_VERSION:
       _DDROP  
       LD        A,#10 
       CALL      utoa
-      JP        prt_cstr 
+      JP        PRINT 
 .ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

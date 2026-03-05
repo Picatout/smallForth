@@ -198,7 +198,7 @@ VSIZE=5
         LD      (LLEN,SP),A   
         INCW    Y  
         LD      A,(SLEN,SP)
-        CALL    prt_cstr
+        CALL    PRINT
         LD      A,#SPC 
         CALL    putc  
         INC     (WC,SP)
