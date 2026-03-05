@@ -215,61 +215,65 @@ UEND:   .word      0
 ;; must be resetted also.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FORGET,6,"FORGET"
-        CALL  TICK  
-        CALL    DUPP 
-        CALL    RSTVEC 
-        CALL    TNAME  ; na 
-; reset UCP, CNTXT and LAST to word before this one 
-        CALL DUPP  ; na na 
-        CALL CELLM ; na link  
-        CALL DUPP  ; na link link   
-        CALL CPP   ; na link link cp 
-        CALL STORE ; na link   now UCP point to first deleted word link 
-        CALL AT    ; na prev_na
-        CALL DUPP  ; na prev_na prev_na   
-        CALL CNTXT ; na prev_na prev_na cntxt  
-        CALL STORE ; na prev_na 
-        CALL LAST  ; na prev_na last 
-        CALL STORE ; na 
-; follow LINK chain from 'na' back to app_space 
-; if code at ca is CALL DOVAR  
-; reset HERE to pfa value 
+; local variables 
+LNK=1
+NAME=3
+XT=5
+NLEN=7
+VSIZE=8 
+        CALL    TOKEN 
+        CALL    NAMEQ 
+        CALL    QDUP 
+        CALL    QBRAN 
+        .WORD   ABOR1   
+        CALL    SWAPP   ; na ca  
+        CALL    RSTVEC  ; -- na 
+        PUSHW   X 
+        SUB     SP,#VSIZE 
+        LDW     Y,UCNTXT
+        LDW     (NAME,SP),Y 
+        SUBW    Y,#2 
+        LDW     (LNK,SP),Y
+        LDW     Y,X 
+        LDW     Y,(Y)  ; na 
+        SUBW    Y,#2 
+        LDW     X,Y  ; boundary link 
+; set UCP,UCNTXT,ULAST 
+        LDW     UCP,Y ; CP !  forget <name> and following 
+        LDW     Y,(Y) ; previous dictionary entry 
+        LDW     UCNTXT,Y ; CONTEXT !  new context 
+        LDW     ULAST,Y  ; LAST !     new last 
+; Must free any RAM used by erased variables        
+        CLR     (NLEN,SP)  
 FORGET1: 
-        CALL DUPP  ; na na 
-        _DOLIT app_space  
-        CALL UGREAT  ; na > app_space?
-        CALL QBRAN 
-        .WORD FORGET4  ; no then done 
-        CALL DUPP   ; na na 
-        CALL NAMET  ; na ca  
-        CALL ONEP   ; skip over CALL  
-        CALL DUPP   
-        CALL AT     ; get routine address 
-        _DOLIT DOVAR
-        CALL EQUAL    ; adr = DOVAR ?
-        CALL QBRAN     
-        .WORD FORGET2  ; not a VARIABLE  
-;reset HERE 
-        CALL CELLP 
-        CALL AT 
-        CALL VPP 
-        CALL STORE
-        JRA  FORGET3 
-FORGET2:
+        LDW     Y,(NAME,SP)
+        LD      A,(Y)
+        AND     A,#0X1F 
+        INC     A 
+        LD      (NLEN+1,SP),A 
+        ADDW    Y,(NLEN,SP)   ; CALL code  
+        INCW    Y  ;  XT
+        LDW     (XT,SP),Y
+        LDW     Y,(Y)  
+        CPW     Y,#DOVAR 
+        JRNE    FORGET3 
+; variable then free RAM used 
+        LDW     Y,(XT,SP) 
+        ADDW    Y,#2   ; pointer to RAM cell  
+        LDW     Y,(Y)  ; var data address 
+        LDW     UVP,Y  ; free RAM cell 
+FORGET3: 
+        LDW     Y,(LNK,SP)
+        LDW     Y,(Y)  ; previous name in dictionary  
+        LDW     (NAME,SP),Y
+        SUBW    y,#2 
+        LDW     (LNK,SP),Y ; new link  
+        CPW     X,(LNK,SP) ; scan boundary 
+        JRULE   FORGET1 
+        ADDW    SP,#VSIZE 
+        POPW    X 
         _DROP 
-FORGET3:         
-        CALL CELLM  ; link field  
-        CALL AT     ; previous word  na  
-        CALL DUPP 
-        CALL TBRAN 
-        .WORD FORGET1 
-FORGET4:
-        _DROP ; na  
-        CALL UPDATPTR 
-        call ZERO  
-        CALL UPDATRUN  
-        RET         
-
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    SEED ( n -- )

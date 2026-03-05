@@ -1,5 +1,9 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-05
+* merge de la branche test à la branche main 
+* Réécriture du mot __FORGET__ pour sauver de l'espace. 
+
 ### 2026-03-04
 * Renommé  __PAUSE__  en __WAIT__.
 * Éliminer __TIMER__ et __TIMEOUT?__ et renommé __MSEC__ en __TIMER__.
