@@ -20,6 +20,7 @@
 * Renommé __prt_cstr__  en __PRINT__ et déplacé dans [ForthCore.asm](ForthCore.asm).
 * commit à 21:55:06.
 * Débuté réécriture de NUMBER? en assembleur.
+* commit à 22:47:06.
 
 ### 2026-03-03
 * Désactivation du mot __2*__  dictonnaire rendu à 172 mots.
