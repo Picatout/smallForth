@@ -1818,7 +1818,7 @@ SIGN1:  RET
 
 ;; Numeric input, single precision
 
-.IF 1
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DIGIT?  ( c base -- u t )
 ;       Convert a character to its numeric
@@ -1854,6 +1854,7 @@ DGTQ1:  CALL     DUPP
 ;  integer. Push a flag on tos.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NUMBQ,7,"NUMBER?"
+.IF 0
         CALL     BASE
         CALL     AT
         CALL     TOR
@@ -1916,28 +1917,92 @@ NUMQ2:  ; digit loop
 NUMQ3:  CALL     SWAPP
         JRA      NUMQ5
 NUMQ4:  
-.if 1 ; optimize 
         ADDW SP,#2*CELLL ; drop 2 elements from R:
         ADDW X,#2*CELLL  ; drop 2 elements from S: 
-.else
-        CALL     RFROM
-        CALL     RFROM
-        CALL     DDROP
-        CALL     DDROP
-.endif 
         CALL     ZERO 
 NUMQ5:  CALL     DUPP
 NUMQ6:  
-.if 1 ; optimize
         addw sp,#CELLL  ; drop 1 element from R: 
         addw x,#CELLL   ; drop 1 element from S: 
-.else 
-        CALL     RFROM
-        CALL     DDROP
-.endif 
         CALL     RFROM
         CALL     BASE
         JP       STORE
+.ELSE 
+; local variables 
+BAS=1
+SIGN=2
+SLEN=3 
+DIG=4
+STRNG=6 
+NBR=8
+PRODL=10 
+VSIZE=12
+        SUB     SP,#VSIZE 
+        CLR     (SIGN,SP)
+        CLR     (DIG,SP)
+        CLRW    Y 
+        LDW     (NBR,SP),Y 
+        LD      A,UBASE+1 
+        LD      (BAS,SP),A 
+        LDW     Y,X 
+        LDW     Y,(Y)   ; cstr 
+        LD      A,(Y)   ; string length  
+        LD      (SLEN,SP),A 
+        INCW    Y
+        LD      A,(Y)   
+        CP      A,#'$'
+        JRNE    1$ 
+        LD      A,#16 
+        LD      (BAS,SP),A 
+        DEC     (SLEN,SP)
+        INCW    Y 
+        LD      A,(Y)
+1$:     CP      A,#'-' 
+        JRNE    5$
+        CPL     (SIGN,SP)
+        DEC     (SLEN,SP)
+        INCW    Y 
+4$:     LD      A,(Y)
+5$:     INCW    Y
+        LDW     (STRNG,SP),Y  
+        SUB     A,#'0'
+        CP      A,#10
+        JRMI    6$ 
+        SUB     A,#7 
+6$:     CP      A,(BAS,SP)
+        JRPL    8$ 
+        LD      (DIG+1,SP),A 
+        LD      A,(NBR+1,SP)
+        LD      YL,A 
+        LD      A,(BAS,SP)
+        MUL     Y,A
+        LDW     (PRODL,SP),Y 
+        LD      A,(NBR,SP)
+        LD      YL,A 
+        LD      A,(BAS,SP)
+        MUL     Y,A 
+        CLR     A 
+        RLWA    Y 
+        ADDW    Y,(PRODL,SP)
+        ADDW    Y,(DIG,SP)
+        LDW     (NBR,SP),Y 
+        LDW     Y,(STRNG,SP)
+        DEC     (SLEN,SP)
+        JRNE    4$
+; all character done 
+        LDW     Y,(NBR,SP)
+        TNZ     (SIGN,SP)
+        JREQ    7$
+        NEGW    Y 
+7$:     LDW     (X),Y  ; n 
+        LDW     Y,#-1
+        JRA     9$ 
+8$: ; not a digit 
+        CLRW    Y 
+9$:     CALL    DPUSH 
+10$:    ADDW    SP,#VSIZE 
+        RET  
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ; forth terminal 
