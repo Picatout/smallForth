@@ -303,23 +303,23 @@ FORGET3:
         DEC A 
         JRNE 1$
         CALL  XORW_Y
-        _stryz SEEDY 
+        LDW  SEEDY,Y  
         LD A,#9 
 2$:     SRLW Y 
         DEC A 
         JRNE 2$ 
         CALL XORW_Y
-        _stryz SEEDY 
+        LDW  SEEDY,Y  
         LD A,#8 
 3$:     SLLW Y 
         DEC A 
         JRNE 3$ 
         CALL XORW_Y 
-        _stryz SEEDY 
+        LDW SEEDY,Y  
         LDW Y,X 
         LDW Y,(Y)
         PUSHW X 
-        _ldxz SEEDY 
+        LDW  X,SEEDY 
         DIVW X,Y 
         POPW X 
         LDW (X),Y 

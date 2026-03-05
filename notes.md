@@ -3,6 +3,7 @@
 ### 2026-03-05
 * merge de la branche test à la branche main 
 * Réécriture du mot __FORGET__ pour sauver de l'espace. 
+* Modifié __RAND__ pour remplacé les les macros **_stryz** et **_ldxz** .
 
 ### 2026-03-04
 * Renommé  __PAUSE__  en __WAIT__.
