@@ -1676,108 +1676,12 @@ PACKS:
         LD      (1,X),A 
         RET         
 
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       EXTRACT ( n base -- n c )
-;       Extract least significant 
-;       digit from n.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER EXTRC,7,"EXTRACT"
-        CALL     USLMOD
-        CALL     SWAPP
-        JP       DIGIT
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       <#      ( -- )
-;       Initiate  numeric 
-;       output process.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER BDIGS,2,"#<"
-        CALL     PAD
-        CALL     HLD
-        JP     STORE
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       HOLD    ( c -- )
-;       Insert a character 
-;       into output string.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER HOLD,4,"HOLD"
-        LDW     Y,UHLD 
-        DECW    Y 
-        LDW     UHLD,Y 
-        LD      A,(1,X)
-        LD      (Y),A 
-        _DROP 
-        RET 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       #       ( u -- u )
-;       Extract one digit from u and
-;       append digit to output string.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DIG,1,"#"
-        CALL     BASE
-        CALL     AT
-        CALL     EXTRC
-        JP     HOLD
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       #S      ( u -- 0 )
-;       Convert u until all digits
-;       are added to output string.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DIGS,2,"#S"
-DIGS1:  CALL     DIG
-        CALL     DUPP
-        CALL     QBRAN
-        .word      DIGS2
-        JRA     DIGS1
-DIGS2:  RET
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       SIGN    ( n -- )
-;       Add a minus sign to
-;       numeric output string.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER SIGN,4,"SIGN"
-        CALL     ZLESS
-        CALL     QBRAN
-        .word      SIGN1
-        CALL     DOLIT
-        .word      45	;"-"
-        JP     HOLD
-SIGN1:  RET
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       #>      ( w -- b u )
-;       Prepare output string.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER EDIGS,2,"#>"
-        _DROP
-        CALL     HLD
-        CALL     AT
-        CALL     PAD
-        CALL     OVER
-        JP     SUBB
-.ENDIF 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       STR     ( w -- b u )
 ;       Convert a signed integer
 ;       to a numeric string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STR,3,"STR"
-.IF 0
-        CALL     DUPP
-        CALL     TOR
-        CALL     ABSS
-        CALL     BDIGS
-        CALL     DIGS
-        CALL     RFROM
-        CALL     SIGN
-        JP     EDIGS
-.ELSE 
         LD     A,(X)
         PUSH   A 
         JRPL    1$ 
@@ -1800,7 +1704,6 @@ SIGN1:  RET
         CLRW    Y 
         LD      YL,A 
         JP      DPUSH         
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       HEX     ( -- )
@@ -1822,116 +1725,12 @@ SIGN1:  RET
 
 ;; Numeric input, single precision
 
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       DIGIT?  ( c base -- u t )
-;       Convert a character to its numeric
-;       value. A flag indicates success.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DIGTQ,6,"DIGIT?"
-        CALL     TOR
-        CALL     DOLIT
-        .word    '0'
-        CALL     SUBB
-        CALL     DOLIT
-        .word      9
-        CALL     OVER
-        CALL     LESS
-        CALL     QBRAN
-        .word      DGTQ1
-        CALL     DOLIT
-        .word      7
-        CALL     SUBB
-        CALL     DUPP
-        CALL     DOLIT
-        .word      10
-        CALL     LESS
-        CALL     ORR
-DGTQ1:  CALL     DUPP
-        CALL     RFROM
-        JP     ULESS
-.ENDIF 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;  NUMBER? ( a -- n T | a F )
 ;  Convert a number string to
 ;  integer. Push a flag on tos.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NUMBQ,7,"NUMBER?"
-.IF 0
-        CALL     BASE
-        CALL     AT
-        CALL     TOR
-        CALL     ZERO
-        CALL     OVER
-        CALL     COUNT
-        CALL     OVER
-        CALL     CAT
-        CALL     DOLIT
-        .WORD    '$'
-        CALL     EQUAL
-        CALL     QBRAN
-        .WORD    NUMQ1
-        CALL     HEX   ; hexadecimal string 
-        CALL     SWAPP
-        CALL     ONEP
-        CALL     SWAPP
-        CALL     ONEM
-NUMQ1:  CALL     OVER
-        CALL     CAT
-        CALL     DOLIT
-        .WORD    '-'
-        CALL     EQUAL
-        CALL     TOR
-        CALL     SWAPP
-        CALL     RAT
-        CALL     SUBB
-        CALL     SWAPP
-        CALL     RAT
-        CALL     PLUS
-        CALL     QDUP
-        CALL     QBRAN
-        .WORD    NUMQ6
-        CALL     ONEM
-        CALL     TOR
-NUMQ2:  ; digit loop 
-        CALL     DUPP
-        CALL     TOR
-        CALL     CAT
-        CALL     BASE
-        CALL     AT
-        CALL     DIGTQ
-        CALL     QBRAN
-        .WORD    NUMQ4
-        CALL     SWAPP
-        CALL     BASE
-        CALL     AT
-        CALL     STAR
-        CALL     PLUS
-        CALL     RFROM
-        CALL     ONEP
-        CALL     DONXT
-        .WORD    NUMQ2
-        CALL     RAT
-        CALL     SWAPP
-        _DROP
-        CALL     QBRAN
-        .WORD    NUMQ3
-        CALL     NEGAT ; negative number 
-NUMQ3:  CALL     SWAPP
-        JRA      NUMQ5
-NUMQ4:  
-        ADDW SP,#2*CELLL ; drop 2 elements from R:
-        ADDW X,#2*CELLL  ; drop 2 elements from S: 
-        CALL     ZERO 
-NUMQ5:  CALL     DUPP
-NUMQ6:  
-        addw sp,#CELLL  ; drop 1 element from R: 
-        addw x,#CELLL   ; drop 1 element from S: 
-        CALL     RFROM
-        CALL     BASE
-        JP       STORE
-.ELSE 
 ; local variables 
 BAS=1
 SIGN=2
@@ -1970,6 +1769,7 @@ VSIZE=12
 5$:     INCW    Y
         LDW     (STRNG,SP),Y  
         SUB     A,#'0'
+        JRMI    8$
         CP      A,#10
         JRMI    6$ 
         SUB     A,#7 
@@ -2006,7 +1806,6 @@ VSIZE=12
 9$:     CALL    DPUSH 
 10$:    ADDW    SP,#VSIZE 
         RET  
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ; forth terminal 
@@ -2100,6 +1899,34 @@ PRINT:
         LD      A,#LF 
         JP      putc 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       $,"     ( -- )
+;       Compile a literal string
+;       up to next " .
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;        _HEADER STRCQ,3,^/'$,"'/
+STRCQ:
+        CALL     DOLIT
+        .word    '"'   
+        CALL     PARSE
+        INC      UINN+1 ; skip le " final
+        CALL     HERE
+        CALL     PACKS   ;string to code dictionary
+; copy string to FLASH memory at CP       
+        CALL     COUNT
+        CALL     ONEP 
+        CALL     TOR 
+        CALL     ONEM 
+        CALL     CPP
+        CALL     AT 
+        CALL     RAT 
+        CALL     FCPY
+        CALL     CPHERE  
+        CALL     RFROM
+        CALL     PLUS  
+        CALL     CPP 
+        JP       STORE 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       do$     ( -- a )
 ;       Return  address of a compiled
@@ -2107,15 +1934,16 @@ PRINT:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       _HEADER DOSTR,COMPO+3,"DO$"
 DOSTR:
-        CALL     RFROM
-        CALL     RAT
-        CALL     RFROM
-        CALL     COUNT
-        CALL     PLUS
-        CALL     TOR
-        CALL     SWAPP
-        CALL     TOR
-        RET
+        LDW     Y,(3,SP) ; ret_adr of DOTQP 
+        CALL    DPUSH    ; ( -- a )
+        LD      A,(Y)    ; sting length 
+        INC     A 
+        PUSH    A 
+        PUSH    #0 
+        ADDW    Y,(1,SP)
+        ADDW    SP,#2 
+        LDW     (3,SP),Y ;  ret_adr of DOTQP after string
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       $"|     ( -- a )
@@ -2127,6 +1955,18 @@ STRQP:
         CALL     DOSTR
         RET 
 
+.IF 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       $"     ( -- ; <string> )
+;       Compile an inline string literal.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;        _HEADER STRQ,IMEDD+COMPO+2,'$"'
+STRQ: 
+        CALL     COMPI
+        .WORD    STRQP 
+        JP       STRCQ
+.ENDIF  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ."|     ( -- )
 ;       Run time routine of ." .
@@ -2137,6 +1977,17 @@ DOTQP:
         CALL     DOSTR
         CALL     COUNT
         JP       TYPES
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       ."          ( -- ; <string> )
+;       Compile an inline string literal 
+;       to be typed out at run time.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DOTQ,IMEDD+COMPO+2,'."'
+        CALL     COMPI
+        .word    DOTQP 
+        JP       STRCQ
+
 
 .IF 0 ;*************************
 
@@ -2360,9 +2211,9 @@ TNAM4:  CALL     DDROP
         _HEADER NAMET,5,"NAME>"
         CALL     COUNT
         CALL     DOLIT
-        .word      31
+        .WORD    0X1F
         CALL     ANDD
-        JP     PLUS
+        JP       PLUS
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SAME?   ( a a u -- a a f \ -0+ )
@@ -2506,19 +2357,20 @@ FIND5:  CALL     RFROM
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABORQ,COMPO+6,'ABORT"'
         CALL     QBRAN
-        .word      ABOR2   ;text flag
+        .word      ABOR2   ;no error 
+; print error message and abort 
         CALL     DOSTR
 ABOR1:  MOV     BASE,#10 ; reset to default 
         CALL     SPACE
         CALL     COUNT
         CALL     TYPES
         CALL     DOLIT
-        .word     63 ; "?"
+        .WORD    '?'
         CALL     EMIT
         CALL     CR
-        JP     ABORT   ;pass error string
-ABOR2:  CALL     DOSTR
-        JP     DROP
+        JP       ABORT   
+ABOR2:  CALL     DOSTR   ;no error 
+        JP       DROP    ;skip error string 
 
 ;; The text interpreter
 
@@ -2826,34 +2678,6 @@ NOOP:
         JP (2,Y) 
 .ENDIF 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       $,"     ( -- )
-;       Compile a literal string
-;       up to next " .
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER STRCQ,3,^/'$,"'/
-STRCQ:
-        CALL     DOLIT
-        .word    '"'   
-        CALL     PARSE
-        INC      UINN+1 ; skip le " final
-        CALL     HERE
-        CALL     PACKS   ;string to code dictionary
-; copy string to FLASH memory at CPP        
-        CALL     COUNT
-        CALL     ONEP 
-        CALL     TOR 
-        CALL     ONEM 
-        CALL     CPP
-        CALL     AT 
-        CALL     RAT 
-        CALL     FCPY
-        CALL     CPHERE  
-        CALL     RFROM
-        CALL     PLUS  
-        CALL     CPP 
-        JP       STORE 
-
 ;; Structures
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3036,26 +2860,6 @@ STRCQ:
         CALL     COMPI
         .word ABORQ
         JP     STRCQ
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       $"     ( -- ; <string> )
-;       Compile an inline string literal.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER STRQ,IMEDD+COMPO+2,'$"'
-STRQ: 
-        CALL     COMPI
-        .word STRQP 
-        JP     STRCQ
- 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ."          ( -- ; <string> )
-;       Compile an inline string literal 
-;       to be typed out at run time.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DOTQ,IMEDD+COMPO+2,'."'
-        CALL     COMPI
-        .word    DOTQP 
-        JP       STRCQ
 
 ;; Name compiler
 

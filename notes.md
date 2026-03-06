@@ -4,6 +4,12 @@
 * merge de la branche test à la branche main 
 * Réécriture du mot __FORGET__ pour sauver de l'espace. 
 * Modifié __RAND__ pour remplacé les les macros **_stryz** et **_ldxz** .
+* commit à 11:48:48
+* Corrigé bogue dand __NUMBER?__. 
+* Réécriture de DOSTR en assembleur. 
+* Désactivé __$"__ qui n'était pas utilisé.
+* commit à 21:28
+
 
 ### 2026-03-04
 * Renommé  __PAUSE__  en __WAIT__.
