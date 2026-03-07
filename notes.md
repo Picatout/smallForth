@@ -1,5 +1,9 @@
 # NOTES DE TRAVAIL
 
+#### 2026-03-07
+* Réécriture de __SAME?__ en assembleur pour réduire la taille.
+
+
 ### 2026-03-05
 * merge de la branche test à la branche main 
 * Réécriture du mot __FORGET__ pour sauver de l'espace. 

@@ -2221,6 +2221,7 @@ TNAM4:  CALL     DDROP
 ;       strings. Return 0 if identical.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SAMEQ,5,"SAME?"
+.IF 0
         CALL     ONEM
         CALL     TOR
         JRA     SAME2
@@ -2241,6 +2242,34 @@ SAME1:  CALL     OVER
 SAME2:  CALL     DONXT
         .word      SAME1
         JP     ZERO 
+.ELSE
+; local variables 
+XSAVE=1
+SLEN=3
+VSIZE=3
+        SUB     SP,#VSIZE
+        LDW     (XSAVE,SP),X  
+        DEC     (1,X)
+        LD      A,(1,X)
+        JREQ    8$
+        LD      (SLEN,SP),A 
+        LDW     Y,X 
+        LDW     Y,(2,Y)  ; a2 
+        LDW     X,(4,X)  ; a1
+1$:     LD      A,(Y)
+        SUB     A,(X)
+        JRNE    8$
+        INCW    X 
+        INCW    Y 
+        DEC     (SLEN,SP)
+        JRNE    1$ 
+8$:
+        LDW     X,(XSAVE,SP) 
+        LD      (1,X),A 
+9$:     ADDW    SP,#VSIZE 
+        RET 
+.ENDIF 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       find    ( a va -- ca na | a F )
