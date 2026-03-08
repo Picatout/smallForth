@@ -1,6 +1,12 @@
 # NOTES DE TRAVAIL
 
-#### 2026-03-07
+### 2026-03-08 
+*  sauvegarde des fichiers *.asm dans le dossier __save__. 
+*  RESET de la brnache test à 3bd05065b7a25f2059e261860485b8ee48a04c41
+*  Ajout de CHIPID dans le fichier [stm8l151k6.inc](inc/stm8l151k6.inc).
+*  Modifié routine __reset__ dans [bios.asm](bios.asm) pour initialisé __SEEDY__ avec le LOT#. 
+
+### 2026-03-07
 * Réécriture de __SAME?__ en assembleur pour réduire la taille.
 
 

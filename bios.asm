@@ -95,9 +95,9 @@ reset:
 	clr (X)
 	decw x 
         jrne 1$
-; set SEEDY to $0101  
-        inc SEEDY  
-        inc SEEDY+1          
+; set SEEDY to $0101
+        LDW  Y,CHIPID+5 ; LOT 
+        LDW   SEEDY,Y        
 
 ; initialize stacks 
         LDW     X,#STACK  ;initialize return stack

@@ -2144,9 +2144,10 @@ PARS:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PAREN,IMEDD+1,"("
         CALL     DOLIT
-        .word     41	; ")"
+        .word   ')'
         CALL     PARSE
-        JP     DDROP
+        INC      UINN+1
+        JP       DDROP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       \       ( -- )
