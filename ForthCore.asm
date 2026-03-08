@@ -2146,7 +2146,6 @@ PARS:
         CALL     DOLIT
         .word   ')'
         CALL     PARSE
-        INC      UINN+1
         JP       DDROP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2216,34 +2215,13 @@ TNAM4:  CALL     DDROP
         CALL     ANDD
         JP       PLUS
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SAME?   ( a a u -- a a f \ -0+ )
 ;       Compare u cells in two
 ;       strings. Return 0 if identical.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SAMEQ,5,"SAME?"
-.IF 0
-        CALL     ONEM
-        CALL     TOR
-        JRA     SAME2
-SAME1:  CALL     OVER
-        CALL     RAT
-        CALL     PLUS
-        CALL     CAT
-        CALL     OVER
-        CALL     RAT
-        CALL     PLUS
-        CALL     CAT
-        CALL     SUBB
-        CALL     QDUP
-        CALL     QBRAN
-        .word      SAME2
-        CALL     RFROM
-        JP       DROP
-SAME2:  CALL     DONXT
-        .word      SAME1
-        JP     ZERO 
-.ELSE
 ; local variables 
 XSAVE=1
 SLEN=3
@@ -2271,13 +2249,35 @@ VSIZE=3
         RET 
 .ENDIF 
 
+;----------------------------
+; Compare 2 counted string 
+; input:
+;    A   str length 
+;    Y   str1 
+;    X   str2 
+; output 
+;   A     0 IF same 
+;----------------------------
+CSTRCMP:
+        PUSH    A
+1$:
+        LD      A,(X)
+        SUB     A,(Y)
+        JRNE    9$ 
+        INCW    X 
+        INCW    Y 
+        DEC     (1,SP)
+        JRNE    1$       
+9$:     ADDW    SP,#1 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       find    ( a va -- ca na | a F )
+;       find    ( a cntxt -- ca na | a F )
 ;       Search vocabulary for string.
 ;       Return ca and na if succeeded.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FIND,4,"FIND"
+.IF 0
         CALL     SWAPP
         CALL     DUPP
         CALL     CAT
@@ -2329,6 +2329,58 @@ FIND5:  CALL     RFROM
         CALL     DUPP
         CALL     NAMET
         JP     SWAPP
+.ELSE 
+ ;local variables 
+ NFA=1
+ TRGT=3
+ XSAVE=5 
+ VSIZE=6
+        SUB     SP,#VSIZE
+        LDW     (XSAVE,SP),X  
+        LDW     Y,X 
+        LDW     Y,(Y) ; CONTEXT  
+        LDW     Y,(Y) ; nfa 
+        LDW     (NFA,SP),Y 
+        LDW     Y,X 
+        LDW     Y,(2,Y) ; searched name 
+        LDW     (TRGT,SP),Y 
+; compare with this dictionary entry 
+        LDW    Y,(NFA,SP)    
+1$:
+        LD     A,(Y)
+        AND    A,#0X1F ; mask flags 
+        LDW    X,(TRGT,SP)
+        CP     A,(X)
+        JRNE   2$ 
+        INCW   Y 
+        INCW   X 
+        CALL   CSTRCMP 
+        TNZ    A 
+        JREQ   4$
+2$: ; next entry 
+        LDW    Y,(NFA,SP)
+        SUBW   Y,#2 
+        LDW    Y,(Y)
+        JREQ   3$ 
+        LDW    (NFA,SP),Y 
+        JRA    1$
+3$: ; not found 
+        LDW     X,(XSAVE,SP)
+        CLRW    Y 
+        LDW     (X),Y 
+        JRA     9$ 
+
+4$: ; found 
+        LDW     X,(XSAVE,SP)
+        LDW     Y,(NFA,SP)
+        LDW     (2,X),Y
+        LDW     (X),Y   
+        CALL    NAMET 
+        CALL    SWAPP 
+9$:         
+        ADDW    SP,#VSIZE 
+        RET 
+.ENDIF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NAME?   ( a -- ca na | a F )
