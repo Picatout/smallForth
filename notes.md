@@ -6,7 +6,10 @@
 *  Ajout de CHIPID dans le fichier [stm8l151k6.inc](inc/stm8l151k6.inc).
 *  Modifié routine __reset__ dans [bios.asm](bios.asm) pour initialisé __SEEDY__ avec le LOT#. 
 *  Commit 12:08 
-
+*  Corrigé bogue dans __FIND__. 
+*  Commit 15:32 
+*  Corrigé bogue dans __PARS__.
+ 
 ### 2026-03-07
 * Réécriture de __SAME?__ en assembleur pour réduire la taille.
 

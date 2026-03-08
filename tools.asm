@@ -357,8 +357,8 @@ SEE9:
         CALL CELLM   
         JRA 1$
 9$:     CALL DOTQP
-        .BYTE 3
-        .ASCII " <R"
+        .BYTE 4
+        .ASCII " <R "
         _DROP 
         CALL PRT_HEX_WORD 
         CALL CR 

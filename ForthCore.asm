@@ -1909,7 +1909,6 @@ STRCQ:
         CALL     DOLIT
         .word    '"'   
         CALL     PARSE
-        INC      UINN+1 ; skip le " final
         CALL     HERE
         CALL     PACKS   ;string to code dictionary
 ; copy string to FLASH memory at CP       
@@ -2089,9 +2088,10 @@ PARS:
         JREQ  4$ 
         INCW  Y 
         DEC   (SLEN,SP)
-        JRNE  2$ 
-4$:
-        LD    A,(3,X)
+        JRNE  2$
+        JRA   5$ 
+4$:     DEC   (SLEN,SP)
+5$:     LD    A,(3,X)
         SUB   A,(SLEN,SP)
         LD    (1,X),A     ; delta 
         SUBW  Y,(BUFF,SP)
