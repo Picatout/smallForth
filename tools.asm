@@ -233,17 +233,10 @@ DOTID: ; ( adr -- )
 ;------------------------
 PRT_ADR: ; ( adr -- adr )
         CALL DUPP 
-;        CALL HDOT 
         CALL PRT_HEX_WORD  
         _DOLIT 2 
         CALL SPACS
         RET 
-
-        _DOLIT 2 
-        CALL SPACS 
-        CALL DOTQP
-        .BYTE 3 
-        .ASCII "JP " 
 
 ;-------------------------------
 ; print CALL or JP target 
