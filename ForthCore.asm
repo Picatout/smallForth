@@ -2067,7 +2067,10 @@ PARS:
         LD    (SLEN,SP),A ; u 
         LDW   Y,X 
         LDW   Y,(4,Y) ;b
-        LDW   (BUFF,SP),Y 
+        LDW   (BUFF,SP),Y
+        LD     A,(CHAR,SP)
+        CP     A,#SPC 
+        JRNE   1$  
 0$: ; skip  all character <= SPACE 
         LD    A,(Y)
         CP    A,#SPC+1

@@ -10,6 +10,7 @@
 *  Commit 15:32 
 *  Corrigé bogue dans __PARS__.
 *  Supprimé code fantôme dans [tools.asm](tools.asm).
+*  Modifié __PARS__ pour que les espaces soient sautées seulement lorsque le séparateur est un espace.
 
 ### 2026-03-07
 * Réécriture de __SAME?__ en assembleur pour réduire la taille.
