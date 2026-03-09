@@ -1,5 +1,12 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-09 
+* Remplacé __CALL XORW_Y___ par __CALLR XORW_Y__.
+* Recodé __WAIT__ pour changer l'ordre des instructions.
+* Désactivation du mot __TEMP__. 
+* Modifié  __0&lt;__ pour sauver de l'espace. 
+
+
 ### 2026-03-08 
 *  sauvegarde des fichiers *.asm dans le dossier __save__. 
 *  RESET de la brnache test à 3bd05065b7a25f2059e261860485b8ee48a04c41

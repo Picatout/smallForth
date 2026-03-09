@@ -166,7 +166,7 @@ BKSPP   =     8       ;back space
 LF      =     10      ;line feed
 CRR     =     13      ;carriage return
 CTRL_C  =     3       ; stop porgram hotkey 
-CTRL_X  =     24      ; reboot hotkey 
+CTRL_X  =     24      ; REBOOT hotkey 
 ERR     =     27      ;error escape
 SPC     =     32      ; space 
 TIC     =     39      ;tick
@@ -212,7 +212,7 @@ UEND:   .word      0
 ;; Reset dictionary pointer before 
 ;; forgotten word. RAM space and 
 ;; interrupt vector defined after 
-;; must be resetted also.
+;; also must be resetted.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FORGET,6,"FORGET"
 ; local variables 
@@ -302,19 +302,19 @@ FORGET3:
         SLLW  Y 
         DEC A 
         JRNE 1$
-        CALL  XORW_Y
+        CALLR  XORW_Y
         LDW  SEEDY,Y  
         LD A,#9 
 2$:     SRLW Y 
         DEC A 
         JRNE 2$ 
-        CALL XORW_Y
+        CALLR XORW_Y
         LDW  SEEDY,Y  
         LD A,#8 
 3$:     SLLW Y 
         DEC A 
         JRNE 3$ 
-        CALL XORW_Y 
+        CALLR XORW_Y 
         LDW SEEDY,Y  
         LDW Y,X 
         LDW Y,(Y)
@@ -364,21 +364,21 @@ DPUSH: ; push Y on parameter stack
 ; suspend execution for u msec 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER WAIT,4,"WAIT"
+        CALL    TMR_RST 
         LDW     Y,X 
         LDW     Y,(Y)
         _DROP  
-        CALL    TMR_RST 
 1$:     WFI 
         CPW     Y,MS   
         JRPL    1$  
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;
-; reboot MCU 
 ; REBOOT ( -- )
+; reboot MCU 
 ;;;;;;;;;;;;;;;;;;;;;
-;        _HEADER reboot,6,"REBOOT"
-reboot:
+;        _HEADER REBOOT,6,"REBOOT"
+REBOOT:
         clr FLASH_IAPSR 
         _swreset
 
@@ -453,7 +453,7 @@ BRAN:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       !       ( w a -- )
-;       Pop  data stack to memory.
+;       store w to a 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STORE,1,"!"
         LDW Y,X
@@ -485,7 +485,7 @@ BRAN:
 	LDW Y,(Y)    ;Y=b
         LD A,(3,X)    ;D = c
         LD  (Y),A     ;store c at b
-	ADDW X,#4 ; DDROP 
+	_DDROP 
         RET     
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -502,43 +502,43 @@ BRAN:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       RP@     ( -- a )
-;       Push current RP to data stack.
+; push hardware stack pointer
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RPAT,3,"RP@"
-        LDW Y,SP    ;save return addr
+        LDW     Y,SP    
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       RP!     ( a -- )
-;       Set  return stack pointer.
+; set hardware stack pointer 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RPSTO,COMPO+3,"RP!"
-        POPW Y
-        LDW YTEMP,Y
-        LDW Y,X
-        LDW Y,(Y)
-        LDW SP,Y
+        POPW    Y
+        LDW     UTMP,Y
+        LDW     Y,X
+        LDW     Y,(Y)
+        LDW     SP,Y
         _DROP 
-        JP [YTEMP]
+        JP      [UTMP]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       R>      ( -- w )
 ;       Pop return stack to data stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RFROM,2,"R>"
-        SUBW X,#CELLL 
-        LDW Y,(3,SP)
-        LDW (X),Y 
-        POPW Y 
-        ADDW SP,#2 
-        JP (Y)
+        SUBW    X,#CELLL 
+        LDW     Y,(3,SP)
+        LDW     (X),Y 
+        POPW    Y 
+        ADDW    SP,#2 
+        JP      (Y)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       R@      ( -- w )
 ;       Copy top of return stack to stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER RAT,2,"R@"
-        ldw y,(3,sp)
+        LDW     Y,(3,SP)
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -546,11 +546,11 @@ BRAN:
 ;       Push data stack to return stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TOR,COMPO+2,">R"
-        LDW Y,(1,SP)
-        PUSHW Y 
-        LDW Y,X 
-        LDW Y,(Y)
-        LDW (3,SP),Y 
+        LDW     Y,(1,SP)
+        PUSHW   Y 
+        LDW     Y,X 
+        LDW     Y,(Y)
+        LDW     (3,SP),Y 
         _DROP 
         RET  
 
@@ -559,7 +559,7 @@ BRAN:
 ;       Push current stack pointer.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SPAT,3,"SP@"
-	LDW Y,X
+	LDW     Y,X
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -584,8 +584,8 @@ BRAN:
 ;       Duplicate  top stack item.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DUPP,3,"DUP"
-	LDW Y,X
-	LDW Y,(Y)
+	LDW     Y,X
+	LDW     Y,(Y)
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -664,7 +664,7 @@ BRAN:
 	LDW Y,#UBASE 
 	JP  DPUSH 
 
-.IF 1
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       TMP     ( -- a )
 ;       A temporary storage.
@@ -868,32 +868,29 @@ QDUP1:  RET
         ADDW SP,#CELLL ; R: -- 
         RET
 
-.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ABS     ( n -- n )
 ;       Return  absolute value of n.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABSS,3,"ABS"
-        LDW Y,X
-	LDW Y,(Y)
-        JRPL     AB1     ;negate:
-        NEGW     Y     ;else negate hi byte
-        LDW (X),Y
+        LDW     Y,X
+	LDW     Y,(Y)
+        JRPL     AB1    
+        NEGW     Y   
+        LDW     (X),Y
 AB1:    RET
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       0<      ( n -- t )
 ;       Return true if n is negative.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ZLESS,2,"0<"
-        LD A,#0xFF
-        LDW Y,X
-        LDW Y,(Y)
-        JRMI     ZL1
-        CLR A   ;false
-ZL1:    LD     (X),A
-        LD (1,X),A
+        CLR      A
+        TNZ     (X)
+        JRPL    ZL1
+        CPL     A   ;true 
+ZL1:    LD      (X),A
+        LD      (1,X),A
 	RET     
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3311,7 +3308,7 @@ COLD9:
         LDW Y,#app_space 
         CALL DPUSH 
         CALL RSTVEC 
-        JP reboot 
+        JP REBOOT 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FREE 
