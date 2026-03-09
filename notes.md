@@ -11,6 +11,8 @@
 *  Corrigé bogue dans __PARS__.
 *  Supprimé code fantôme dans [tools.asm](tools.asm).
 *  Modifié __PARS__ pour que les espaces soient sautées seulement lorsque le séparateur est un espace.
+*  Remplacé __CALL__ par __CALLR__ dans __PARSE__, __(__, __WORD__, __FIND__, __&gt;NAME__.
+*  Remplacé un __JP__ par un __JRA__ dans __TOKEN__. 
 
 ### 2026-03-07
 * Réécriture de __SAME?__ en assembleur pour réduire la taille.

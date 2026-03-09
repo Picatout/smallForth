@@ -2124,7 +2124,7 @@ PARS:
         CALL     AT
         CALL     SUBB    ;remaining count
         CALL     RFROM
-        CALL     PARS
+        CALLR     PARS
         CALL     INN
         JP       PSTOR
 
@@ -2136,7 +2136,7 @@ PARS:
         _HEADER DOTPR,IMEDD+2,".("
         CALL     DOLIT
         .word     41	; ")"
-        CALL     PARSE
+        CALLR     PARSE
         JP     TYPES
 .ENDIF ;************************
 
@@ -2148,7 +2148,7 @@ PARS:
         _HEADER PAREN,IMEDD+1,"("
         CALL     DOLIT
         .word   ')'
-        CALL     PARSE
+        CALLR     PARSE
         JP       DDROP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2166,7 +2166,7 @@ PARS:
 ;       and copy it at HERE+CELLL.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER WORDD,4,"WORD"
-        CALL     PARSE
+        CALLR    PARSE
         CALL     HERE
         CALL     CELLP
         CALL     PACKS
@@ -2179,7 +2179,7 @@ PARS:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TOKEN,5,"TOKEN"
         CALL     BLANK
-        JP       WORDD
+        JRA      WORDD
 
 ;; Dictionary search
 
@@ -2195,7 +2195,7 @@ TNAM2:  CALL     AT
         CALL     QBRAN
         .word      TNAM4
         CALL     DDUP
-        CALL     NAMET
+        CALLR     NAMET
         CALL     XORR    ;compare
         CALL     QBRAN
         .word      TNAM3
@@ -2280,59 +2280,6 @@ CSTRCMP:
 ;       Return ca and na if succeeded.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FIND,4,"FIND"
-.IF 0
-        CALL     SWAPP
-        CALL     DUPP
-        CALL     CAT
-        CALL     TEMP
-        CALL     STORE
-        CALL     DUPP
-        CALL     AT
-        CALL     TOR
-        CALL     CELLP
-        CALL     SWAPP
-FIND1:  CALL     AT
-        CALL     DUPP
-        CALL     QBRAN
-        .word      FIND6
-        CALL     DUPP
-        CALL     AT
-        CALL     DOLIT
-        .word      MASKK
-        CALL     ANDD
-        CALL     RAT
-        CALL     XORR
-        CALL     QBRAN
-        .word      FIND2
-        CALL     CELLP
-        CALL     DOLIT
-        .word     0xFFFF
-        JRA     FIND3
-FIND2:  CALL     CELLP
-        CALL     TEMP
-        CALL     AT
-        CALL     SAMEQ
-FIND3:  CALL     BRAN
-        .word      FIND4
-FIND6:  CALL     RFROM
-        _DROP
-        CALL     SWAPP
-        CALL     CELLM
-        JP     SWAPP
-FIND4:  CALL     QBRAN
-        .word      FIND5
-        CALL     CELLM
-        CALL     CELLM
-        JRA     FIND1
-FIND5:  CALL     RFROM
-        _DROP
-        CALL     SWAPP
-        _DROP
-        CALL     CELLM
-        CALL     DUPP
-        CALL     NAMET
-        JP     SWAPP
-.ELSE 
  ;local variables 
  NFA=1
  TRGT=3
@@ -2357,7 +2304,7 @@ FIND5:  CALL     RFROM
         JRNE   2$ 
         INCW   Y 
         INCW   X 
-        CALL   CSTRCMP 
+        CALLR   CSTRCMP 
         TNZ    A 
         JREQ   4$
 2$: ; next entry 
@@ -2383,7 +2330,6 @@ FIND5:  CALL     RFROM
 9$:         
         ADDW    SP,#VSIZE 
         RET 
-.ENDIF
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       NAME?   ( a -- ca na | a F )
