@@ -5,6 +5,10 @@
 * Recodé __WAIT__ pour changer l'ordre des instructions.
 * Désactivation du mot __TEMP__. 
 * Modifié  __0&lt;__ pour sauver de l'espace. 
+* Désactivé  __DIGIT?__
+* Désactivé  __BL__ 
+* Désactivé  __ACCEPT__ 
+* Recodé     __QUERY__ en assembleur.
 
 
 ### 2026-03-08 

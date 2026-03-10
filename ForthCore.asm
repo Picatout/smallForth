@@ -179,20 +179,20 @@ RET_CODE =    0x81    ; exit subroutine
 
 ; COLD initialize these variables.
 UZERO:
-        .word      BASEE   ;UBASE
-        .word      0       ;UTMP 
-        .word      0       ;UINN
-        .word      0       ;UCTIB
-        .word      TIBB    ;UTIB
-        .word      INTER   ;UINTER 
-        .word      0       ;UHLD
-        .word      LASTN   ;UCNTXT pointer
-        .word      VAR_BASE ;UVP variables free space pointer 
-        .word      app_space ;UCP FLASH free space pointer 
-        .word      LASTN   ;ULAST
-        .word      0       ;USTATE 
-        .word      0       ;UNEST  
-UEND:   .word      0
+        .WORD      BASEE   ;UBASE
+        .WORD      0       ;UTMP 
+        .WORD      0       ;UINN
+        .WORD      0       ;UCTIB
+        .WORD      TIBB    ;UTIB
+        .WORD      INTER   ;UINTER 
+        .WORD      0       ;UHLD
+        .WORD      LASTN   ;UCNTXT pointer
+        .WORD      VAR_BASE ;UVP variables free space pointer 
+        .WORD      app_space ;UCP FLASH free space pointer 
+        .WORD      LASTN   ;ULAST
+        .WORD      0       ;USTATE 
+        .WORD      0       ;UNEST  
+UEND:   .WORD      0
 
         LINK = 0  ; used by _HEADER macro 
 
@@ -974,7 +974,6 @@ UGREAT1:
         LD (1,X),A 
         RET 
 
-.IF 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       >   (n1 n2 -- f )
 ;  signed compare n1 n2 
@@ -992,7 +991,6 @@ GREAT1:
         LD (X),A 
         LD (1,X),A 
         RET 
-.ENDIF 
 
 .IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1128,7 +1126,7 @@ MMSMb:
         CALL	DUPP
         CALL	TOR
         CALL	QBRAN
-        .word	MMOD1
+        .WORD	MMOD1
         CALL	NEGAT
         CALL	TOR
         CALL	DNEGA
@@ -1137,14 +1135,14 @@ MMOD1:	CALL	TOR
         CALL	DUPP
         CALL	ZLESS
         CALL	QBRAN
-        .word	MMOD2
+        .WORD	MMOD2
         CALL	RAT
         CALL	PLUS
 MMOD2:	CALL	RFROM
         CALL	UMMOD
         CALL	RFROM
         CALL	QBRAN
-        .word	MMOD3
+        .WORD	MMOD3
         CALL	SWAPP
         CALL	NEGAT
         JP	SWAPP
@@ -1298,7 +1296,7 @@ SLMOD8:
         CALL	UMSTA
         CALL	RFROM
         CALL	QBRAN
-        .word	MSTA1
+        .WORD	MSTA1
         JP	DNEGA
 MSTA1:	RET
 .ENDIF 
@@ -1440,14 +1438,6 @@ RSHIFT4:
         LDW (X),Y
         RET
 .ENDIF 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       BL      ( -- 32 )
-;       Return 32,  blank character.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER BLANK,2,"BL"
-	LDW Y,#32
-        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;         0     ( -- 0)
@@ -1660,6 +1650,7 @@ PACKS:
 
 ;; Numeric output, single precision
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       DIGIT   ( u -- c )
 ;       Convert digit u to a character.
@@ -1672,6 +1663,7 @@ PACKS:
 1$:     ADD     A,#'0 
         LD      (1,X),A 
         RET         
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       STR     ( w -- b u )
@@ -1679,12 +1671,12 @@ PACKS:
 ;       to a numeric string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STR,3,"STR"
-        LD     A,(X)
-        PUSH   A 
+        LD      A,(X)
+        PUSH    A 
         JRPL    1$ 
         CALL    ABSS     
 1$:             
-        ld      A,UBASE+1 ; base 
+        LD      A,UBASE+1 ; base 
         LDW     Y,X 
         LDW     Y,(Y)  ; U 
         CALL    utoa 
@@ -1841,6 +1833,27 @@ VSIZE=12
 	ADDW	X,#CELLL
         JP      putc  
 
+.IF 0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       BL      ( -- 32 )
+;       Return 32,  blank character.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER BLANK,2,"BL"
+	LDW     Y,#SPC 
+        JP      DPUSH 
+.ENDIF 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       CR      ( -- )
+;       Output a carriage return
+;       and a line feed.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER CR,2,"CR"
+        LD      A,#CRR
+        CALL    putc 
+        LD      A,#LF 
+        JP      putc 
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       SPACE   ( -- )
 ;       Send  blank character to
@@ -1860,7 +1873,7 @@ VSIZE=12
         JRA      CHAR2
 CHAR1:  CALL     SPACE
 CHAR2:  CALL     DONXT
-        .word    CHAR1
+        .WORD    CHAR1
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1886,17 +1899,6 @@ PRINT:
         ret 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       CR      ( -- )
-;       Output a carriage return
-;       and a line feed.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER CR,2,"CR"
-        LD      A,#CRR
-        CALL    putc 
-        LD      A,#LF 
-        JP      putc 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       $,"     ( -- )
 ;       Compile a literal string
 ;       up to next " .
@@ -1904,7 +1906,7 @@ PRINT:
 ;        _HEADER STRCQ,3,^/'$,"'/
 STRCQ:
         CALL     DOLIT
-        .word    '"'   
+        .WORD    '"'   
         CALL     PARSE
         CALL     HERE
         CALL     PACKS   ;string to code dictionary
@@ -1981,7 +1983,7 @@ DOTQP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DOTQ,IMEDD+COMPO+2,'."'
         CALL     COMPI
-        .word    DOTQP 
+        .WORD    DOTQP 
         JP       STRCQ
 
 
@@ -2014,7 +2016,7 @@ DOTQP:
         CALL     DIGS
         CALL     EDIGS
         CALL     SPACE
-        JP     TYPES
+        JP       TYPES
 .ELSE 
         CALL    SPACE 
         LD      A,UBASE+1 
@@ -2022,7 +2024,7 @@ DOTQP:
         LDW     Y,(Y)
         _DROP 
         CALL    utoa 
-        JP    PRINT 
+        JP      PRINT 
 .ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2034,10 +2036,10 @@ DOTQP:
         CALL     BASE
         CALL     AT
         CALL     DOLIT
-        .word      10
+        .WORD    10
         CALL     XORR    ;?decimal
         CALL     QBRAN
-        .word      DOT1
+        .WORD      DOT1
         JRA     UDOT
 DOT1:   CALL     STR
         CALL     SPACE
@@ -2132,7 +2134,7 @@ PARS:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DOTPR,IMEDD+2,".("
         CALL     DOLIT
-        .word     41	; ")"
+        .WORD     41	; ")"
         CALLR     PARSE
         JP     TYPES
 .ENDIF ;************************
@@ -2144,7 +2146,7 @@ PARS:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER PAREN,IMEDD+1,"("
         CALL     DOLIT
-        .word   ')'
+        .WORD   ')'
         CALLR     PARSE
         JP       DDROP
 
@@ -2175,7 +2177,7 @@ PARS:
 ;       and copy it to name dictionary.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TOKEN,5,"TOKEN"
-        CALL     BLANK
+        _DOLIT   SPC 
         JRA      WORDD
 
 ;; Dictionary search
@@ -2190,12 +2192,12 @@ PARS:
 TNAM2:  CALL     AT
         CALL     DUPP    ;?last word in a vocabulary
         CALL     QBRAN
-        .word      TNAM4
+        .WORD      TNAM4
         CALL     DDUP
         CALLR     NAMET
         CALL     XORR    ;compare
         CALL     QBRAN
-        .word      TNAM3
+        .WORD      TNAM3
         CALL     CELLM   ;continue with next word
         JRA     TNAM2
 TNAM3:  CALL     SWAPP
@@ -2338,6 +2340,7 @@ CSTRCMP:
 
 ;; Terminal response
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       accept  ( b u -- b u )
 ;       Accept characters to input
@@ -2351,6 +2354,7 @@ CSTRCMP:
         LD      (1,X),A
         CLR     (X) 
         RET 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       QUERY   ( -- )
@@ -2358,9 +2362,10 @@ CSTRCMP:
 ;       terminal input buffer.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER QUERY,5,"QUERY"
+.IF 0
         CALL     TIB
         CALL     DOLIT
-        .word    TIB_SIZE 
+        .WORD    TIB_SIZE 
         CALL     ACCEP 
         CALL     NTIB
         CALL     STORE
@@ -2368,6 +2373,14 @@ CSTRCMP:
         CALL     ZERO 
         CALL     INN
         JP       STORE
+.ELSE 
+        LDW     Y,#TIBB 
+        LD      A,#TIB_SIZE
+        CALL    getline 
+        LD      UCTIB+1,A 
+        CLR     UINN+1 
+        RET 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ABORT   ( -- )
@@ -2385,7 +2398,7 @@ CSTRCMP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABORQ,COMPO+6,'ABORT"'
         CALL     QBRAN
-        .word      ABOR2   ;no error 
+        .WORD      ABOR2   ;no error 
 ; print error message and abort 
         CALL     DOSTR
 ABOR1:  MOV     BASE,#10 ; reset to default 
@@ -2412,19 +2425,19 @@ INTER:
         CALL     NAMEQ
         CALL     QDUP    ;?defined
         CALL     QBRAN
-        .word      INTE1
+        .WORD      INTE1
         CALL     AT
         CALL     DOLIT
-	.word       0x4000	; COMPO*256
+	.WORD       0x4000	; COMPO*256
         CALL     ANDD    ;?compile only lexicon bits
         CALL     ABORQ
-        .byte      13
+        .BYTE      13
         .ascii     " compile only"
         JP      EXECU
 INTE1:  
         CALL     NUMBQ   ;convert a number 
         CALL     QBRAN
-        .word    ABOR1
+        .WORD    ABOR1
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2435,7 +2448,7 @@ INTE1:
         CLR    USTATE 
         CLR    USTATE+1
         CALL   DOLIT
-        .word  INTER
+        .WORD  INTER
         CALL   TEVAL
         JP     STORE
 
@@ -2447,15 +2460,11 @@ INTE1:
         CALL     STATE 
         CALL     AT
         CALL     TBRAN
-        .word      DOTO1
-.IF 0
-        LDW      Y,UNEST 
-        JRNE     DOTO2 
-.ENDIF         
+        .WORD    DOTO1
         CALL     DOTQP
-        .byte      3
-        .ascii     " ok"
-DOTO1:  JP     CR
+        .BYTE    3
+        .ASCII   " ok"
+DOTO1:  JP       CR
 DOTO2:  RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2466,8 +2475,8 @@ DOTO2:  RET
         CALL     DEPTH
         CALL     ZLESS   ;check only for underflow
         CALL     ABORQ
-        .byte      11
-        .ascii     " underflow "
+        .BYTE    11
+        .ASCII   " underflow "
         RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2475,26 +2484,16 @@ DOTO2:  RET
 ;       Interpret  input stream.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EVAL,4,"EVAL"
-.IF 0
-        LDW     Y,UNEST
-        INCW    Y 
-        LDW     UNEST,Y 
-.ENDIF 
 EVAL1:  CALL     TOKEN
         CALL     DUPP
         CALL     CAT     ;?input stream empty
         CALL     QBRAN
-        .word    EVAL2
+        .WORD    EVAL2
         CALL     TEVAL
         CALL     ATEXE
         CALL     QSTAC   ;evaluate input, check stack
         JRA     EVAL1 
 EVAL2:  _DROP
-.IF 0
-        LDW     Y,UNEST 
-        DECW    Y 
-        LDW     UNEST,Y 
-.ENDIF 
         JP       DOTOK
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2507,7 +2506,7 @@ EVAL2:  _DROP
         .WORD   SPP 
         CALL    SPSTO 
         CALL     DOLIT
-        .word    TIBB
+        .WORD    TIBB
         CALL     NTIB
         CALL     CELLP
         JP       STORE
@@ -2528,7 +2527,9 @@ QUIT2:  CALL     QUERY   ;get input
         CALL     EVAL
         JRA     QUIT2   ;continue till error
 
+;;****************
 ;; The compiler
+;;****************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       '       ( -- ca )
@@ -2539,7 +2540,7 @@ QUIT2:  CALL     QUERY   ;get input
         CALL     TOKEN
         CALL     NAMEQ   ;?defined
         CALL     QBRAN
-        .word    ABOR1
+        .WORD    ABOR1
         RET     ;yes, push code address
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2611,7 +2612,7 @@ QUIT2:  CALL     QUERY   ;get input
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER LITER,COMPO+IMEDD+7,"LITERAL"
         CALL     COMPI
-        .word DOLIT 
+        .WORD DOLIT 
         JP     COMMA
 
 .IF 0
@@ -2715,7 +2716,7 @@ NOOP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER FOR,COMPO+IMEDD+3,"FOR"
         CALL     COMPI
-        .word    TOR 
+        .WORD    TOR 
         JP       CPHERE
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2724,7 +2725,7 @@ NOOP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NEXT,COMPO+IMEDD+4,"NEXT"
         CALL     COMPI
-        .word DONXT 
+        .WORD DONXT 
         JP     COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2760,7 +2761,7 @@ NOOP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER UNTIL,COMPO+IMEDD+5,"UNTIL"
         CALL     COMPI
-        .word    QBRAN 
+        .WORD    QBRAN 
 ;        call     ADRADJ
         JP       COMMA
 
@@ -2781,23 +2782,10 @@ NOOP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER IFF,COMPO+IMEDD+2,"IF"
         CALL     COMPI
-        .word QBRAN
+        .WORD QBRAN
         CALL     CPHERE
         CALL     ZERO 
         JP     COMMA
-
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       ~IF      ( -- A )
-;       Begin a conditional branch.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER TILDEIF,COMPO+IMEDD+3,"~IF"
-        CALL     COMPI
-        .WORD    TBRAN
-        CALL     CPHERE
-        CALL     ZERO 
-        JP       COMMA
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       THEN        ( A -- )
@@ -2886,7 +2874,7 @@ NOOP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABRTQ,IMEDD+6,'ABORT"'
         CALL     COMPI
-        .word ABORQ
+        .WORD ABORQ
         JP     STRCQ
 
 ;; Name compiler
@@ -2900,9 +2888,9 @@ NOOP:
         CALL     DUPP
         CALL     NAMEQ   ;?name exists
         CALL     QBRAN
-        .word      UNIQ1
+        .WORD      UNIQ1
         CALL     DOTQP   ;redef are OK
-        .byte       7
+        .BYTE       7
         .ascii     " reDef "       
         CALL     OVER
         CALL     COUNT
@@ -2920,7 +2908,7 @@ SNAME:
         CALL     DUPP
         CALL     CAT     ;?null input
         CALL     QBRAN
-        .word    PNAM1
+        .WORD    PNAM1
         CALL     UNIQU   ;?redefinition
 ; write new link 
         CALL    CNTXT ; na cn 
@@ -2949,7 +2937,7 @@ SNAME:
         CALL     STORE  ; update cp 
         RET    
 PNAM1:  CALL     STRQP
-        .byte      5
+        .BYTE      5
         .ascii     " name" ;null input
         JP     ABOR1
 
@@ -2965,21 +2953,21 @@ SCOMP:
         CALL     NAMEQ
         CALL     QDUP    ;?defined
         CALL     QBRAN
-        .word      SCOM2
+        .WORD    SCOM2
         CALL     AT
         CALL     DOLIT
-        .word     0x8000	;  IMEDD*256
+        .WORD    0x8000	;  IMEDD*256
         CALL     ANDD    ;?immediate
         CALL     QBRAN
-        .word      SCOM1
-        JP     EXECU
-SCOM1:  JP     JSRC
+        .WORD    SCOM1
+        JP       EXECU
+SCOM1:  JP       JSRC
 SCOM2:  CALL     NUMBQ   ;try to convert to number 
-        CALL    QDUP  
+        CALL     QDUP  
         CALL     QBRAN
-        .word      ABOR1
+        .WORD    ABOR1
         _DROP 
-        JP     LITER
+        JP       LITER
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2998,7 +2986,7 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SEMIS,IMEDD+COMPO+1,^/";"/
         CALL DOLIT 
-        .word 0x81   ; opcode for RET 
+        .WORD 0x81   ; opcode for RET 
         CALL  CCOMMA 
         CALL  LBRAC
         CALL  OVERT
@@ -3014,7 +3002,7 @@ SCOM2:  CALL     NUMBQ   ;try to convert to number
         LDW    Y,#-1 
         LDW    USTATE,Y 
         CALL   DOLIT
-        .word  SCOMP
+        .WORD  SCOMP
         CALL   TEVAL
         JP     STORE
 
@@ -3055,7 +3043,7 @@ JSRC:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER IMMED,9,"IMMEDIATE"
         CALL	DOLIT
-        .word	(IMEDD<<8)
+        .WORD	(IMEDD<<8)
 IMM01:  CALL	LAST
         CALL    AT
         CALL    AT
@@ -3072,7 +3060,7 @@ IMM01:  CALL	LAST
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER COMPONLY,12,"COMPILE-ONLY"
         CALL     DOLIT
-        .word    (COMPO<<8)
+        .WORD    (COMPO<<8)
         JP       IMM01
 		
 ;; Defining words
@@ -3195,13 +3183,13 @@ PRINT_VERSION:
 ;        _HEADER HI,2,"HI"
 HI: 
         CALL     DOTQP   
-        .byte      19 
+        .BYTE      19 
         .ascii     "smallForth version "
 	_DOLIT VER 
         _DOLIT MINOR 
         CALL PRINT_VERSION
         CALL    DOTQP
-        .byte 15+34
+        .BYTE 15+34
         .ascii  " on stm8l151k6\n"
         .ascii "Copyright Jacques Deschenes, 2026\n"
         RET 
@@ -3253,11 +3241,11 @@ LOAD_EEP:
 COLD:
 ; initialize user variables from UZERO table. 
         CALL     DOLIT
-        .word      UZERO
+        .WORD      UZERO
 	CALL     DOLIT
-        .word      UPP
+        .WORD      UPP
         CALL     DOLIT
-	.word      UEND-UZERO
+	.WORD      UEND-UZERO
         CALL     CMOVE   ; ( src dest cnt -- ) initialize user area
         CALL     LOAD_EEP
         CALL     UPDATPTR
@@ -3344,6 +3332,6 @@ LASTN =	LINK   ;last name defined
 ; application code begin here
 	.bndry 16 ; align on flash block  
 app_space: 
-.word 0,0,0,0
+.WORD 0,0,0,0
 
 
