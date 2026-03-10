@@ -2432,7 +2432,7 @@ INTER:
         CALL     ANDD    ;?compile only lexicon bits
         CALL     ABORQ
         .BYTE      13
-        .ascii     " compile only"
+        .ASCII     " compile only"
         JP      EXECU
 INTE1:  
         CALL     NUMBQ   ;convert a number 
@@ -2891,7 +2891,7 @@ NOOP:
         .WORD      UNIQ1
         CALL     DOTQP   ;redef are OK
         .BYTE       7
-        .ascii     " reDef "       
+        .ASCII     " reDef "       
         CALL     OVER
         CALL     COUNT
         CALL     TYPES   ;just in case
@@ -2913,32 +2913,49 @@ SNAME:
 ; write new link 
         CALL    CNTXT ; na cn 
         CALL    AT    ; na pna 
-        CALL    CPHERE ; na pna cp 
-        CALL    FSTOR  ; na 
+        CALL     COMMA 
 ; copy name to FLASH memory 
+.IF 0
         CALL     CPHERE ; na cp  
-        CALL     CELLP  ; new name field 
         CALL     DUPP
         CALL     LAST 
-        CALL     STORE  ;new name field 
-        CALL     OVER   ; na cp+ na 
-        CALL     COUNT  ; na cp+ na+ cnt 
-        CALL     SWAPP  ; na cp+ cnt na+
-        _DROP           ; na cp+ cnt 
-        CALL     ONEP   ; na cp+ cnt+
-        CALL     DUPP   ; na cp+ cnt+ cnt+ 
-        CALL     TOR    ; na cp+ cnt+ R: cnt+ 
+        CALL     STORE  ; new last na 
+        CALL     OVER   ; na cp na 
+        CALL     COUNT  ; na cp na+ cnt 
+        CALL     SWAPP  ; na cp cnt na+
+        _DROP           ; na cp cnt 
+        CALL     ONEP   ; na cp cnt+
+        CALL     DUPP   ; na cp cnt+ cnt+ 
+        CALL     TOR    ; na cp cnt+ R: cnt+ 
         CALL     FCPY   ;
-        CALL     LAST  ; cp+ R: cnt+  
+        CALL     LAST  ; cp R: cnt+  
         CALL     AT 
-        CALL     RFROM   ; cp+ cnt+
+        CALL     RFROM   ; cp cnt+
         CALL     PLUS    ; cp++ 
         CALL     CPP     ;  
         CALL     STORE  ; update cp 
+.ELSE 
+        LDW     Y,X 
+        LDW     Y,(Y)
+        LD      A,(Y) ; string length 
+        INC     A 
+        CLRW    Y 
+        LD      YL,A 
+        PUSHW   Y
+        CALL    DPUSH  ; na cnt 
+        LDW     Y,UCP 
+        LDW     ULAST,Y ;
+        CALL    DPUSH 
+        CALL    SWAPP  ; na cp cnt 
+        CALL    FCPY          
+        POPW    Y 
+        ADDW    Y,UCP 
+        LDW     UCP,Y 
+.ENDIF 
         RET    
 PNAM1:  CALL     STRQP
         .BYTE      5
-        .ascii     " name" ;null input
+        .ASCII     " name" ;null input
         JP     ABOR1
 
 ;; FORTH compiler
@@ -3184,14 +3201,14 @@ PRINT_VERSION:
 HI: 
         CALL     DOTQP   
         .BYTE      19 
-        .ascii     "smallForth version "
+        .ASCII     "smallForth version "
 	_DOLIT VER 
         _DOLIT MINOR 
         CALL PRINT_VERSION
         CALL    DOTQP
         .BYTE 15+34
-        .ascii  " on stm8l151k6\n"
-        .ascii "Copyright Jacques Deschenes, 2026\n"
+        .ASCII  " on stm8l151k6\n"
+        .ASCII "Copyright Jacques Deschenes, 2026\n"
         RET 
 
 

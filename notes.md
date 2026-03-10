@@ -5,12 +5,14 @@
 * Recodé __WAIT__ pour changer l'ordre des instructions.
 * Désactivation du mot __TEMP__. 
 * Modifié  __0&lt;__ pour sauver de l'espace. 
+* commit à 12:09 
 * Désactivé  __DIGIT?__
 * Désactivé  __BL__ 
 * Désactivé  __ACCEPT__ 
 * Recodé     __QUERY__ en assembleur.
-
-
+* Commit à 20:25 
+* Réécriture de __SNAME__  pour réduire la taille.
+ 
 ### 2026-03-08 
 *  sauvegarde des fichiers *.asm dans le dossier __save__. 
 *  RESET de la brnache test à 3bd05065b7a25f2059e261860485b8ee48a04c41
