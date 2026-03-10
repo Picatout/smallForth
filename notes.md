@@ -1,5 +1,9 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-10 
+* Création de l'étiquette __DPUSHA:__ dans la routine __STR__. 
+* Réécriture de __KEY__, __SNAME__ et __WORDS__ pour utiliser __DPUSHA__.
+
 ### 2026-03-09 
 * Remplacé __CALL XORW_Y___ par __CALLR XORW_Y__.
 * Recodé __WAIT__ pour changer l'ordre des instructions.
@@ -12,6 +16,7 @@
 * Recodé     __QUERY__ en assembleur.
 * Commit à 20:25 
 * Réécriture de __SNAME__  pour réduire la taille.
+* commit à 21:11 
  
 ### 2026-03-08 
 *  sauvegarde des fichiers *.asm dans le dossier __save__. 

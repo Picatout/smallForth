@@ -209,9 +209,13 @@ VSIZE=5
 ;display words count 
         CALL    CR
         LD      A,(WC,SP)
+.IF 0
         CLRW    Y
         LD      YL,A  
         CALL    DPUSH 
+.ELSE 
+        CALL    DPUSHA 
+.ENDIF 
         CALL    DOT 
         ADDW     SP,#VSIZE 
         RET  

@@ -132,8 +132,8 @@ iap_locked:
 ; return EEPROM base address 
 ;-----------------------------------
 	_HEADER EEPROM,6,"EEPROM"
-    ldw y,#EEPROM_BASE
-    JP	DPUSH 
+    ldw 	y,#EEPROM_BASE
+    JP		DPUSH 
 
 ;---------------------------------
 ; EEP-CNTXT ( -- u )
@@ -141,8 +141,8 @@ iap_locked:
 ;---------------------------------
 ;	_HEADER EEPCNTXT,9,"EEP-CNTXT"
 EEPCNTXT:
-	ldw y,#EEP_CNTXT  
-	JP	DPUSH 
+	ldw 	y,#EEP_CNTXT  
+	JP		DPUSH 
 
 ;----------------------------------
 ; EEP-RUN ( -- u )
@@ -150,8 +150,8 @@ EEPCNTXT:
 ;-----------------------------------
 ;	_HEADER EEPRUN,7,"EEP-RUN"
 EEPRUN:
-	ldw y,#EEP_RUN 
-	JP	DPUSH 
+	ldw 	y,#EEP_RUN 
+	JP		DPUSH 
 
 ;------------------------------------
 ; EEP-CP ( -- u )
@@ -159,8 +159,8 @@ EEPRUN:
 ;------------------------------------
 ;	_HEADER EEPCP,6,"EEP-CP"
 EEPCP:
-	ldw y,#EEP_CP  
-	JP	DPUSH 
+	ldw 	y,#EEP_CP  
+	JP		DPUSH 
 
 ;------------------------------------
 ; EEP-VP ( -- u )
@@ -168,8 +168,8 @@ EEPCP:
 ;-------------------------------------
 ;	_HEADER EEPVP,6,"EEP-VP"
 EEPVP:
-	ldw y,#EEP_VP  
-	JP	DPUSH 
+	ldw 	y,#EEP_VP  
+	JP		DPUSH 
 	
 ;---------------------------------
 ; UPDAT-RUN ( a -- )

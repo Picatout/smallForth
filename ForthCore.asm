@@ -342,11 +342,11 @@ XORW_Y:
 ;; get millisecond counter 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TIMER,5,"TIMER"
-        ldw y,MS 
+        LDW     Y,MS 
 DPUSH: ; push Y on parameter stack 
-        subw x,#CELLL 
-        ldw (x),y 
-        ret 
+        SUBW    X,#CELLL 
+        LDW     (X),Y 
+        RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  TMR-RST ( -- )
@@ -608,9 +608,9 @@ BRAN:
 ;       Copy second stack item to top.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER OVER,4,"OVER"
-        LDW Y,X 
-        LDW Y,(2,Y)
-        JP  DPUSH 
+        LDW     Y,X 
+        LDW     Y,(2,Y)
+        JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       AND     ( w w -- w )
@@ -661,8 +661,8 @@ BRAN:
 ;       Radix base for numeric I/O.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BASE,4,"BASE"
-	LDW Y,#UBASE 
-	JP  DPUSH 
+	LDW     Y,#UBASE 
+	JP      DPUSH 
 
 .IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -670,8 +670,8 @@ BRAN:
 ;       A temporary storage.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TEMP,3,"TMP"
-	LDW Y,#UTMP
-        JP  DPUSH 
+	LDW     Y,#UTMP
+        JP      DPUSH 
 .ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -679,7 +679,7 @@ BRAN:
 ;        Hold parsing pointer.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER INN,3,">IN"
-	LDW Y,#UINN 
+	LDW     Y,#UINN 
         JP      DPUSH
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -688,7 +688,7 @@ BRAN:
 ;       buffer.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NTIB,4,"#TIB"
-	LDW Y,#UCTIB 
+	LDW     Y,#UCTIB 
         JP      DPUSH 
 
 ; systeme variable 
@@ -698,7 +698,7 @@ BRAN:
 ;       Execution vector of EVAL.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER TEVAL,5,"'EVAL"
-	LDW Y,#UINTER 
+	LDW     Y,#UINTER 
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -707,7 +707,7 @@ BRAN:
 ;        string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER HLD,3,"HLD"
-	LDW Y,#UHLD 
+	LDW     Y,#UHLD 
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -715,7 +715,7 @@ BRAN:
 ;       Start vocabulary search.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CNTXT,7,"CONTEXT"
-	LDW Y,#UCNTXT
+	LDW     Y,#UCNTXT
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -723,7 +723,7 @@ BRAN:
 ;       Point to top of variables
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER VPP,2,"VP"
-	LDW Y,#UVP 
+	LDW     Y,#UVP 
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -731,7 +731,7 @@ BRAN:
 ;       Pointer to top of FLASH 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER CPP,2,"CP"
-        ldw y,#UCP 
+        LDW     Y,#UCP  
         JP      DPUSH 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -750,9 +750,9 @@ BRAN:
 ;       Dup tos if its is not zero.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER QDUP,4,"?DUP"
-        LDW Y,X
-	LDW Y,(Y)
-        JREQ     QDUP1
+        LDW     Y,X
+	LDW     Y,(Y)
+        JREQ    QDUP1
         JP      DPUSH 
 QDUP1:  RET
 
@@ -1452,10 +1452,10 @@ RSHIFT4:
 ;       Return  depth of  data stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DEPTH,5,"DEPTH"
-        LDW Y,SP0    ;save data stack ptr
-	PUSHW  X 
-        SUBW Y,(1,SP)     ;#bytes = SP0 - X
-        SRAW Y    ;Y = #stack items
+        LDW     Y,SP0    ;save data stack ptr
+	PUSHW   X 
+        SUBW    Y,(1,SP)     ;#bytes = SP0 - X
+        SRAW    Y    ;Y = #stack items
         ADDW    SP,#2 
         JP      DPUSH 
 
@@ -1487,7 +1487,7 @@ RSHIFT4:
         ldw (x),y 
         clrw  y 
         ld yl,a
-        jp      DPUSH  
+        JP      DPUSH  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       HERE    ( -- a )
@@ -1690,6 +1690,7 @@ PACKS:
         INC     A    ; slen 
 2$:     ADDW    SP,#1  
         LDW     (X),Y 
+DPUSHA: 
         CLRW    Y 
         LD      YL,A 
         JP      DPUSH         
@@ -1819,17 +1820,21 @@ VSIZE=12
 ;       input character.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER KEY,3,"KEY"
-        call getc 
-        clrw y
-        ld yl ,a         
+        CALL     getc 
+.IF 1
+        JP      DPUSHA 
+.ELSE 
+        CLRW    Y 
+        LD      YL,A         
         JP      DPUSH 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       EMIT    ( c -- )
 ;       Send character c to  output device.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER EMIT,4,"EMIT"
-        LD     A,(1,X)
+        LD      A,(1,X)
 	ADDW	X,#CELLL
         JP      putc  
 
@@ -2134,9 +2139,9 @@ PARS:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER DOTPR,IMEDD+2,".("
         CALL     DOLIT
-        .WORD     41	; ")"
-        CALLR     PARSE
-        JP     TYPES
+        .WORD    ')'
+        CALLR    PARSE
+        JP       TYPES
 .ENDIF ;************************
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2147,7 +2152,7 @@ PARS:
         _HEADER PAREN,IMEDD+1,"("
         CALL     DOLIT
         .WORD   ')'
-        CALLR     PARSE
+        CALLR    PARSE
         JP       DDROP
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2340,47 +2345,18 @@ CSTRCMP:
 
 ;; Terminal response
 
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       accept  ( b u -- b u )
-;       Accept characters to input
-;       buffer. Return with actual count.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER ACCEP,6,"ACCEPT"
-        LD       A,(1,X)
-        LDW     Y,X 
-        LDW     Y,(2,Y)
-        CALL    getline 
-        LD      (1,X),A
-        CLR     (X) 
-        RET 
-.ENDIF 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       QUERY   ( -- )
 ;       Accept input stream to
 ;       terminal input buffer.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER QUERY,5,"QUERY"
-.IF 0
-        CALL     TIB
-        CALL     DOLIT
-        .WORD    TIB_SIZE 
-        CALL     ACCEP 
-        CALL     NTIB
-        CALL     STORE
-        _DROP
-        CALL     ZERO 
-        CALL     INN
-        JP       STORE
-.ELSE 
         LDW     Y,#TIBB 
         LD      A,#TIB_SIZE
         CALL    getline 
         LD      UCTIB+1,A 
         CLR     UINN+1 
         RET 
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       ABORT   ( -- )
@@ -2939,10 +2915,15 @@ SNAME:
         LDW     Y,(Y)
         LD      A,(Y) ; string length 
         INC     A 
+.IF 0
         CLRW    Y 
         LD      YL,A 
         PUSHW   Y
         CALL    DPUSH  ; na cnt 
+.ELSE 
+        CALL    DPUSHA 
+        PUSHW   Y 
+.ENDIF
         LDW     Y,UCP 
         LDW     ULAST,Y ;
         CALL    DPUSH 
@@ -3040,8 +3021,8 @@ JSRC:
 ;;  0 == interpret 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STATE,5,"STATE"
-        LDW Y,#USTATE
-        JP DPUSH   
+        LDW     Y,#USTATE
+        JP      DPUSH   
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       :       ( -- ; <string> )
@@ -3299,21 +3280,21 @@ COLD9:
 ; modification.
 ;-----------------------------
 	_HEADER SYS_RST,5,"RESET"
-        PUSH #8 
-        _DOLIT EEPROM_BASE 
-1$:     CALL ZERO 	
-        CALL OVER 
-        CALL FSTOR 
-        DEC (1,SP)
-        JREQ 2$ 
-        CALL CELLP 
-        JRA 1$ 
-2$:	POP A
+        PUSH    #8 
+        _DOLIT  EEPROM_BASE 
+1$:     CALL    ZERO 	
+        CALL    OVER 
+        CALL    FSTOR 
+        DEC     (1,SP)
+        JREQ    2$ 
+        CALL    CELLP 
+        JRA     1$ 
+2$:	POP     A
         _DROP 
-        LDW Y,#app_space 
-        CALL DPUSH 
-        CALL RSTVEC 
-        JP REBOOT 
+        LDW     Y,#app_space 
+        CALL    DPUSH 
+        CALL    RSTVEC 
+        JP      REBOOT 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;  FREE 
