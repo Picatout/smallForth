@@ -3,6 +3,8 @@
 ### 2026-03-10 
 * Création de l'étiquette __DPUSHA:__ dans la routine __STR__. 
 * Réécriture de __KEY__, __SNAME__ et __WORDS__ pour utiliser __DPUSHA__.
+* commit à 10:52
+* Ajout des mots __SETBIT__, __RSTBIT__ et __TOGLBIT__. 
 
 ### 2026-03-09 
 * Remplacé __CALL XORW_Y___ par __CALLR XORW_Y__.

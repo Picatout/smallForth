@@ -1020,6 +1020,73 @@ MIN1:	_DROP
 	RET     
 .ENDIF 
 
+;********************************
+;  bit manipulation 
+;********************************
+
+;------------------------------
+; create bitmask 
+; input:
+;    a    bit# 
+; output:
+;    a    mask 
+;-------------------------------
+bitmask:
+        PUSH    A 
+        LD      A,#1 
+        TNZ     (1,SP)
+        JREQ    9$
+1$:     SLL     A 
+        DEC     (1,SP)
+        JRNE     1$
+9$:     ADD     SP,#1 
+        RET 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  SETBIT ( b# a -- )
+;  set sélected bit 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER SETBIT,6,"SETBIT"
+        LD      A,(3,X)
+        CALL    bitmask 
+        LDW     Y,X 
+        LDW     Y,(Y)
+        OR      A,(Y)
+        LD      (Y),A 
+        _DDROP 
+        RET 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  RSTBIT ( b# a -- )
+;  set sélected bit 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER RSTBIT,6,"RSTBIT"
+        LD      A,(3,X)
+        CALL    bitmask
+        CPL     A  
+        LDW     Y,X 
+        LDW     Y,(Y)
+        AND      A,(Y)
+        LD      (Y),A 
+        _DDROP 
+        RET 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;  TOGLBIT ( b# a -- )
+;  set sélected bit 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER TOGLBIT,7,"TOGLBIT"
+        LD      A,(3,X)
+        CALL    bitmask 
+        LDW     Y,X 
+        LDW     Y,(Y)
+        XOR      A,(Y)
+        LD      (Y),A 
+        _DDROP 
+        RET 
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       WITHIN  ( u ul uh -- t )
 ;       Return true if u is within
