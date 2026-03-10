@@ -8,7 +8,7 @@ J'ai repris le projet stm8_eforth [stm8_eforth](https://github.com/Picatout/stm8
 * Le support pour la création d'un vocabulaire en mémoire RAM a été éliminé. Toutes les définitions sont compilées directement en mémoire FLASH.
 * Le support pour les entiers double (32 bits) a été illiminé. 
 * Certains mots ont été éliminés. Alors que d'autres ont étés simplement retirés du dictionnaire puisqu'ils ne sont utilent que pour le compilateur.
-* Le vocabulaire original compenrait environ 250 mots dans le dictionnaire, __smallForth__ ne contient que 156 mots dans le dictionnaire.
+* Le vocabulaire original compenrait environ 250 mots dans le dictionnaire, __smallForth__ ne contient que 159 mots dans le dictionnaire.
 * Ajouter 3 mots utiles pour la manipulation des périphériques: __SETBIT__, __RSTBIT__ et __TOGLBIT__. 
 
 
