@@ -9,6 +9,8 @@
 * Ajout du flags __COMPO__ aux mots __R&gt;__ et __R@__.
 * commit 21:27 
 * 21:28 Merge de la branche test à la branche main.
+* Déplacé le mot __PICK__ du fichier [tools.asm](tools.asm) vers le fichier [ForthCore.asm](ForthCore.asm)
+* Travail sur le fichier [référence_smallForth.md]. 
 
 ### 2026-03-09 
 * Remplacé __CALL XORW_Y___ par __CALLR XORW_Y__.

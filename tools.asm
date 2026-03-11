@@ -2,24 +2,6 @@
 ;; tools vocabulary ;;
 ;;;;;;;;;;;;;;;;;;;;;;
 
-.IF 0
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       U.R     ( u +n -- )
-;       Display an unsigned integer
-;       in n column, right justified.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER UDOTR,3,"U.R"
-        CALL     TOR
-        CALL     BDIGS
-        CALL     DIGS
-        CALL     EDIGS
-        CALL     RFROM
-        CALL     OVER
-        CALL     SUBB
-        CALL     SPACS
-        JP       TYPES
-.ENDIF 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       _TYPE   ( b u -- )
 ;       Display a string. Filter
@@ -133,24 +115,6 @@ DUMP3:  _DROP
         CALL     RFROM
         CALL     BASE
         JP     STORE   ;restore radix
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       PICK    ( ... +n -- ... w )
-;       Copy  nth stack item to tos.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER PICK,4,"PICK"
-        LDW Y,X   ;D = n1
-        LDW Y,(Y)
-; modified for standard compliance          
-; 0 PICK must be equivalent to DUP 
-        INCW Y 
-        SLAW Y
-        PUSHW X 
-        ADDW Y,(1,SP)
-        LDW Y,(Y)
-        LDW (X),Y
-        ADDW  SP,#2 
-        RET
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .S      ( ... -- ... )
@@ -267,7 +231,7 @@ NO_NAME:
         RET         
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; SEE word 
+;; SEE <word> ( -- ) 
 ;; decompile dictionary WORD 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER SEE,3,"SEE"

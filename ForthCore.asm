@@ -774,6 +774,24 @@ QDUP1:  RET
         ldw (2,x),y
         ret 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       PICK    ( ... +n -- ... w )
+;       Copy  nth stack item to tos.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER PICK,4,"PICK"
+        LDW Y,X   ;D = n1
+        LDW Y,(Y)
+; modified for standard compliance          
+; 0 PICK must be equivalent to DUP 
+        INCW Y 
+        SLAW Y
+        PUSHW X 
+        ADDW Y,(1,SP)
+        LDW Y,(Y)
+        LDW (X),Y
+        ADDW  SP,#2 
+        RET
+
 .IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    <ROT ( n1 n2 n3 -- n3 n1 n2 )
