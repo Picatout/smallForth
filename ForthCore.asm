@@ -525,7 +525,7 @@ BRAN:
 ;       R>      ( -- w )
 ;       Pop return stack to data stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER RFROM,2,"R>"
+        _HEADER RFROM,2+COMPO,"R>"
         SUBW    X,#CELLL 
         LDW     Y,(3,SP)
         LDW     (X),Y 
@@ -537,7 +537,7 @@ BRAN:
 ;       R@      ( -- w )
 ;       Copy top of return stack to stack.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER RAT,2,"R@"
+        _HEADER RAT,2+COMPO,"R@"
         LDW     Y,(3,SP)
         JP      DPUSH 
 
