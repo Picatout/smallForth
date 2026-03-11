@@ -15,12 +15,12 @@
 ; EI  ( -- )
 ; active les interruptions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER EII,2+COMPO,"DI"
+        _HEADER EII,2,"EI"
         RIM 
         RET 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       I:  ( n+ --  )
+;       I:  ( n+ -- n+ )
 ; Start interrupt service 
 ; routine definition
 ; those definition have 
@@ -34,7 +34,7 @@
         JP      RBRAC  
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       I; ( vector ca --  )
+;       I; ( n+ ca --  )
 ;  Terminate an ISR definition 
 ;  write interrupt vector  
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

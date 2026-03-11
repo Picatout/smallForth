@@ -399,13 +399,13 @@ DOLIT:
         jp (2,y)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       NEXT    ( -- )
-;       Code for  single index loop.
+; DONXT 
+; NEXT runtime .
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER DONXT,COMPO+4,"NEXT"
+DONXT: 
 	LDW Y,(3,SP)
 	DECW Y
-	JRPL NEX1 ; jump if N=0
+	JRPL NEX1 ; jump if N>=0
 	POPW Y
         addw sp,#2
         JP (2,Y)
@@ -2789,8 +2789,8 @@ NOOP:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER NEXT,COMPO+IMEDD+4,"NEXT"
         CALL     COMPI
-        .WORD DONXT 
-        JP     COMMA
+        .WORD    DONXT 
+        JP       COMMA
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       I ( -- n )

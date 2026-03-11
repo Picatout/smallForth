@@ -4,7 +4,7 @@
 
 **a**&nbsp;&nbsp;  Adressse 16 bits 
 
-**b**&nbsp;&nbsp;  Adresse 16 bits d'une chaîne de caractère
+**b**&nbsp;&nbsp;  Adresse 16 bits d'une chaîne de caractères
 
 **c**&nbsp;&nbsp;  Caractère ASCII ou octet.
 
@@ -16,7 +16,7 @@
 
 **n**&nbsp;&nbsp; Valeur 16 bits sans type défini.
 
-**n+**&nbsp;&nbsp; Entier positif.
+**n+**&nbsp;&nbsp; Entier positif {0...32767}.
 
 **u**&nbsp;&nbsp; Entier 16 bits non signé {0...65535}.
 
@@ -37,7 +37,7 @@
 
 # Index 
 
-Chaque module a une section séparé pour son vocubulaire. Cet index conduit à la section concernée. 
+Chaque module a une section séparée pour son vocubulaire. Cet index conduit à la section concernée. 
 
 * [core](#core)&nbsp;&nbsp; module [ForthCore.asm](ForthCore.asm) 
 
@@ -58,41 +58,41 @@ Chaque module a une section séparé pour son vocubulaire. Cet index conduit à 
 
 * __#TIB__&nbsp;&nbsp;( -- a ) Empile l'adresse de la variable système **UCTIB**. Cette variable contient le nombre de caractères qu'il y a dans le TIB *(Terminal Input Buffer)*.  
 
-* __'__ &lt;string&gt;&nbsp;&nbsp;( -- a ) Ce mot est suivit d'une chaîne de caractère qui doit représenter un mot du dictionnaire. Si ce mot est trouvé **a** est l'adresse d'éxécution de ce mot. Un échec résulte en un abandon avec message d'erreur.
+* __'__ &lt;nom&gt;&nbsp;&nbsp;( -- a ) Ce mot est suivit d'une chaîne de caractère qui doit représenter un mot du dictionnaire. Si ce mot est trouvé **a** est l'adresse d'éxécution de ce mot. Un échec résulte en un abandon avec message d'erreur.
 
-* __'EVAL__&nbsp;&nbsp;( -- a ) Retourne l'adresse de la variable système **INTER** qui contient l'adresse du code qui doit-être exécuté par **UEVAL**. 
+* __'EVAL__&nbsp;&nbsp;( -- a ) Retourne l'adresse de la variable système **UINTER** qui contient l'adresse du code qui doit-être exécuté par **'EVAL**. 
 
 * __(__&nbsp;&nbsp;( -- ) Ce mot introduit un commentaire délimité par **)**. Les commentaires sont simplement ignorés.
 
-* __*__&nbsp;&nbsp;( i1 i2 -- i3 )  Multiplication signée. i3=i1*i2.
+* __*__&nbsp;&nbsp;( i1 i2 -- i3 )  Multiplication signée. __i3=i1*i2__.
 
-* __+__&nbsp;&nbsp;( i1 i2 -- i3 ) i3 est la somme de i1 et i2. 
+* __+__&nbsp;&nbsp;( i1 i2 -- i3 ) addition signée __i3=i1+i2__. 
 
-* __+!__&nbsp;&nbsp;( i a -- ) Ajoute la valeur i à l'entier situé à l'adresse a et sauvegarde la nouvelle valeur.
+* __+!__&nbsp;&nbsp;( i a -- ) Ajoute la valeur __i__ à l'entier situé à l'adresse __a__ et sauvegarde la nouvelle valeur.
 
-* __,__&nbsp;&nbsp;( n -- ) Compile la valeur n dans la mémoire FLASH et avance le pointer __UCP__ de 2 octets.
+* __,__&nbsp;&nbsp;( n -- ) Compile la valeur __n__ dans la mémoire FLASH et avance le pointer __UCP__ de 2 octets.
 
-* __-__&nbsp;&nbsp;( i1 i2 -- i3 ) i3 est le résultat de la soustraction i1-i2. 
+* __-__&nbsp;&nbsp;( i1 i2 -- i3 ) Soustraction signée. __i3=i1-i2__.
 
-* __.__&nbsp;&nbsp;( i -- ) Imprime l'entier au sommet de la pile.
+* __.__&nbsp;&nbsp;( i -- ) Imprime l'entier au sommet de la pile. __i__ est retiré de la pile.
 
 * __."__ &lt;string"&gt;&nbsp;&nbsp;( -- ) Compile une chaîne litérale pour impression. Cette chaîne est terminée par le caractère **"**. Ce caractère est un délimiteur et ne fait pas partie de la chaîne compilée.
 
 * __.OK__&nbsp;&nbsp;( -- ) Imprime le message ** ok** suivit d'un **CR**. 
 
-* __/__&nbsp;&nbsp;( i1 i2 -- i3  ) **i3** est le quotient entier arrondie à l'entier le plus petit résultant de **i1** divisé par **i2**.
+* __/__&nbsp;&nbsp;( i1 i2 -- i3  ) Division entière sigée. **i3=i1/i2**. Le quotient est tronqué vers zéro.
 
-* __/MOD__&nbsp;&nbsp;( i1 i2 -- r q ) **Q** est le quotient et **r** le reste de la division entière. 
+* __/MOD__&nbsp;&nbsp;( i1 i2 -- r q ) **q** est le quotient et **r** le reste de la division entière __i1/i2__.  
 
 * __0__&nbsp;&nbsp;( -- 0 ) Constante numérique **0**.  
 
 * __0<__&nbsp;&nbsp;( i -- f ) Retourne vrai (-1) si __i&lt;0__ sinon retourne 0.
 
-* __1+__&nbsp;&nbsp;( i1 -- i2 ) Incrémente **i1** pour donner **i2**. 
+* __1+__&nbsp;&nbsp;( i1 -- i2 ) **i2=i1+1**. 
 
-* __1-__&nbsp;&nbsp;( i1 -- i2 ) Décrémente **i1** pour donner **i2**.
+* __1-__&nbsp;&nbsp;( i1 -- i2 ) **i2-i1-1**.
 
-* __2*__&nbsp;&nbsp;( i1 -- i2 ) Multiplie par **i1** par 2.
+* __2*__&nbsp;&nbsp;( i1 -- i2 ) __i2=2*i1__.
 
 * __2+__&nbsp;&nbsp;( i1 -- i2 ) **i2=i1+2**. 
 
@@ -114,9 +114,9 @@ Chaque module a une section séparé pour son vocubulaire. Cet index conduit à 
 
 * __>IN__&nbsp;&nbsp;( -- a ) Empile l'adrese de la variable système **UINN** qui est le pointeur de l'analyseur lexical. 
 
-* __>NAME__&nbsp;&nbsp;( a1 -- a2|0 ) Retourne l'adrresse du champ nom à partir de l'adresse du champ code d'une entrée du dictionnaire. __a1__ est le *code address* et __a2__ est le *name address*. Si le champ code est invalide retourne **0**. 
+* __>NAME__&nbsp;&nbsp;( ca -- nfa|0 ) Retourne l'adrresse du champ nom __nfa__ à partir de l'adresse du champ code __ca__ d'une entrée du dictionnaire. __ca__ est le *code address* et __nfa__ est le *name field address*. Si le champ code est invalide retourne **0**. 
 
-* __>R__&nbsp;&nbsp;( n -- R: n ) Envoie n sur la pile des retours.
+* __>R__&nbsp;&nbsp;( n -- R: n ) Envoie __n__ sur la pile des retours.
 
 * __?DUP__&nbsp;&nbsp;( n -- n n | 0 ) Duplique **n** seulement si **&lt;&gt; 0**. 
 
@@ -128,33 +128,33 @@ Chaque module a une section séparé pour son vocubulaire. Cet index conduit à 
 
 * __@__&nbsp;&nbsp;( a -- n ) Empile l'entier qui est à l'adresse __a__.
 
-* __@EXECUTE__&nbsp;&nbsp;( a -- ) __a__ est un pointeur vers l'adresse d'un code exécutable. Cette adresse est empilée pour être exécutée immédiatement. 
+* __@EXECUTE__&nbsp;&nbsp;( a -- ) __a__ est un pointeur vers l'adresse d'un code exécutable. Il s'agit d'un __@__ pour obtenir le __ca__ suivit d'un __EXECUTE__. 
 
 * __ABORT__&nbsp;&nbsp;( nx -- ) Abandon avec vidage de la pile et du TIB. Est appellé par **ABORT"**.  
 
 * __ABORT"__&nbsp;&nbsp;( f -- ) Si l'indicateur est vrai affiche le message litéral qui suit et appelle **ABORT**.
 
-* __ABS__&nbsp;&nbsp;( i1 -- u ) Retourne la valeur absolue de **i1**. 
+* __ABS__&nbsp;&nbsp;( i1 -- u ) __u__ est la valeur absolue de **i1**. 
 
-* __AGAIN__&nbsp;&nbsp;( -- ) Marque la fin d'une boucle BEGIN..AGAIN. 
+* __AGAIN__&nbsp;&nbsp;( a -- ) Compile un saut arrière au début d'une boucle BEGIN..AGAIN. __a__ est la distination du saut et a été laissé sur la pile par __BEGIN__. 
 
 * __ALLOT__&nbsp;&nbsp;( u -- ) Alloue __u__ octets dans l'espace RAM. Avance le pointeur **UVP** de __u__ octets. 
 
 * __AND__&nbsp;&nbsp;( n1 n2 -- n3 ) Opération bit à bit ET.  
 
-* __AUTORUN__ &lt;string&gt;&nbsp;&nbsp;( --  ) Enregistre dans la variable système persistante **EPP_RUN**  l'adresse d'exécution du programme qui doit-être exécuté au démarrage. Les 16 premiers octets de l'EEPROM sont réservés pour les variables système persistantes. 
+* __AUTORUN__ &lt;string&gt;&nbsp;&nbsp;( --  ) Enregistre dans la variable système persistante **EEP_RUN**  l'adresse d'exécution du programme qui doit-être exécuté au démarrage. Les 16 premiers octets de l'EEPROM sont réservés pour les variables système persistantes. 
 
-* __BASE__&nbsp;&nbsp;( -- ) Variable système **UBASE** qui contient la base numérique utilisée pour la conversion des entiers en chaîne de caractères et vice-versa. 
+* __BASE__&nbsp;&nbsp;( -- a ) Empile l'adresse de la variable système **UBASE** qui contient la base numérique utilisée pour la conversion des entiers en chaîne de caractères et vice-versa. 
 
-* __BEGIN__&nbsp;&nbsp;( -- a ) Compile le début d'une boucle BEGIN..UNTIL|AGAIN. **a** indique l'adresse où doit se faire le saut arrière pour répéter la boucle. 
+* __BEGIN__&nbsp;&nbsp;( -- a ) Compile le début d'une boucle BEGIN..UNTIL|AGAIN|REPEAT. **a** indique l'adresse où doit se faire le saut arrière pour répéter la boucle. **a** est consommé par UNTIL|AGAIN|REPEAT. 
 
-* __C!__&nbsp;&nbsp;( c a -- ) Dépose le caractère **c** à l'adresse **a**. Sur la pile **c** occupe 2 octets mais en mémoire il n'occupe qu'un octet. 
+* __C!__&nbsp;&nbsp;( c a -- ) Dépose le caractère **c** à l'adresse **a**. 
 
 * __C,__&nbsp;&nbsp;( c -- ) Compile le caractère qui est au sommet de la pile. 
 
 * __C@__&nbsp;&nbsp;( a -- c ) Empile l'octet qui se trouve à l'adresse **a**.
 
-* __CMOVE__&nbsp;&nbsp;( a1 a2 u -- ) Copie **u** octets de **a1** vers **a2**.
+* __CMOVE__&nbsp;&nbsp;( a1 a2 u -- ) Copie **u** octets de **a1** vers **a2**. __a1__ et __a2__ doivent indiqué un emplacement en mémoire RAM.
 
 * __CONSTANT__ &lt;nom&gt; &nbsp;&nbsp;( n --) Compile une constante dans le dictionnaire. **n** est la valeur de la constante dont le nom est **&lt;nom&gt;**. 
 
@@ -163,6 +163,8 @@ Chaque module a une section séparé pour son vocubulaire. Cet index conduit à 
 * __COUNT__&nbsp;&nbsp;( b -- b u ) Empile la longueur de la chaîne comptée **b** et incrémente **b**.   
 
 * __CP__&nbsp;&nbsp;( -- a ) Empile l'adresse de la variable système **UCP** qui contient l'adresse du début de l'espace libre en mémoire flash. 
+
+* __CP-HERE__&nbsp;&nbsp;( -- a ) Empile la valeur contenu dans la variable système **UCP**. Il s'agit de l'adresse où est rendu le pointeur de compilation dans la mémoire FLASH. Autrement l'adresse le début de la FLASH libre.
 
 * __CR__&nbsp;&nbsp;( -- ) Envoie le caractère ASCII **CR** au terminal.
 
@@ -184,9 +186,9 @@ Chaque module a une section séparé pour son vocubulaire. Cet index conduit à 
 
 * __EXECUTE__&nbsp;&nbsp;( a -- ) Exécute le code à l'adresse *a*.  
 
-* __FIND__&nbsp;&nbsp;( b cntxt -- ca nfa | b 0 ) Recherche le nom pointé par **b** dans le dictionnaire à partir du context **va**. Si trouvé retourne **ca** l'adresse d'exécution. **nfa** l'adresse du champ nom. En cas d'échec retourne **b** et **0**.
+* __FIND__&nbsp;&nbsp;( b cntxt -- ca nfa | b 0 ) Recherche le nom pointé par **b** dans le dictionnaire à partir du context **cntxt**. Si trouvé retourne **ca** l'adresse d'exécution et **nfa** l'adresse du champ nom. En cas d'échec retourne **b** et **0**.
 
-* __FOR__&nbsp;&nbsp;( n+ -- ) Initialise une boucle FOR..NEXT. *n+* est un entier positif. La boucle se répète *n+1* fois. 
+* __FOR__&nbsp;&nbsp;(  -- a ) compile l'initialisation d'une boucle FOR..NEXT. La boucle se répète *u+1* fois. __a__ sera utilisé par __NEXT__ pour connaître l'endroit ou le saut arrière devra se faire. 
 
 * __FORGET__ &lt;nom&gt;&nbsp;&nbsp;( -- ) Supprime du dictionnaire la définition **&lt;nom&gt;** ainsi que toutes celles qui ont étées créées après celle-ci. Ne supprime que les définitions de l'utilisateur. Les définitions du système sont protégées.  
 
@@ -196,21 +198,23 @@ Chaque module a une section séparé pour son vocubulaire. Cet index conduit à 
 
 * __HEX__&nbsp;&nbsp;( -- ) Sélectionne la base numérique hexadécimal. Dépose la valeur **16** dans la variable système **UBASE**. 
 
-* __I__&nbsp;&nbsp;( -- n+ ) Empile le compteur d'une boucle **FOR..NEXT**.
+* __I__&nbsp;&nbsp;( -- u ) Empile le compteur d'une boucle **FOR..NEXT** de premier niveau.
 
-* __IF__&nbsp;&nbsp;( f -- ) Vérifie la valeur de l'indicateur booléen *f* et exécute le code qui suis le **IF** si cette indicateur est *vrai* sinon saute après le **ELSE** ou le **THEN**. 
+* __IF__&nbsp;&nbsp;(  -- a ) Compile un __?BRANCH__ c'est à dire un branchement conditionnel et laisse l'adresse indiquant la fente où doit-être compilée l'adresse destination du saut si le bloc suivant le __IF__ n'est pas excécuté. 
 
 * __IMMEDIATE__&nbsp;&nbsp;( -- ) Active l'indicateur **IMMED** dans l'entête de dictionnaire du dernier mot qui a été compilé. Habituellement invoqué juste après le **;**. 
 
+* __J__&nbsp;&nbsp;( -- u ) Empile le compteur d'une boucle **FOR..NEXT** de 2ième niveau. 
+
 * __KEY__&nbsp;&nbsp;( -- c ) Attend la réception d'un caractère du  terminal. Empile le caractère reçu **c**.  
 
-* __LAST__&nbsp;&nbsp;( -- a ) Empile l'adresse de la variable système **ULAST**. Cette variable contient l'adresse du champ nom du dernier mot compilé.  
+* __LAST__&nbsp;&nbsp;( -- a ) Empile l'adresse de la variable système **ULAST**. Cette variable contient l'adresse du champ nom (nfa) du dernier mot compilé.  
 
 * __LITERAL__&nbsp;&nbsp;( n -- ) Compile **n** comme entier litéral. En **runtime** **DOLIT** est invoqué pour mettre sur la pile la valeur **n**.  
 
-* __LSHIFT__&nbsp;&nbsp;( i1 n+ -- ) Décalage vers la gauche de **i1** **n+** bits. Les bits à droites sont mis à zéro.
+* __LSHIFT__&nbsp;&nbsp;( i1 n+ -- i2 ) Décalage vers la gauche de **i1** **n+** bits. Les bits à droites sont mis à zéro. __i2__ est le résultat de ce décalage.
 
-* __MOD__&nbsp;&nbsp;( n1 n2 -- n ) Retourne le reste de la division entière arrondie vers zéro.
+* __MOD__&nbsp;&nbsp;( n1 n2 -- n ) Retourne le reste de la division entière __n1/n2__ arrondie vers zéro.
 
 * __NAME>__&nbsp;&nbsp;( nfa -- ca ) Retourne l'adresse du __code__ correspondant à l'entrée du dictionnaire avec le *champ nom* __nfa__. Donne une valeur erronnée si __nfa__ n'est pas une entrée valide dans le dictionnaire.  
 
@@ -218,18 +222,19 @@ Chaque module a une section séparé pour son vocubulaire. Cet index conduit à 
 
 * __NEGATE__&nbsp;&nbsp;( i1 -- i2 ) Empile la négation arithmétique de __i1__. 
 
-* __NEXT__&nbsp;&nbsp;( a -- ) Mot immédiat qui compile la fin d'une boucle **FOR-NEXT**.
+* __NEXT__&nbsp;&nbsp;( a -- ) Compile le runtime __DONXT__ complétant une boucle **FOR-NEXT**. En _runtime_ __DONXT__ décrément le compteur de boucle 
+et fait un saut au début de la boucle tant que le compteur est __>=0__. 
 __a__ est l'adresse du début de la boucle et est compilée comme saut arrière. 
 
 * __NOT__&nbsp;&nbsp;( i1 -- i2 ) __i2__ est le complément unaire de __i1__. Autrement dit tous les bits de __i1__ sont inversés. 
 
-* __NUMBER?__&nbsp;&nbsp;( b -- i T | b F ) Essaie de convertir la chaîne *b* en entier. Si la convertion réussie l'entier **i** et **T** sont retournés. Sinon **b** et **F** sont retournés.
+* __NUMBER?__&nbsp;&nbsp;( b -- i T | b F ) Essaie de convertir la chaîne **b** en entier. Si la convertion réussie l'entier **i** et **T** sont retournés. Sinon **b** et **F** sont retournés.
 
 * __OR__&nbsp;&nbsp;( n1 n2 -- n3 ) __n3__ est le résultat d'un OU bit à bit entre __n1__ et __n2__. 
 
 * __OVER__&nbsp;&nbsp;( n1 n2 -- n1 n2 n1 ) Copie le second élémente de la pile au sommet. 
 
-* __OVERT__&nbsp;&nbsp;( -- ) Met l'adresse **nfa** du dernier mot définie dans le pointer **UCNTXT**. Cette variable indique le début du dictionnaire pour la recherche de mots.
+* __OVERT__&nbsp;&nbsp;( -- ) Copie l'adresse qui est dans **ULAST** dans **UCNTXT**. Cette variable indique le début du dictionnaire pour la recherche de mots. 
 
 * __PAD__&nbsp;&nbsp;( -- a ) Empile l'adresse du tampon de travail **PAD**.  
 
@@ -239,7 +244,7 @@ __a__ est l'adresse du début de la boucle et est compilée comme saut arrière.
 
 * __PRESET__&nbsp;&nbsp;( -- ) Vide la pile des arguments et le TIB avant d'invoquer **QUIT**.  
 
-* __QUERY__&nbsp;&nbsp;( -- ) Lecture d'une ligne de texte du terminal dans le TIB. La lecture se termine à la réception d'un caractère **CR**. Le nombre de caractères dans le TIB est dans la variable système **UCTIB**. La variable **UINN** est remise à zéro pour débuter l'interprétation. 
+* __QUERY__&nbsp;&nbsp;( -- ) Lecture d'une ligne de texte du terminal dans le TIB. La lecture se termine à la réception d'un caractère **CR**. Le nombre de caractères dans le TIB est dans la variable système **UCTIB**. La variable **UINN** est remise à zéro pour débuter l'interprétation. __QUERY__ est appellé par l'interpréteur __QUIT__. 
 
 * __QUIT__&nbsp;&nbsp;( -- ) Il s'agit de l'interpréteur de texte, c'est à dire l'interface entre l'utilisateur et le système. **QUIT** appel en boucle **QUERY** et **EVAL**. 
 
@@ -249,7 +254,9 @@ __a__ est l'adresse du début de la boucle et est compilée comme saut arrière.
 
 * __RAND__&nbsp;&nbsp;( u1 -- u2 ) Retourne un entier pseudo aléatoire dans l'intervalle **0&le;u2&lt;u1**.  
 
-* __REPEAT__&nbsp;&nbsp;( -- ) Termine un boucle de la forme **BEGIN-WHILE-REPEAT**. Le branchement s'effectue après le **BEGIN**.
+* __REPEAT__&nbsp;&nbsp;( a1 a2 -- ) compile un saut arrière vers le début  d'un boucle de la forme **BEGIN-WHILE-REPEAT**. Le branchement s'effectue après le **BEGIN**. Consomme l'adresse de destination du saut arrière __a1__ . __a2__ est l'adresse d'une fente ou est compilé l'adressse du saut conditionnel du avant du __WHILE__. __a2__ est laissé sur la pile par le __WHILE__ pour indiquer au __REPEAT__ où il doit compiler l'adresse du saut conditionnel avant. 
+
+* __RESET__&nbsp;&nbsp;( -- ) Réinitialise le système en effaçant tous les mots définis par l'utilisateur. 
 
 * __ROT__&nbsp;&nbsp;( n1 n2 n3 -- n2 n3 n1 ) Rotation des 3 éléments supérieurs de la pile.
 
@@ -257,9 +264,13 @@ __a__ est l'adresse du début de la boucle et est compilée comme saut arrière.
 
 * __RP@__&nbsp;&nbsp;( -- u ) Empile la valeur du pointeur de la pile des retours. 
 
-* __RSHIFT__&nbsp;&nbsp;( n1 u -- n2 ) Décale **n1** de **u** bits vers la droite. Les bits à gauche sont remplacés par **0**. 
+* __RSHIFT__&nbsp;&nbsp;( n1 u -- n2 ) Décale **n1** de **u** bits vers la droite. Les bits à gauche sont remplacés par **0**. __n2__ est le résultat de ce décalage. 
 
-* __SEED__&nbsp;&nbsp;( u -- ) Initialise le générateur pseudo-aléatoire avec la valeur **u**.   
+* __RSTBIT__&nbsp;&nbsp;( c a --  ) Met à zéro le bit à la position __c__ {0...7} de l'octet qui est situé à l'adresse __a__. Surtout utile pour manipuler les bits des registres d'un périphérique.
+
+* __SEED__&nbsp;&nbsp;( u -- ) Initialise le générateur pseudo-aléatoire avec la valeur **u**. __u__ doit-être différent de __0__.  
+
+* __SETBIT__&nbsp;&nbsp;( c a --  ) Met à 1 le bit à la position __c__ {0...7} de l'octet qui est situé à l'adresse __a__. Surtout utile pour manipuler les bits des registres d'un périphérique.
 
 * __SP!__&nbsp;&nbsp;( u --  ) Initialise le pointeur de la pile des arguments avec la valeur **u**.  
 
@@ -273,13 +284,16 @@ __a__ est l'adresse du début de la boucle et est compilée comme saut arrière.
 
 * __SWAP__&nbsp;&nbsp;( n1 n2 -- n2 n1 ) Inverse l'ordre des 2 éléments au sommet de la pile. 
 
-* __THEN__&nbsp;&nbsp;( -- ) Termine une boucle **IF-ELSE-THEN. 
+* __THEN__&nbsp;&nbsp;( a -- ) Compile l'adresse destination d'un saut avant du  **IF-ELSE-THEN. __a__ est laissé sur la pile par le __IF__ pour par le __ELSE__.
+Il s'agit de l'adresse d'une fente ou la destination du saut doit-être compilée.
 
-* __TIB__&nbsp;&nbsp;( -- a ) Empile l'adresse du *Transaction Input Buffer* qui est le tampon qui accumule les caractes lus par **QUERY**.  
+* __TIB__&nbsp;&nbsp;( -- a ) Empile l'adresse du *Transaction Input Buffer* qui est le tampon qui accumule les caractères lus par **QUERY**.  
 
 * __TIMER__&nbsp;&nbsp;( -- u ) Retourne la valeur du compteur de millisecondes. Il s'agit d'un compteur qui est incrémenté chaque milliseconde par une interruption du TIMER4. 
 
 * __TMR-RST__&nbsp;&nbsp;( -- u ) Remet à zéro le compteur de millisecondes.
+
+* __TOGLBIT__&nbsp;&nbsp;( c a --  ) Inverse l'état du bit à la position __c__ {0...7} de l'octet qui est situé à l'adresse __a__. Surtout utile pour manipuler les bits des registres d'un périphérique.
 
 * __TOKEN__  &lt;stream&gt;&nbsp;&nbsp;( -- b ) Extrait le prochain mot du TIB. __b__ est l'adresse de la chaîne comptée.  
 
@@ -291,7 +305,7 @@ __a__ est l'adresse du début de la boucle et est compilée comme saut arrière.
 
 * __UM*__&nbsp;&nbsp;( u1 u2 -- ud ) Multiplication de 2 entiers non signés et retourne le résultat comme entier non signé double.  
 
-* __UNTIL__&nbsp;&nbsp;( f -- ) Termine une boucle **BEGIN - UNTIL**. La boucle se termine quand **f** est *vrai*.  
+* __UNTIL__&nbsp;&nbsp;( a -- ) compile un saut conditionnel vers le début d'une boucle **BEGIN - UNTIL**. __a__ est l'adresse destination du saut et a été laissé sur la pile par __BEGIN__. En *runtime* le boucle roule aussi longtemps que la valeur au sommet de la pile est __0__.  
 
 * __VARIABLE__  &lt;nom&gt;&nbsp;&nbsp;( --) Crée une nouvelle variable de nom **&lt;nom&gt;**. Cette variable est initialisée à zéro.  
 
@@ -299,7 +313,8 @@ __a__ est l'adresse du début de la boucle et est compilée comme saut arrière.
 
 * __WAIT__&nbsp;&nbsp;( u -- ) Suspend l'exécution pour une durée de **u** millisecondes.  
 
-* __WHILE__&nbsp;&nbsp;( f -- ) Condition de contrôle d'une boucle **BEGIN - WHILE - REPEAT**. la boucle se poursuit tant que **f** est *vrai*.  
+* __WHILE__&nbsp;&nbsp;(  -- a ) Compile un saut conditionnel avant pour une boucle **BEGIN - WHILE - REPEAT**. __a__ est l'adresse de la fente où sera compilé l'adresse de destination du saut. __a__ est consommé par __REPEAT__. 
+En *runtime* la bouche roule tant la valeur au sommet de la pile est *vrai*.
 
 * __WITHIN__&nbsp;&nbsp;( u ul uh -- f ) Retourne **f** indiquant si **ul &le; u &lt;uh** 
 
@@ -331,8 +346,7 @@ Ce module définit le vocabulaire nécessaire pour écrire dans la mémoire pers
 
 * __FCPY__&nbsp;&nbsp;( a1 a2 u -- ) Copie une plage de mémoire RAM en mémoire FLASH ou EEPROM.  **a1** est l'adresse source en RAM. **a2** est l'adresse destination. **u** est le nombre d'octets à copier. 
 
-* __FD!__&nbsp;&nbsp;( d a -- ) Écris en mémoire persistante 'entier double **d** à l'adresse **a**.
-
+* __FD!__&nbsp;&nbsp;( d a -- ) Écris en mémoire persistante l'entier double **d** à l'adresse **a**.
 
 * __UPDAT-EEPTR__&nbsp;&nbsp;( -- ) Met à jour les variables système persistantes (en EEPROM) à partir des valeurs de celles en mémoire RAM. Il y a 3 variables sauvegardées: 
 
@@ -343,20 +357,19 @@ Ce module définit le vocabulaire nécessaire pour écrire dans la mémoire pers
 [index](#index)
 
 <hr>
+<a id="intr"></a>
 
 ## Module interruptions
-
-<a id="intr"></a>
 
  Le fichier [interrupts.asm](interrupts.asm) contient le vocabulaire permettant de créer et gérér des services d'interruptions.
 
 * __DI__&nbsp;&nbsp;( -- ) Désactive les interruptions en exécutant l'instruction machine **SIM**. Ce mot ne peut être utilisé que dans une définition. Il est impératif de réactiver les interruptions dans la même définition. Si les interruptions sont désactivés il n'y a plus d'accès au terminal. 
 
-* __EI__&nbsp;&nbsp;( -- ) Active les interruptions en exécutant l'extruction machine **RIM**. Il ne peut être utilisé qu'à l'intérieur d'une définition.
+* __EI__&nbsp;&nbsp;( -- ) Active les interruptions en exécutant l'instruction machine **RIM**.
 
 * __I:__&nbsp;&nbsp;( n+ -- n+ ) Débute la compilation d'une routine d'interruption. Les routines d'interruptions n'ont pas de nom et ne sont donc pas inscrite dans le dictionnaire. **n+** est le numéro du vecteur d'interruption {0..29}. Il ne faut pas écraser les vecteurs utilisés par le TIMER4 et le USART qui communique avec le terminal sinon le système ne sera plus en état de marche.
 
-* __I;__&nbsp;&nbsp;( n+ -- ) Termine la compilation d'une routine d'interruption. Le vecteur d'interruption **n+** est modifié avec l'adresse avec l'adresse d'exécution du gestionnaire d'interruption.
+* __I;__&nbsp;&nbsp;( n+ ca -- ) Termine la compilation d'une routine d'interruption. Le vecteur d'interruption **n+** est modifié avec l'adresse d'exécution __ca__ du gestionnaire d'interruption. 
 
 * __I-RST__&nbsp;&nbsp;( n+ -- ) Réinitialise le vecteur d'interruption **n+** avec le gestionnaire par défaut qui est un interruption vide.
 
@@ -365,8 +378,9 @@ Ce module définit le vocabulaire nécessaire pour écrire dans la mémoire pers
 [index](#index)
 
 <hr>
-
 <a id="tools"></a>
+
+## Module tools 
 
 ## Le fichier [tools.asm](tools.asm) contient le vocabulaire utile au débogage des programmes.
 
@@ -383,9 +397,11 @@ Ce module définit le vocabulaire nécessaire pour écrire dans la mémoire pers
 [Index](#index)
 
 <hr>
-
 <a id="bios"></a>
+
 ## Module [bios.asm](bios.asm)
 
 Ce module ne contient aucun mot inscrit dans le dictionnaire Forth. Il initialise le matériel et offre des fonctions de bas niveaux pour la minuterie **TIMER4** ainsi que  avec le **UART**  qui sert d'interface avec le terminal.
+
+[Index](#index)
 

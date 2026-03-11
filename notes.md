@@ -4,6 +4,8 @@
 * Ajout des mots __DI__ et __EI__ qui avait été retirés du fichier [interrupts.asm](interrupts.asm).
 * Suppression du mot __HLD__ qui n'était plus utile. 
 * Travail sur le fichier [référence_smallForth.md]. 
+* Corrigé erreur dans [ForthCore.asm](ForthCore.asm) où le mot "NEXT" apparaissait 2 fois. Le 2ième étant en fait le runtime __DONXT__.
+* Travail sur le fichier [référence_smallForth.md]. 
 
 
 ### 2026-03-10 
