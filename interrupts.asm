@@ -4,7 +4,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;       I:  ( n --  )
+; DI  ( -- )
+; désactive les interruptions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER DII,2+COMPO,"DI"
+        SIM 
+        RET 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; EI  ( -- )
+; active les interruptions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+        _HEADER EII,2+COMPO,"DI"
+        RIM 
+        RET 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;       I:  ( n+ --  )
 ; Start interrupt service 
 ; routine definition
 ; those definition have 
@@ -36,7 +52,7 @@
         JP      LBRAC 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; I-RST  ( n -- )
+;; I-RST  ( n+ -- )
 ;; reset inteerupt vector to defalut 
 ;; value 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -49,7 +65,7 @@
         JP    FSTOR
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;  VEC-ADR ( n -- adr )
+;  VEC-ADR ( n+ -- adr )
 ;  return address of interrupt 
 ;  vector 'n' 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -69,9 +85,9 @@
        .ascii " bad vector"
 
 ;------------------------------
-; RST-VEC ( xt -- )
+; RST-VEC ( a -- )
 ; all interrupt vector with 
-; an address >= xt are resetted 
+; an address >= a are resetted 
 ; to default
 ;------------------------------
 VECTOR_SIZE=4 

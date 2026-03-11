@@ -1,5 +1,11 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-11
+* Ajout des mots __DI__ et __EI__ qui avait été retirés du fichier [interrupts.asm](interrupts.asm).
+* Suppression du mot __HLD__ qui n'était plus utile. 
+* Travail sur le fichier [référence_smallForth.md]. 
+
+
 ### 2026-03-10 
 * Création de l'étiquette __DPUSHA:__ dans la routine __STR__. 
 * Réécriture de __KEY__, __SNAME__ et __WORDS__ pour utiliser __DPUSHA__.
@@ -11,6 +17,7 @@
 * 21:28 Merge de la branche test à la branche main.
 * Déplacé le mot __PICK__ du fichier [tools.asm](tools.asm) vers le fichier [ForthCore.asm](ForthCore.asm)
 * Travail sur le fichier [référence_smallForth.md]. 
+* commit à 22:15
 
 ### 2026-03-09 
 * Remplacé __CALL XORW_Y___ par __CALLR XORW_Y__.

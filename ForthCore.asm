@@ -701,6 +701,7 @@ BRAN:
 	LDW     Y,#UINTER 
         JP      DPUSH 
 
+.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       HLD     ( -- a )
 ;       Hold a pointer of output
@@ -709,6 +710,7 @@ BRAN:
         _HEADER HLD,3,"HLD"
 	LDW     Y,#UHLD 
         JP      DPUSH 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       CONTEXT ( -- a )
@@ -2648,23 +2650,24 @@ QUIT2:  CALL     QUERY   ;get input
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER BCOMP,COMPO+IMEDD+9,"[COMPILE]"
         CALL     TICK
-        JP     JSRC
+        JP       JSRC
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       COMPILE ( -- )
 ;       Compile next jsr in
 ;       colon list to code dictionary.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-        _HEADER COMPI,COMPO+7,"COMPILE"
+;        _HEADER COMPI,COMPO+7,"COMPILE"
+COMPI: 
         CALL     RFROM
         CALL     DUPP
         CALL     AT
         CALL     JSRC    ;compile subroutine
         CALL     CELLP
-        ldw y,x 
-        ldw y,(y)
-        addw x,#CELLL 
-        jp (y)
+        LDW      Y,X  
+        LDW      Y,(Y)
+        ADDW     X,#CELLL 
+        JP       (Y)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       LITERAL ( w -- )
