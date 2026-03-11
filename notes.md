@@ -7,6 +7,7 @@
 * Ajout des mots __SETBIT__, __RSTBIT__ et __TOGLBIT__. 
 * commit à 11:26
 * Ajout du flags __COMPO__ aux mots __R&gt;__ et __R@__.
+* commit 21:27 
 
 
 ### 2026-03-09 
