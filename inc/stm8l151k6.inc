@@ -494,7 +494,7 @@ TIM2_CCR2L=0x5264
 TIM2_BKR=0x5265
 TIM2_OISR=0x5266
 
-; TIMER2 control register 1
+; TIMER control register 1
 TIM2_CR1_CEN=0 ; counter enable 
 TIM2_CR1_UDIS=1 ; update disable 
 TIM2_CR1_URS=2  ; update request source 
@@ -503,7 +503,7 @@ TIM2_CR1_DIR=4  ; direction up/down
 TIM2_CR1_CMS=5 ; 6:5 center-aligned mode
 TIM2_CR1_ARPE=7 ; auto-reload preload enable 
 
-; TIM3 capture compare mode regiser 1
+; TIMER capture compare mode regiser 1
 ; output compare 
 TIM2_CCMR1_CCS1=0 ;1:0 capture/compare 1 selection 
 TIM2_CCMR1_OC1FE=2 ; output compare fast enable 
@@ -514,7 +514,7 @@ TIM2_CCMR1_CC1S=0 ; capture/compare 1 selection
 TIM2_CCMR1_IC1PSC=2 ; 3:2 input capture prescaler 
 TIM2_CCMR1_IC1F=4 ;7:4 input capture 1 filter 
 
-; TIM3 capture compare mode regiser 2
+; TIMER capture compare mode regiser 2
 ; output compare 
 TIM2_CCMR2_CCS2=0 ;1:0 capture/compare 2 selection 
 TIM2_CCMR2_OC2FE=2 ; output compare fast enable 

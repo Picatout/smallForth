@@ -1,2 +1,2 @@
 #! /bin/bash 
-./tools/SendFile -s/dev/ttyACM0 $1
+./tools/SendFile -d 200 -s/dev/ttyS0 $1

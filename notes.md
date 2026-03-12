@@ -1,5 +1,12 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-12 
+* Modifié le script [send.sh](send.sh), nécessitait un délais plus long.
+* Création du programme [forth/blink.f](forth/blink.f).
+* Création du programme [forth/exist.f](forth/exist.f)
+* Création du programme [forth/warble.f](forth/warble.f)
+
+
 ### 2026-03-11
 * Ajout des mots __DI__ et __EI__ qui avait été retirés du fichier [interrupts.asm](interrupts.asm).
 * Suppression du mot __HLD__ qui n'était plus utile. 
