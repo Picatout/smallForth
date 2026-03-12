@@ -1,4 +1,4 @@
-\ count and disply words in dictionray 
+\ count words in dictionray 
 
 : WC ( -- )
     0 CONTEXT BEGIN 
