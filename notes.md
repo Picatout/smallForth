@@ -6,7 +6,7 @@
 * Travail sur le fichier [référence_smallForth.md]. 
 * Corrigé erreur dans [ForthCore.asm](ForthCore.asm) où le mot "NEXT" apparaissait 2 fois. Le 2ième étant en fait le runtime __DONXT__.
 * Travail sur le fichier [référence_smallForth.md]. 
-
+* Merge de la branche test à la branche main à 15:03.
 
 ### 2026-03-10 
 * Création de l'étiquette __DPUSHA:__ dans la routine __STR__. 
