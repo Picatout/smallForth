@@ -1,0 +1,6 @@
+\ indicate WORD flags 
+\ usage FLAGS <word>
+: FLAGS TOKEN CONTEXT FIND SWAP DROP C@ DUP 
+$80 AND IF ."  IMMEDIATE" THEN
+$40 AND IF ."  COMPILE-ONLY" THEN
+;
