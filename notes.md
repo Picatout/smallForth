@@ -5,6 +5,8 @@
 * Création du programme [forth/blink.f](forth/blink.f).
 * Création du programme [forth/exist.f](forth/exist.f)
 * Création du programme [forth/warble.f](forth/warble.f)
+* commit à 16:32 
+* Moficiation de [forth/exist.f](forth/exist.f). 
 
 
 ### 2026-03-11
