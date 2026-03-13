@@ -59,12 +59,13 @@ $534D CONST ADC1_SQR4 \ 0-7 channel select
     0 ADC1_SQR4 C! 
 ; 
 
-\ display internal temparure sensor 
-\ reading 
+\ display channel 17 reading 
+\  10K potentiometer connected betweed Vdd - Vss 
+\  pot. arm on st8l151k6 pin 14.
 :? TEMP ( -- )
     CLK_PCKENR2_ADC1 CLK_PCKENR2 SETBIT \ enable ADC1 clock gate
     ADC1_CR1_ADON ADC1_CR1 SETBIT \ enable ADC 
-    BEGIN \ display temp sensor value loop 
+    BEGIN \ display channel 17 reading 
         ADC1_CH_17 READ_ADC
         . CR \ display value 
         1000 WAIT  \ pause 1 second 

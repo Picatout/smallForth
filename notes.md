@@ -4,7 +4,8 @@
 * Ajout du programme [forth/char.f](forth/char.f).
 * Modifié [forth/warble.f](forth/warble.f), remplacé __256 /MOD__  par un __8 RSHIFT__ plus rapide.
 * Ajout du programme [forth/adc.f]. Démonstration de lecture d'un canal sur le convertisseur ADC1.
-
+* commit à 16:46  et push.
+* Reformaté le programme [forth/flags.f](forth/flags.f).
 
 ### 2026-03-12 
 * Modifié le script [send.sh](send.sh), nécessitait un délais plus long.
