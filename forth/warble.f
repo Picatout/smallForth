@@ -32,12 +32,14 @@ $5265 CONST TIM2_BKR \ break register
     >R \ put delay on R: 
 BEGIN 
     DUP \ u1 u2 u2 
-    256 /MOD \ u1 u2 r q 
+    8 RSHIFT 
     TIM2_ARRH C! \ u1 u2 r 
+    DUP 
     TIM2_ARRL C! \ u1 u2 
     R@ WAIT \ u3 delay 
-    OVER \ u1 u2 u1 
-    256 /MOD \ u1 u2 r q 
+    OVER \ u1 u2 u1
+    DUP  
+    8 RSHIFT 
     TIM2_ARRH C! \ u1 u2 r 
     TIM2_ARRL C! \ u1 u2 
     R@ WAIT \ u3 delay 

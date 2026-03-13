@@ -1977,7 +1977,7 @@ CHAR2:  CALL     DONXT
         LDW     Y,X 
         LDW     Y,(2,Y)
         _DDROP 
-PRINT:
+PRINT: ; A=LEN, Y=*STR 
         push a 
         tnz (1,sp)
         jreq 9$ 
@@ -2093,7 +2093,7 @@ DOTQP:
         CALL     OVER
         CALL     SUBB
         CALL     SPACS
-        JP     TYPES
+        JP       TYPES
 
 .ENDIF ;**********************
 
@@ -2103,13 +2103,6 @@ DOTQP:
 ;       in free format.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER UDOT,2,"U."
-.IF 0
-        CALL     BDIGS
-        CALL     DIGS
-        CALL     EDIGS
-        CALL     SPACE
-        JP       TYPES
-.ELSE 
         CALL    SPACE 
         LD      A,UBASE+1 
         LDW     Y,X 
@@ -2117,7 +2110,6 @@ DOTQP:
         _DROP 
         CALL    utoa 
         JP      PRINT 
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       .       ( w -- )
@@ -2131,11 +2123,11 @@ DOTQP:
         .WORD    10
         CALL     XORR    ;?decimal
         CALL     QBRAN
-        .WORD      DOT1
-        JRA     UDOT
+        .WORD    DOT1
+        JRA      UDOT
 DOT1:   CALL     STR
         CALL     SPACE
-        JP     TYPES
+        JP       TYPES
 
 ;; Parsing
 

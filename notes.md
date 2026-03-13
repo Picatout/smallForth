@@ -1,5 +1,11 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-13
+* Ajout du programme [forth/char.f](forth/char.f).
+* Modifié [forth/warble.f](forth/warble.f), remplacé __256 /MOD__  par un __8 RSHIFT__ plus rapide.
+* Ajout du programme [forth/adc.f]. Démonstration de lecture d'un canal sur le convertisseur ADC1.
+
+
 ### 2026-03-12 
 * Modifié le script [send.sh](send.sh), nécessitait un délais plus long.
 * Création du programme [forth/blink.f](forth/blink.f).
@@ -9,6 +15,7 @@
 * Moficiation de [forth/exist.f](forth/exist.f). 
 * commit à 20:03 
 * Modification de  [forth/warble.f](forth/warble.f)
+* commit à 22:15 
 
 
 ### 2026-03-11
