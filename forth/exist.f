@@ -1,6 +1,6 @@
-\ check if a name is already in dictionary 
+\ check if a <name> is already in dictionary 
 \ abort if already exist.
-: EXIST? 
+: EXIST? ( <name>  -- )
     >IN @ 
     TOKEN CONTEXT FIND IF
        ABORT" exist" 
@@ -22,9 +22,10 @@
     VARIABLE 
 ; 
 
-\ enter compile mode only if WORD does not arleary exist.
+\ enter compile mode only if <name> does not arleary exist.
 : :? ( <name> -- )
     EXIST? 
     :  
 ;
+
 
