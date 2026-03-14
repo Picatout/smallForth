@@ -1,5 +1,9 @@
 # NOTES DE TRAVAIL
 
+### 2026-04-14 
+* Ajout du programme [forth/dac.f](forth/dac.f).
+
+
 ### 2026-03-13
 * Ajout du programme [forth/char.f](forth/char.f).
 * Modifié [forth/warble.f](forth/warble.f), remplacé __256 /MOD__  par un __8 RSHIFT__ plus rapide.
@@ -9,6 +13,8 @@
 * commit à 16:56 
 * Réactivé le mot __2/__ et __2*__ dans [ForthCore.asm](ForthCore.asm). 
 * Modifié et débogué [forth/warble.f](forth/warble.f).
+* commit à 21:00 
+* Création du tag V1.1 poussé le tag vers github.
 
 
 ### 2026-03-12 
