@@ -1438,7 +1438,6 @@ MSTA1:	RET
         LDW (X),Y
         RET
 
-.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2*   ( n -- n )
 ;       Multiply tos by 2.
@@ -1450,7 +1449,6 @@ TWOSTAR:
         SLAW Y
         LDW (X),Y
         RET
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       1+      ( a -- a )
@@ -1513,7 +1511,6 @@ RSHIFT4:
         ldw (x),y 
         ret 
 
-.IF 0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       2/      ( n -- n )
 ;       divide  tos by 2.
@@ -1524,7 +1521,6 @@ RSHIFT4:
         SRAW Y
         LDW (X),Y
         RET
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;         0     ( -- 0)

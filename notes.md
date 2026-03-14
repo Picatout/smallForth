@@ -6,6 +6,10 @@
 * Ajout du programme [forth/adc.f]. Démonstration de lecture d'un canal sur le convertisseur ADC1.
 * commit à 16:46  et push.
 * Reformaté le programme [forth/flags.f](forth/flags.f).
+* commit à 16:56 
+* Réactivé le mot __2/__ et __2*__ dans [ForthCore.asm](ForthCore.asm). 
+* Modifié et débogué [forth/warble.f](forth/warble.f).
+
 
 ### 2026-03-12 
 * Modifié le script [send.sh](send.sh), nécessitait un délais plus long.
