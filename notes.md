@@ -2,6 +2,8 @@
 
 ### 2026-04-14 
 * Ajout du programme [forth/dac.f](forth/dac.f).
+* commit à 12:03 
+* Corrigé bogue dans __NOISE__ de [forth/dac.f](forth/dac.f).
 
 
 ### 2026-03-13

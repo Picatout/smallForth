@@ -54,7 +54,6 @@ $53AD CONST DAC_DORL
         DAC_RDHRL C!
         KEY? 
     UNTIL 
-    2DROP 
     KEY DROP
     DAC_OFF  
 ; 
