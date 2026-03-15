@@ -1,6 +1,10 @@
 # NOTES DE TRAVAIL
 
-### 2026-04-14 
+### 2026-03-15
+
+* Mise à jour note de license dans les fichiers source.
+
+### 2026-03-14 
 * Ajout du programme [forth/dac.f](forth/dac.f).
 * commit à 12:03 
 * Corrigé bogue dans __NOISE__ de [forth/dac.f](forth/dac.f).
@@ -10,6 +14,8 @@
 * Incrémenté le numéro de révision à 2.
 * commit à 20:30 
 * Création du tag V1.1R2 
+* Corrigé bogue dans NOISE du démo forth/dac.f
+* commit à 20:36 suivit d'un push.
 
 
 ### 2026-03-13
