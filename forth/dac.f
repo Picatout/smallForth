@@ -43,40 +43,32 @@ $53AD CONST DAC_DORL
     CLK_PCKENR2_COMP CLK_PCKENR2 RSTBIT 
 ; 
 
-\ DAC noise channel output 
+\ DAC noise output 
 : NOISE ( -- )
     DAC_CFG 
     BEGIN 
         4096 RAND 
-        DUP 
-        8 RSHIFT 
-        DAC_RDHRH C! 
-        DAC_RDHRL C!
         KEY? 
     UNTIL 
     KEY DROP
     DAC_OFF  
 ; 
 
-
-\ DAC triangle wave channel output 
-: TRIANGLE ( -- )
+\ DAC saw tooth wave
+\ n is step, it determine 
+\ wave frequency 
+\ n=4096*freq/41667
+: SAWTOOTH ( n -- )
     DAC_CFG 
-    256 0
+    0
     BEGIN 
         OVER  
-        + DUP
-        0 4096 WITHIN IF 
-            DUP DUP  
-            8 RSHIFT 
-            DAC_RDHRH C! 
-            DAC_RDHRL C!
-        ELSE 
-            SWAP 
-            NEGATE 
-            SWAP 
-            OVER + 
-        THEN 
+        + 
+        4095 AND  
+        DUP DUP  
+        8 RSHIFT 
+        DAC_RDHRH C! 
+        DAC_RDHRL C!
         KEY? 
     UNTIL 
     2DROP 

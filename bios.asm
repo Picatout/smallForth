@@ -123,8 +123,8 @@ uart_init:
 
 ; initialize timer4, used for millisecond interrupt  
 	bset CLK_PCKENR1,#CLK_PCKENR1_TIM4 
-        mov TIM4_PSCR,#7 ; prescale 128  
-	mov TIM4_ARR,#125 ; set for 1msec.
+        mov TIM4_PSCR,#7  ; prescale 128  
+	mov TIM4_ARR,#131 ; set for 1msec.
 	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
 	bset TIM4_IER,#TIM4_IER_UIE 
         rim 

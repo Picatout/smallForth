@@ -639,7 +639,7 @@ TIM4_CR1_CEN=0 ;counter enable
 TIM4_CR1_UDIS=1 ; update disable 
 TIM4_CR1_URS=2 ; update request source 
 TIM4_CR1_OPM=3 ; one pulse mode 
-TIM4_CR1_arpe=7 ; auto-reload preload enable 
+TIM4_CR1_ARPE=7 ; auto-reload preload enable 
 ; control register 2 
 TIM4_CR2=0x52E1
 TIM4_SMCR=0x52E2

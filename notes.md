@@ -4,7 +4,10 @@
 * Ajout du programme [forth/dac.f](forth/dac.f).
 * commit à 12:03 
 * Corrigé bogue dans __NOISE__ de [forth/dac.f](forth/dac.f).
-
+* commit à 12:06 
+* Corrigé bogue dans [bios.asm](bios.asm) dans l'initialisation du TIMER4 le registre ARR doit-être initialisé à **131** et non **125**.
+* Corrigé bogue dans mot __FORGET__, __UPDATPTR__ n'était pas appellé.
+* Incrémenté le numéro de révision à 2.
 
 ### 2026-03-13
 * Ajout du programme [forth/char.f](forth/char.f).

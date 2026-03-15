@@ -149,7 +149,8 @@ EEP_RUN = EEP_CP+2   ; application autorun Code Addr
 ;; Version control
 ;***********************************************
 VER     =  1         ;major release version
-MINOR   =  0         ;minor revision
+MINOR   =  1         ;minor revision
+REV     =  2         ;revison 
 
 ;; Constants
 
@@ -251,7 +252,7 @@ FORGET1:
         AND     A,#0X1F 
         INC     A 
         LD      (NLEN+1,SP),A 
-        ADDW    Y,(NLEN,SP)   ; CALL code  
+        ADDW    Y,(NLEN,SP)   ; ca  
         INCW    Y  ;  XT
         LDW     (XT,SP),Y
         LDW     Y,(Y)  
@@ -273,7 +274,8 @@ FORGET3:
         ADDW    SP,#VSIZE 
         POPW    X 
         _DROP 
-        RET 
+        JP      UPDATPTR 
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;    SEED ( n -- )
@@ -3218,37 +3220,25 @@ DOCONST:
         jp (2,y)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;    PRINT_VERSION ( c1 c2 -- )
-;    c2 minor 
-;    c1 major 
+;    PRINT_VERSION
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 PRINT_VERSION:
-.IF 0
-     CALL BDIGS 
-     CALL DIGS 
-     CALL DIGS 
-     _DOLIT '.' 
-     CALL HOLD 
-     _DROP 
-     CALL DIGS 
-     CALL EDIGS 
-     CALL TYPES
-     RET  
-.ELSE 
       LD        A,#10 
-      LDW       Y,X 
-      LDW       Y,(2,Y)
+      LDW       Y,#VER  
       CALL      utoa 
       CALL      PRINT
       LD        A,#'.' 
       CALL      putc 
-      LDW       Y,X 
-      LDW       Y,(Y)
-      _DDROP  
       LD        A,#10 
-      CALL      utoa
+      LDW       Y,#MINOR  
+      CALL      utoa   
+      CALL      PRINT 
+      LD        A,#'R' 
+      CALL      putc 
+      LD        A,#10 
+      LDW       Y,#REV 
+      CALL      utoa 
       JP        PRINT 
-.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       hi      ( -- )
@@ -3259,8 +3249,6 @@ HI:
         CALL     DOTQP   
         .BYTE      19 
         .ASCII     "smallForth version "
-	_DOLIT VER 
-        _DOLIT MINOR 
         CALL PRINT_VERSION
         CALL    DOTQP
         .BYTE 15+34
