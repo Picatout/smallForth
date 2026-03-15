@@ -48,6 +48,10 @@ $53AD CONST DAC_DORL
     DAC_CFG 
     BEGIN 
         4096 RAND 
+        DUP 
+        8 RSHIFT 
+        DAC_RDHRH C! 
+        DAC_RDHRL C!
         KEY? 
     UNTIL 
     KEY DROP

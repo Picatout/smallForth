@@ -8,6 +8,9 @@
 * Corrigé bogue dans [bios.asm](bios.asm) dans l'initialisation du TIMER4 le registre ARR doit-être initialisé à **131** et non **125**.
 * Corrigé bogue dans mot __FORGET__, __UPDATPTR__ n'était pas appellé.
 * Incrémenté le numéro de révision à 2.
+* commit à 20:30 
+* Création du tag V1.1R2 
+
 
 ### 2026-03-13
 * Ajout du programme [forth/char.f](forth/char.f).
