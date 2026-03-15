@@ -3,6 +3,9 @@
 ### 2026-03-15
 
 * Mise à jour note de license dans les fichiers source.
+* Mise à jour du [readme.md](readme.md).
+* Débuté un nouveau démo [dma_dac.f](forth/dma_dac.f), démontrant l'utilisation du DMA avec le convertisseur numérique/analogique.
+
 
 ### 2026-03-14 
 * Ajout du programme [forth/dac.f](forth/dac.f).

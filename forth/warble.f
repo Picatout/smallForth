@@ -1,4 +1,4 @@
-\ USE: exist.f 
+\ NOTE: Must load exist.f before this one. 
 
 \ use TIMER2 channel 1 to generate a warble sound 
 \ output is on PB0 pin 12 on STM8L151K6 

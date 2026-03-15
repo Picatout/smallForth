@@ -1,4 +1,4 @@
-\ USE: exist.f 
+\ NOTE: Must load exist.f before this one  
 
 \ BLINK LED CONNECTED ON PB3 
 $5005 CONST PB_ODR \ PB ODR register address 
