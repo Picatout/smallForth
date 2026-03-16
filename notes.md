@@ -6,7 +6,8 @@
 * Après lecture de la documentation j'ai du mofifié le canal DMA utilisé par le DAC pour le canal 3.
 * Modifié l'initialisation du TIMER4 dans [bios.asm](bios.asm), ramené la valeur de ARR à 124.
 * Débogué [dma_dac.f](forth/dma_dac.f).
-
+* commit à 15:28 suivit d'un push.
+* Modifié [dma_dac.f](forth/dma_dac.f) pour faire passer la fréquence d'échantillonnage à 40Khz. Le démo produit maintenant une fréquence 1Khz.
 
 ### 2026-03-15
 

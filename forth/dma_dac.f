@@ -5,7 +5,7 @@
 \ Démonstration de l'utilisation 
 \ du DMA avec le DAC 
 \ pour générer une onde triangulaire 
-\ de 500 Hertz. 
+\ de 1000 Hertz. 
 \ la sortie est sur PB4 pint 17 du 
 \ stm8l151k6.
 \ Le tampon l'onde triangulaire 
@@ -67,7 +67,7 @@ $509A CONST DMA_C3M0ARL
 \ msec ticker 
 : SET_TICKER 
     7 TIM4_PSCR C!  \ 16Mhz/128  
-    125 TIM4_ARR C!  \ 125 
+    124 TIM4_ARR C!  \ 125Khz/1Khz-1 
     5 TIM4_CR1 C! 
     TIM4_IER_UIE TIM4_IER SETBIT 
 ;   
@@ -78,8 +78,8 @@ $509A CONST DMA_C3M0ARL
 \ no interrupt   
 : SET_TRIGGER ( -- ) 
     TIM4_IER_UIE TIM4_IER RSTBIT 
-    2 TIM4_PSCR C!  \ 16Mhz/4  
-    199 TIM4_ARR C!  \ 4Mhz/20Khz   
+    1 TIM4_PSCR C!  \ 16Mhz/2  
+    199 TIM4_ARR C!  \ 8Mhz/40Khz -    
     $20 TIM4_CR2 C! \ UEV  -> TRGO 
     5 TIM4_CR1 C!   \ URS and EN bits  
 ;
