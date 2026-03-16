@@ -1,10 +1,20 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-16
+
+* Renommé le fichier [forth/dma.f](forth/dma.f) [forth/dma_registers.f](forth/dma_registers.f). 
+* Après lecture de la documentation j'ai du mofifié le canal DMA utilisé par le DAC pour le canal 3.
+* Modifié l'initialisation du TIMER4 dans [bios.asm](bios.asm), ramené la valeur de ARR à 124.
+* Débogué [dma_dac.f](forth/dma_dac.f).
+
+
 ### 2026-03-15
 
 * Mise à jour note de license dans les fichiers source.
 * Mise à jour du [readme.md](readme.md).
 * Débuté un nouveau démo [dma_dac.f](forth/dma_dac.f), démontrant l'utilisation du DMA avec le convertisseur numérique/analogique.
+* commit à 11:11 
+* Continuer travail sur [dma_dac.f](forth/dma_dac.f). Le transfert DMA ne fonctionne pas.
 
 
 ### 2026-03-14 

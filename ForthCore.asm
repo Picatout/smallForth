@@ -150,7 +150,7 @@ EEP_RUN = EEP_CP+2   ; application autorun Code Addr
 ;***********************************************
 VER     =  1         ;major release version
 MINOR   =  1         ;minor revision
-REV     =  2         ;revison 
+REV     =  3         ;revison 
 
 ;; Constants
 
