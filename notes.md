@@ -8,7 +8,8 @@
     * Mise à jour des commentaires dans plusieurs fichiers démo forth.
     * commit à 11:17 
     * Ajout de des mots __W25Q_RD_SR1__ et __W25Q_ERASE_SECTOR__ au démo [forth/spi.f](forth/spi.f).
-    
+    * Commit et push à 11:35 
+    * Corrigé bogue dans __W25Q_ERASE_SECTOR__, testait le mauvait bit dans SR1. 
 
 ### 2026-03-17 
 

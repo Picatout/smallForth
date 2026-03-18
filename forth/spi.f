@@ -151,8 +151,8 @@ $5204 CONST SPI1_DR \ SPI1 data register
     W25Q_DESELECT 
     BEGIN \ attend la fin de l'opération 
       W25Q_RD_SR1
-      $80 AND 
-      0= 
+      3 AND \ test bits WEL et BUSY 
+      0= \ attend qu'ils soient à 0.
     UNTIL   
 ; 
 
