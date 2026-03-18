@@ -5,6 +5,9 @@
 * Déboguage de [forth/spi.f](forth/spi.f). 
     * Les broches de sorties des périphériques doivent-être configurées en push-pull dans le registre PB_CR1, donc PB5 et PB6 devait l'être pour que le SPI fonctionne.
     * dans __WRITE_BUFF__ j'avais oublié d'envoyé la commande __2__ avant d'envoyer l'adresse. 
+    * Mise à jour des commentaires dans plusieurs fichiers démo forth.
+    * commit à 11:17 
+    * Ajout de des mots __W25Q_RD_SR1__ et __W25Q_ERASE_SECTOR__ au démo [forth/spi.f](forth/spi.f).
     
 
 ### 2026-03-17 

@@ -102,6 +102,16 @@ $5204 CONST SPI1_DR \ SPI1 data register
     SPI1_DR C@ \ -- c 
 ;
 
+\ envoie de l'adresse W25Q80DV
+\ W25Q80DV déjà sélectionné  
+: W25Q_ADDR ( ud -- )
+    SPI_WR_BYTE \ adresse bits 16..23  
+    DUP 
+    8 RSHIFT 
+    SPI_WR_BYTE \ adresse bits 8..15
+    SPI_WR_BYTE \ adresse bits 0..7
+; 
+
 \ sélectionne le W25Q
 : W25Q_SELECT ( -- )
     PB0 PB_ODR RSTBIT 
@@ -121,14 +131,29 @@ $5204 CONST SPI1_DR \ SPI1 data register
     W25Q_DESELECT \ must deselect after this command 
 ; 
 
-\ envoie de l'adresse W25Q80DV
-\ W25Q80DV déjà sélectionné  
-: W25Q_ADDR ( ud -- )
-    SPI_WR_BYTE \ adresse bits 16..23  
-    DUP 
-    8 RSHIFT 
-    SPI_WR_BYTE \ adresse bits 8..15
-    SPI_WR_BYTE \ adresse bits 0..7
+\ lecture du registre SR1 
+\ du W25Q80DV
+: W25Q_RD_SR1 ( -- c )
+    W25Q_SELECT 
+    5 SPI_WR_BYTE
+    SPI_RD_BYTE
+    W25Q_DESELECT 
+; 
+
+\ efface un secteur de 4KO dans la mémoire W25Q80DV
+\ ud est l'adresse du sector  
+: W25Q_ERASE_SECTOR ( ud -- )
+    SPI_CFG 
+    W25Q_WR_EN 
+    W25Q_SELECT 
+    $20 SPI_WR_BYTE 
+    W25Q_ADDR
+    W25Q_DESELECT 
+    BEGIN \ attend la fin de l'opération 
+      W25Q_RD_SR1
+      $80 AND 
+      0= 
+    UNTIL   
 ; 
 
 \ envoie le tampon vers le SPI 
