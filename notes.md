@@ -1,5 +1,18 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-18
+
+* Déboguage de [forth/spi.f](forth/spi.f). 
+    * Les broches de sorties des périphériques doivent-être configurées en push-pull dans le registre PB_CR1, donc PB5 et PB6 devait l'être pour que le SPI fonctionne.
+    * dans __WRITE_BUFF__ j'avais oublié d'envoyé la commande __2__ avant d'envoyer l'adresse. 
+    
+
+### 2026-03-17 
+
+* Ajout du fichier [forth/spi_registers.f](forth/spi_registers.f).
+* Création du démo [forth/spi.f](forth/spi.f). 
+
+
 ### 2026-03-16
 
 * Renommé le fichier [forth/dma.f](forth/dma.f) [forth/dma_registers.f](forth/dma_registers.f). 
