@@ -1,3 +1,8 @@
+
+
+DECIMAL 
+FORGET EXIST? 
+
 \ check if a <name> is already in dictionary 
 \ abort if already exist.
 : EXIST? ( <name>  -- )

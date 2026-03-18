@@ -12,6 +12,9 @@
 \ comprend 40 échantillons 
 \ *********************************
 
+DECIMAL 
+FORGET SET_TICKER 
+
 \ peripheral clock gating 
 $50C3 CONST CLK_PCKENR1 \ peripheral clock gating register 1 
 $50C4 CONST CLK_PCKENR2 \ peripheral clock gating register 2

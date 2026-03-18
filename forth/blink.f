@@ -1,4 +1,11 @@
-\ NOTE: Must load exist.f before this one  
+\ *************************************************
+\ démo clignetement d'une LED branchée sur PB3 
+\ *************************************************
+
+\ NOTE:  forth/exist.f doit-être chargé avant celui-ci 
+
+DECIMAL 
+FORGET BLINK 
 
 \ BLINK LED CONNECTED ON PB3 
 $5005 CONST PB_ODR \ PB ODR register address 

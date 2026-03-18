@@ -1,6 +1,12 @@
+\ *************************************************
 \ Digital to analog converter demo 
 \ output on PB4 STM8L151K6 pin 17
+\ *************************************************
 
+\ NOTE:  forth/exist.f doit-être chargé avant celui-ci 
+
+DECIMAL 
+FORGET DAC_CFG 
 
 \ peripheral clock gating 
 $50C3 CONST CLK_PCKENR1 \ peripheral clock gating register 1 

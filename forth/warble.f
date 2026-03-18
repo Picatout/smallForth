@@ -1,7 +1,13 @@
-\ NOTE: Must load exist.f before this one. 
-
+\ *************************************************
 \ use TIMER2 channel 1 to generate a warble sound 
 \ output is on PB0 pin 12 on STM8L151K6 
+\ *************************************************
+
+\ NOTE: Must load exist.f before this one. 
+
+
+DECIMAL 
+FORGET PWM-CFG 
 
 \ clock gating register 
 $50C3 CONST CLK_PCKENR1 \ clock gating register 1 

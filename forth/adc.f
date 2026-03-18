@@ -1,8 +1,14 @@
-\ USE: exist.f 
-
+\ *************************************************
 \ analog to digital converter demo.
 \ read the stm8l151k6 internal
 \ temperature sensor and print value.
+\ *************************************************
+
+\ NOTE:  forth/exist.f doit-être chargé avant celui-ci 
+
+
+DECIMAL 
+FORGET :? 
 
 \ peripherals clock gating register 2 
 $50C4 CONST CLK_PCKENR2 
@@ -25,7 +31,7 @@ $534D CONST ADC1_SQR4 \ 0-7 channel select
 
 \ read ADC1 channel n 
 \ u range {0...4095} 
-:? READ_ADC ( n+ -- u )
+: READ_ADC ( n+ -- u )
     DUP 
     23 > IF 
         24 - ADC1_SQR1 SETBIT 
@@ -62,7 +68,7 @@ $534D CONST ADC1_SQR4 \ 0-7 channel select
 \ display channel 17 reading 
 \  10K potentiometer connected betweed Vdd - Vss 
 \  pot. arm on st8l151k6 pin 14.
-:? TEMP ( -- )
+: TEMP ( -- )
     CLK_PCKENR2_ADC1 CLK_PCKENR2 SETBIT \ enable ADC1 clock gate
     ADC1_CR1_ADON ADC1_CR1 SETBIT \ enable ADC 
     BEGIN \ display channel 17 reading 
