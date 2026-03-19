@@ -14,6 +14,7 @@
     * Commit 20:16 
     * Ajout de **W25Q_WAIT_EOP** et **W25Q_ERASE_CHIP** dans [forth/spi.f](forth/spi.f).
     * Ajout du fichier [forth/load_buffer.f](forth/load_buffer.f).
+    * Commit 21:53
     
 
 ### 2026-03-17 

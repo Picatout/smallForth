@@ -15,7 +15,7 @@ FORGET LOAD_LINE
       TOKEN NUMBER? WHILE  
       OVER C! 1+ 
       SWAP 1-
-      DUP 0< IF ABORT THEN   
+      DUP 0< IF ABORT"  too many" THEN   
    REPEAT
    DROP SWAP  
 ; 
