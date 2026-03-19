@@ -1,5 +1,11 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-19 
+
+* Augmenté la taille de **TIB_SIZE** à 128 octets. 
+* Augmenté la taille **RX_QUEUE_SIZE** à 32 octets.
+
+
 ### 2026-03-18
 
 * Déboguage de [forth/spi.f](forth/spi.f). 
@@ -15,6 +21,8 @@
     * Ajout de **W25Q_WAIT_EOP** et **W25Q_ERASE_CHIP** dans [forth/spi.f](forth/spi.f).
     * Ajout du fichier [forth/load_buffer.f](forth/load_buffer.f).
     * Commit 21:53
+    * Modifié [forth/load_buffer.f](forth/load_buffer.f). 
+    * commit 22:05 
     
 
 ### 2026-03-17 

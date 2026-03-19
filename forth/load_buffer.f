@@ -1,3 +1,8 @@
+\ ***************************************
+\ comment programmer la mémoire W25Q80DV 
+\ à partir du PC par envoie automatique?
+\ ***************************************
+
 DECIMAL 
 FORGET LOAD_LINE 
 
@@ -25,11 +30,25 @@ FORGET LOAD_LINE
 \ b is buffer address 
 \ c is byte count 
 : LOAD_BUFF ( b c -- ) 
+   BASE @ >R 
+   HEX 
    BEGIN 
       LOAD_LINE 
       DUP
    WHILE
    REPEAT 
-   2DROP 
+   2DROP
+   R> BASE !  
+; 
+
+\ réception d'un fichier
+\ envoyé par le PC 
+\ et enregistré dans 
+\ W25Q80DV 
+\ <name> nom du fichier 
+\ ud1 adrese dans W25Q80DV
+\ ud2 taille du fichier 
+: RX_FILE ( <name> ud1 ud2 -- )
+
 ; 
 

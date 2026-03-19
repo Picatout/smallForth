@@ -26,7 +26,7 @@
 RAMBASE = 0x0000	        ;ram base
 STACK_SIZE = 128 
 DSTACK_SIZE = 128 
-TIB_SIZE= 80 
+TIB_SIZE= 128 
 STACK   =	RAM_END                 ;R: stack  
 DATSTK  =	RAM_SIZE-DSTACK_SIZE 	;S: stack  
 TIBBASE =       DATSTK-TIB_SIZE         ; transaction input buffer addr. 128 bytes

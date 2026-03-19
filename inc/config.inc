@@ -31,9 +31,10 @@ EEPROM_RES = 16
 
 	.include "inc/macros.inc" 
 
+RX_QUEUE_SIZE=32 ; uart receive queue size
+
 STM8L151K6=1 
 .IF STM8L151K6 
-	RX_QUEUE_SIZE=16 ; uart receive queue size
 
 	UART_PCKEN=CLK_PCKENR1_USART1
 	UART_BRR1=USART1_BRR1 
