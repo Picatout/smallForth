@@ -10,6 +10,11 @@
     * Ajout de des mots __W25Q_RD_SR1__ et __W25Q_ERASE_SECTOR__ au démo [forth/spi.f](forth/spi.f).
     * Commit et push à 11:35 
     * Corrigé bogue dans __W25Q_ERASE_SECTOR__, testait le mauvait bit dans SR1. 
+    * Modification de [bios.asm](bios.asm) pour activer les pullup sur toutes les entrées.
+    * Commit 20:16 
+    * Ajout de **W25Q_WAIT_EOP** et **W25Q_ERASE_CHIP** dans [forth/spi.f](forth/spi.f).
+    * Ajout du fichier [forth/load_buffer.f](forth/load_buffer.f).
+    
 
 ### 2026-03-17 
 
@@ -38,7 +43,7 @@
 ### 2026-03-14 
 * Ajout du programme [forth/dac.f](forth/dac.f).
 * commit à 12:03 
-* Corrigé bogue dans __NOISE__ de [forth/dac.f](forth/dac.f).
+* Corrigé bogue dans __NOISE__ de [forth/dac.f](forth/dac.f).       
 * commit à 12:06 
 * Corrigé bogue dans [bios.asm](bios.asm) dans l'initialisation du TIMER4 le registre ARR doit-être initialisé à **131** et non **125**.
 * Corrigé bogue dans mot __FORGET__, __UPDATPTR__ n'était pas appellé.

@@ -140,6 +140,27 @@ $5204 CONST SPI1_DR \ SPI1 data register
     W25Q_DESELECT 
 ; 
 
+\ attend la fin de l'opération 
+\ de programmation
+: W25Q_WAIT_EOP 
+    BEGIN \ attend la fin de l'opération 
+      W25Q_RD_SR1
+      3 AND \ test bits WEL et BUSY 
+      0= \ attend qu'ils soient à 0.
+    UNTIL   
+; 
+
+\ efface tout le W25Q80DV
+: W25Q_ERASE_CHIP 
+    SPI_CFG 
+    W25Q_WR_EN 
+    W25Q_SELECT 
+    $60 SPI_WR_BYTE 
+    W25Q_DESELECT 
+    W25Q_WAIT_EOP
+    SPI_OFF  
+; 
+
 \ efface un secteur de 4KO dans la mémoire W25Q80DV
 \ ud est l'adresse du sector  
 : W25Q_ERASE_SECTOR ( ud -- )
@@ -148,12 +169,9 @@ $5204 CONST SPI1_DR \ SPI1 data register
     W25Q_SELECT 
     $20 SPI_WR_BYTE 
     W25Q_ADDR
-    W25Q_DESELECT 
-    BEGIN \ attend la fin de l'opération 
-      W25Q_RD_SR1
-      3 AND \ test bits WEL et BUSY 
-      0= \ attend qu'ils soient à 0.
-    UNTIL   
+    W25Q_DESELECT
+    W25Q_WAIT_EOP
+    SPI_OFF   
 ; 
 
 \ envoie le tampon vers le SPI 
