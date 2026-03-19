@@ -130,6 +130,13 @@ reset:
 clock_init:
         clr CLK_CKDIVR
 
+; set pullup on all input 
+        LD      A,#255 
+        LD      PA_CR1,A 
+        LD      PB_CR1,A 
+        LD      PC_CR1,A 
+        LD      PD_CR1,A 
+        
 ; initialize UART, 115200 8N1
 uart_init:
 	bset CLK_PCKENR1,#UART_PCKEN
