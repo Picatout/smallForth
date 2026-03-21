@@ -1,9 +1,14 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-21 
+
+* Adaptation de smallForth pour le stm8s103f3.
+
 ### 2026-03-19 
 
 * Augmenté la taille de **TIB_SIZE** à 128 octets. 
 * Augmenté la taille **RX_QUEUE_SIZE** à 32 octets.
+* commit 11:15 
 
 
 ### 2026-03-18

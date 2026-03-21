@@ -3332,8 +3332,13 @@ COLD9:
         CALL     OVERT
         JP       QUIT    ;start interpretation
 
-
+.IF STM8L151K6
 	.include "stm8l151k6_iap.asm"
+.ENDIF 
+
+.IF STM8S103F3 
+        .include "stm8s103f3_iap.asm" 
+.ENDIF 
         .include "flash.asm"
         .include "interrupts.asm"
 
