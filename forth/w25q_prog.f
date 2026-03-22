@@ -101,15 +101,20 @@ $5204 CONST SPI1_DR \ SPI1 data register
     SPI1_DR C@ \ -- c 
 ;
 
+\ addtion non signée 
+\ retourne un double 
+: UM+ ( u1 u2 -- ud )
+    OVER +
+    DUP >R 
+    U> IF 1 ELSE 0 THEN
+    R> SWAP 
+;
+
 \ Ajoute 256 à l'adresse 
 \ pour passer à la page suivante 
 : W25Q_PAG+ ( ud -- ud+256)
-    OVER 256 + 
-    DUP >R 
-    ROT  U< IF 
-       1+ 
-    THEN 
-    R> SWAP 
+    SWAP 256 UM+ 
+    ROT + 
 ;
 
 \ envoie de l'adresse W25Q80DV

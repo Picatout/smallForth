@@ -3,6 +3,10 @@
 ### 2026-03-21 
 
 * Adaptation de smallForth pour le stm8s103f3.
+* Travail sur [forth/w25q_prog.f](forth/w25q_prog.f ). 
+* Ajout de UM+  dans [forth/w25q_prog.f](forth/w25q_prog.f ).
+* commit 21:40
+
 
 ### 2026-03-19 
 
