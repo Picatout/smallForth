@@ -27,14 +27,13 @@ $5203 CONST SPI1_SR \ SPI1 status register
 $5204 CONST SPI1_DR \ SPI1 data register
 
 \ création d'un tampon de
-\ n entiers dans la mémoire RAM  
+\ n octets dans la mémoire RAM  
 : BUFFER ( <name> n --  )
     VAR 
-    1- 2* ALLOT 
+    2- ALLOT 
 ;
 
-128 BUFFER WR_BUFF  \ tampon d'écriture 
-128 BUFFER RD_BUFF  \ tampon de lecture  
+256 BUFFER PGR_BUFF  \ tampon de programmation
 
 \ configuration du 
 \ périphérique SPI 
@@ -42,9 +41,9 @@ $5204 CONST SPI1_DR \ SPI1 data register
 : SPI_CFG ( -- )
 \ PA3 configuré en sortie push pull 
 \ pour contrôler la broche sélect du W25Q80DV
-    0 PA_ODR SETBIT \ ~CS  W25Q80DV désactivé quand à 1   
-    0 PA_CR1 SETBIT \ PA3 configuration push pull 
-    0 PA_DDR SETBIT  \ PA3 mode sortie 
+    PA3 PA_ODR SETBIT \ ~CS  W25Q80DV désactivé quand à 1   
+    PA3 PA_CR1 SETBIT \ PA3 configuration push pull 
+    PA3 PA_DDR SETBIT  \ PA3 mode sortie 
     5 PA_CR1 SETBIT   \ SPI SCLK en pushpull 
     6 PA_CR1 SETBIT   \ SPI MOSI en pushpull 
     7 PA_CR1 SETBIT  \ SPI MISO pullup activé 
@@ -100,6 +99,17 @@ $5204 CONST SPI1_DR \ SPI1 data register
         1 AND  \ test RXNE bit 
     UNTIL \ boucle jusqu'à ce que RXNE=1 
     SPI1_DR C@ \ -- c 
+;
+
+\ Ajoute 256 à l'adresse 
+\ pour passer à la page suivante 
+: W25Q_PAG+ ( ud -- ud+256)
+    OVER 256 + 
+    DUP >R 
+    ROT  U< IF 
+       1+ 
+    THEN 
+    R> SWAP 
 ;
 
 \ envoie de l'adresse W25Q80DV
@@ -212,27 +222,50 @@ $5204 CONST SPI1_DR \ SPI1 data register
     W25Q_DESELECT  
 ;
 
-\ remplie le tampon 
-\ de transmission 
-: FILL_BUFF ( -- )
-    WR_BUFF 
-    255 FOR 
-        I OVER C! 
-        1+ 
-    NEXT 
+\ load a single line 
+\ from terminal 
+\ b buffer 
+\ c1 max count
+\ c2 left  
+: LOAD_LINE ( b c1 -- b++ c2 )
+   CR
+   DUP . ."  LEFT ? "
+   QUERY 
+   BEGIN  
+      SWAP  \ c1 b 
+      TOKEN NUMBER? WHILE  
+      OVER C! 1+ 
+      SWAP 1-
+      DUP 0< IF ABORT"  too many" THEN   
+   REPEAT
+   DROP SWAP  
 ; 
 
-: TEST ( -- )
-    FILL_BUFF \ remplie de tampon de transmission 
-    CR ." ecriture vers W25Q80DV" 
-    WR_BUFF 255 DUMP \ affiche le contenu 
-    SPI_CFG 
-    WR_BUFF 0 0 256 
-    WRITE_BUFF
-    CR ." lecture du contenu de W25Q80DV"  
-    RD_BUFF 0 0 256 
-    READ_BUFF
-    RD_BUFF 255 DUMP \ affiche le contenu
-    SPI_OFF    
+\ load buffer from data 
+\ input on command line
+\ b is buffer address 
+\ c is byte count 
+: LOAD_BUFF ( b c -- ) 
+   BASE @ >R 
+   HEX 
+   BEGIN 
+      LOAD_LINE 
+      DUP
+   WHILE
+   REPEAT 
+   2DROP
+   R> BASE !  
 ; 
+
+\ réception d'un fichier
+\ envoyé par le PC 
+\ et enregistré dans 
+\ W25Q80DV 
+\ <name> nom du fichier 
+\ ud1 adrese dans W25Q80DV
+\ ud2 taille du fichier 
+: RX_FILE ( <name> ud1 ud2 -- )
+
+; 
+
 

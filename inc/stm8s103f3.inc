@@ -66,7 +66,7 @@ GPIO_END = (0x57ff)
  OPT3  = (0x4805)
  NOPT3  = (0x4806)
  OPT4  = (0x4807)
- NOPT4  = (0x4808)PB0
+ NOPT4  = (0x4808)
  OPT5  = (0x4809)
  NOPT5  = (0x480A)
 ; option registers usage
