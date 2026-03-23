@@ -190,6 +190,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
         SPI_WR_BYTE
         1+
     NEXT
+    DROP 
     W25Q_DESELECT 
 ; 
 
@@ -209,6 +210,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
         OVER C! 
         1+
     NEXT
+    DROP 
     W25Q_DESELECT  
 ;
 

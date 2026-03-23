@@ -33,7 +33,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
     2- ALLOT 
 ;
 
-256 BUFFER PGR_BUFF  \ tampon de programmation
+256 BUFFER PROG_BUFF  \ tampon de programmation
 
 \ configuration du 
 \ périphérique SPI 
@@ -100,6 +100,16 @@ $5204 CONST SPI1_DR \ SPI1 data register
     UNTIL \ boucle jusqu'à ce que RXNE=1 
     SPI1_DR C@ \ -- c 
 ;
+
+\ soustraction d'un entier 
+\ simple non signé d'un 
+\ entier double non signé. 
+: UM- ( ud1 u -- ud2 )
+    2 PICK SWAP - 
+    DUP >R 
+    ROT U> IF 1- THEN 
+    R> SWAP
+; 
 
 \ addtion non signée 
 \ retourne un double 
@@ -205,6 +215,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
         SPI_WR_BYTE
         1+
     NEXT
+    DROP
     W25Q_DESELECT 
 ; 
 
@@ -224,6 +235,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
         OVER C! 
         1+
     NEXT
+    DROP 
     W25Q_DESELECT  
 ;
 
@@ -233,8 +245,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
 \ c1 max count
 \ c2 left  
 : LOAD_LINE ( b c1 -- b++ c2 )
-   CR
-   DUP . ."  LEFT ? "
+   CR 63 EMIT \ carriage return '?' EMIT 
    QUERY 
    BEGIN  
       SWAP  \ c1 b 
@@ -265,12 +276,66 @@ $5204 CONST SPI1_DR \ SPI1 data register
 \ réception d'un fichier
 \ envoyé par le PC 
 \ et enregistré dans 
-\ W25Q80DV 
-\ <name> nom du fichier 
-\ ud1 adrese dans W25Q80DV
-\ ud2 taille du fichier 
-: RX_FILE ( <name> ud1 ud2 -- )
-
+\ W25Q80DV
+\ voir le fichier test.hex pour le format 
+\ de fichier à envoyer en utilisant send.sh 
+\
+\ b adresse du tampon  
+\ ud1 adresse dans W25Q80DV, alignée sur page 
+\ ud2 taille du fichier, multiple de 16
+: RX_FILE ( b ud1 ud2 -- )
+    SPI_CFG 
+    BEGIN
+        2DUP OR WHILE \ tantque ud2 > 0  
+        2DUP >R >R   \ sauve taille sur  R:   
+        0= IF DUP 256 U> IF \ si partie basse > 65535 
+              DROP 256  \ remplace la partie basse par 256 
+            THEN 
+        ELSE \ si taille > 65525 remplace partie basse par 256 
+            DROP 256 \ b ud1 u1 
+        THEN
+        DUP >R \ sauvegarde compte sur R: 
+        3 PICK SWAP \ b ud1 b u1 
+        LOAD_BUFF \ -- b ud1 
+        2DUP \ b ud1 ud1 
+        4 PICK \ b ud1 ud1 b 
+        ROT ROT \ b ud1 b ud1 
+        R@ \ b ud1 b ud1 u1 
+        WRITE_BUFF \ écris le tampon dans W25Q80DV 
+        W25Q_PAG+   \ avance l'adresse à la page suivante 
+        R> R> R> ROT \ b ud1 ud2 compte 
+        UM- \ b ud1 ud2-compte 
+    REPEAT 
+    PRESET \ vide la pile 
+    SPI_OFF 
 ; 
 
-
+\ dump une partie du contenu de 
+\ W25Q80DV 
+\ b tampon de lecture 
+\ ud1 adresse de départ 
+\ ud2 compte 
+: W25Q_DUMP ( b ud1 ud2 -- )
+    SPI_CFG
+    BEGIN 
+        2DUP OR WHILE \ tanque ud2 > 0
+        2DUP >R >R \ sauve ud2 sur R: 
+        0= IF DUP 256 U> IF \ si partie basse > 65535 
+              DROP 256  \ remplace la partie basse par 256 
+            THEN 
+        ELSE \ si taille > 65525 remplace partie basse par 256 
+            DROP 256 \ b ud1 256 
+        THEN
+        >R \ sauvegarde compte sur R: 
+        2DUP \ b ud1 ud1 
+        4 PICK \ b ud1 ud1 b 
+        ROT ROT \ b ud1 b ud1 
+        R@ READ_BUFF \ b ud1 b ud1 u1 -- b ud1  
+        2 PICK R@ 1- DUMP
+        W25Q_PAG+ 
+        R> R> R> ROT \ b ud1 ud2 compte 
+        UM- \ b ud1 ud2-compte 
+    REPEAT 
+    PRESET 
+    SPI_OFF 
+; 

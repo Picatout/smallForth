@@ -2441,6 +2441,8 @@ CSTRCMP:
 ;       jump to QUIT.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER ABORT,5,"ABORT"
+        LD     A,#CRR 
+        CALL   putc 
         CALL   PRESE
         JP     QUIT
 

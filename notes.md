@@ -1,5 +1,15 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-22
+
+* Travail sur [forth/w25q_prog.f](forth/w25q_prog.f ).
+* Modifié __ABORT__ pour envoyer un retour à la ligne. 
+* Testé avec succès [forth/w25q_prog.f](forth/w25q_prog.f ) en programmant le ficher [ren_3i_type_22k.hex](ren_3i_type_22k.hex) dans la W25Q80DV. durée de la programmation 26 minutes.
+* Ajout de __W25Q_DUMP__ dans [forth/w25q_prog.f](forth/w25q_prog.f ). Testé avec succès.
+* Corrigé bogue dans [forth/spi.f](forth/spi.f) __WRITE_BUFF__ et __READ_BUFF__ ne jetait pas __b__ à la sortie de la boucle FOR...NEXT.
+
+
+
 ### 2026-03-21 
 
 * Adaptation de smallForth pour le stm8s103f3.
