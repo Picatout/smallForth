@@ -1,5 +1,13 @@
 # NOTES DE TRAVAIL
 
+### 2026-03-23
+
+* Retour au stm8l151k6.  Modifié [forth/w25q_prog.f](forth/w25q_prog.f ) pour utilisé PB0 au lieu de PA3 comme chip select du W25Q80DV.
+* Ajout du démo [forth/play_wav.f](forth/play_wav.f).
+* Corrigé bogue dans [ForthCore.asm](ForthCore.asm), la valeur __IRET_CODE__ était erronée.
+* _PLAY_WAV fonctionne mais il faudrait ajoute un filtre passe bas pour éliminer le bruit de quantisation.
+ 
+
 ### 2026-03-22
 
 * Travail sur [forth/w25q_prog.f](forth/w25q_prog.f ).
@@ -7,7 +15,7 @@
 * Testé avec succès [forth/w25q_prog.f](forth/w25q_prog.f ) en programmant le ficher [ren_3i_type_22k.hex](ren_3i_type_22k.hex) dans la W25Q80DV. durée de la programmation 26 minutes.
 * Ajout de __W25Q_DUMP__ dans [forth/w25q_prog.f](forth/w25q_prog.f ). Testé avec succès.
 * Corrigé bogue dans [forth/spi.f](forth/spi.f) __WRITE_BUFF__ et __READ_BUFF__ ne jetait pas __b__ à la sortie de la boucle FOR...NEXT.
-
+* commit à 21:59 suivit d'un push.
 
 
 ### 2026-03-21 

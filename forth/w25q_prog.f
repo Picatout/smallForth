@@ -3,7 +3,11 @@
 \ W25Q80DV 
 \ ****************************************
 
-\ NOTE: forth/exist.f  doit-être chargé avant ce fichier 
+\ ****************************
+\  DÉPENDANCES
+\
+\    forth/exist.f 
+\ ****************************
 
 DECIMAL 
 FORGET BUFFER 
@@ -13,12 +17,12 @@ $50C3 CONST CLK_PCKENR1
 4 CONST CLK_PCKENR1_SPI1 \ SPI bit gating bit 
 
 
-\ sortie chip select sur PA3 
-\ pin 10 du stm8l151k6 
-$5000 CONST PA_ODR 
-$5002 CONST PA_DDR 
-$5003 CONST PA_CR1 
-3 CONST PA3 \ W25Q80DV select   
+\ sortie chip select sur PB0 
+\ pin 13 du stm8l151k6 
+$5005 CONST PB_ODR 
+$5007 CONST PB_DDR 
+$5008 CONST PB_CR1 
+0 CONST PB0 \ W25Q80DV select   
 
 \ regitres du SPI 
 $5200 CONST SPI1_CR1 \ SPI1 control register 
@@ -39,14 +43,14 @@ $5204 CONST SPI1_DR \ SPI1 data register
 \ périphérique SPI 
 \ CLK=8Mhz
 : SPI_CFG ( -- )
-\ PA3 configuré en sortie push pull 
+\ PB0 configuré en sortie push pull 
 \ pour contrôler la broche sélect du W25Q80DV
-    PA3 PA_ODR SETBIT \ ~CS  W25Q80DV désactivé quand à 1   
-    PA3 PA_CR1 SETBIT \ PA3 configuration push pull 
-    PA3 PA_DDR SETBIT  \ PA3 mode sortie 
-    5 PA_CR1 SETBIT   \ SPI SCLK en pushpull 
-    6 PA_CR1 SETBIT   \ SPI MOSI en pushpull 
-    7 PA_CR1 SETBIT  \ SPI MISO pullup activé 
+    PB0 PB_ODR SETBIT \ ~CS  W25Q80DV désactivé quand à 1   
+    PB0 PB_CR1 SETBIT \ PB0 configuration push pull 
+    PB0 PB_DDR SETBIT  \ PB0 mode sortie 
+    5 PB_CR1 SETBIT   \ SPI SCLK en pushpull 
+    6 PB_CR1 SETBIT   \ SPI MOSI en pushpull 
+    7 PB_CR1 SETBIT  \ SPI MISO pullup activé 
 \ utilisation du SPI à sa fréquence maximale de 8Mhz   
     CLK_PCKENR1_SPI1 CLK_PCKENR1 SETBIT \ activation du signal clock SPI  
     3 SPI1_CR2 C!  \ NSS contrôlé par logiciel, mode maître   
@@ -57,7 +61,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
 : SPI_OFF ( -- )
     6 SPI1_CR1 RSTBIT 
     CLK_PCKENR1_SPI1 CLK_PCKENR1 RSTBIT
-    0 PA_DDR RSTBIT \ mode entrée, avec pullup 
+    0 PB_DDR RSTBIT \ mode entrée, avec pullup 
 ; 
 
 \ attend que la transaction 
@@ -139,13 +143,13 @@ $5204 CONST SPI1_DR \ SPI1 data register
 
 \ sélectionne le W25Q
 : W25Q_SELECT ( -- )
-    PA3 PA_ODR RSTBIT 
+    PB0 PB_ODR RSTBIT 
 ; 
 
 \ désélectionne le W25Q
 : W25Q_DESELECT ( -- )
     SPI_WAIT \ évter la corruption 
-    PA3 PA_ODR SETBIT \ désélection du W25Q 
+    PB0 PB_ODR SETBIT \ désélection du W25Q 
 ; 
 
 \ Envoie de la commande WRITE ENABLE 

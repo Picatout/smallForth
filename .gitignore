@@ -4,3 +4,8 @@ build/stm8l151k6/*.lst
 build/stm8l151k6/*.map
 build/stm8l151k6/*.rel
 build/stm8l151k6/*.rst
+build/stm8s103f3/*.lk
+build/stm8s103f3/*.lst
+build/stm8s103f3/*.map
+build/stm8s103f3/*.rel
+build/stm8s103f3/*.rst
