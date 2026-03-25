@@ -274,14 +274,16 @@ DOUBLE WAV_SIZE  \ WAV data size
 \ data rate 22050 hertz 
 \ channel 1 
 \ bits per sample 8 
-\ data offset at 60 
-: PLAY_WAV ( -- )
+\ data offset at 60
+\ ud address of wav file in W25Q  
+: PLAY_WAV ( ud -- )
 \ initialize peripherals 
+    SWAP 60 UM+ ROT + 
+    W25Q_OFFSET 2! 
     SPI_CFG 
     DAC_CFG 
     DMA_BUFFER DMA_CFG 
-    0 FLAGS !  
-    60 0 W25Q_OFFSET 2! \ data offset in file 
+    0 FLAGS !
 \ get data size, 32 bits integer 
     DMA_BUFFER 0 0 60 READ_BUFF 
     DMA_BUFFER 56 + DUP \ little indian double 

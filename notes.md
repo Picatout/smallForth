@@ -2,10 +2,17 @@
 
 ### 2026-03-23
 
+* Ajouté BIG-BEN.WAV dans la mémoire W25Q80DV. 
+* Modifié __PLAY_WAV__ maintenant requiert l'adresse du fichier à jouer.
+
+
+### 2026-03-23
+
 * Retour au stm8l151k6.  Modifié [forth/w25q_prog.f](forth/w25q_prog.f ) pour utilisé PB0 au lieu de PA3 comme chip select du W25Q80DV.
 * Ajout du démo [forth/play_wav.f](forth/play_wav.f).
 * Corrigé bogue dans [ForthCore.asm](ForthCore.asm), la valeur __IRET_CODE__ était erronée.
 * _PLAY_WAV fonctionne mais il faudrait ajoute un filtre passe bas pour éliminer le bruit de quantisation.
+* commit à 22:09 suivit d'un push
  
 
 ### 2026-03-22
