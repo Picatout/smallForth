@@ -115,10 +115,10 @@ $509A CONST DMA_C3M0ARL
 ; 
 
 \ configure DMA channel 0 
-\ for transfert from DMA_BUFFER 
+\ for transfert from PROG_BUFF 
 \ to DAC_RDHR register 
 \ TIMER4 control transfert pace 
-\ b is DMA_BUFFER address 
+\ b is PROG_BUFF address 
 : DMA_CFG ( b -- )
     CLK_PCKENR2_DMA1 CLK_PCKENR2 SETBIT \ enable DMA clock gating 
 \ set memory address in DMA_C0M0AR 
@@ -212,22 +212,22 @@ I;
 DOUBLE W25Q_OFFSET \ where in file 
 DOUBLE WAV_SIZE  \ WAV data size 
 
-254 BUFFER DMA_BUFFER
 
-
-\ write WAV data in DMA_BUFFER.
+\ write WAV data in PROG_BUFF.
 \ load a page size from 
 \ W25Q80DV
 \ while DMA is transferring 
 \ data from one half to DAC 
 \ the other half is filled 
-\ with next data page   
-: FILL_BUFFER ( -- ) 
-    DMA_BUFFER
+\ with next data page 
+\ nombre d'octets à lire   
+: FILL_BUFFER ( n -- ) 
+    >R 
+    PROG_BUFF
     FLAG_HALF FLAGS FLAG_TEST 
     IF 127 + THEN \ fill upper half 
     W25Q_OFFSET 2@ \ W25Q address 
-    127 READ_BUFF   \ read 256 bytes 
+    R> READ_BUFF   \ read n bytes 
     W25Q_OFFSET 2@  \ update to 
     SWAP 127 UM+  ROT + \ next segment  
     W25Q_OFFSET 2!   
@@ -245,29 +245,79 @@ DOUBLE WAV_SIZE  \ WAV data size
     SWAP C@ + 
 ; 
 
+: 2LI@ ( a -- d )
+    DUP LI@ SWAP 2+ LI@ 
+;
+
+\ imprime l'entier u1
+\ à largeur de champ u2
+\ sans espace avant ou après 
+\ BASE doit-être 16 
+: H.R ( u1 u2 -- )
+    SWAP STR \ u2 b us 
+    >R  \ u2 b 
+    BEGIN 
+       OVER R@ > WHILE \ tant que u2 > us 
+       $30 EMIT 
+       SWAP 1- SWAP  \ u2 - 1    
+    REPEAT 
+    R> TYPE
+    DROP
+; 
+
+\ imprime entier double 
+\ en hexadecimal 
+\ sous la forme 
+\ $xxxx xxxx
+\ BASE doit-être 16  
+: 2H.R ( d  -- )
+    $24 EMIT 
+    4 H.R
+    SPACE  
+    4 H.R
+    SPACE  
+;
+
 \ print file name 
 \ file size 
 \ data size 
 : FILE_INFO 
     BASE @ >R 
     16 BASE ! 
-    SPI_CFG 
-    PROG_BUFF 0 0 $3C READ_BUFF
-    CR ." FILE NAME: "  
-    PROG_BUFF $C TYPE 
-    CR ." file size: "
-    PROG_BUFF $C + DUP
-    LI@ 
-    SWAP 2+ LI@ 
-    $24 EMIT \ '$' emit 
-    . . 
-    CR ." data size: " 
+    CR
+    W25Q_OFFSET 2@ 
+    2H.R   
+    PROG_BUFF 12 TYPE 
+    ."  FILE SIZE: "
+    PROG_BUFF $C + 
+    2LI@ 2H.R 
+    ."  DATA SIZE: " 
     PROG_BUFF $38 +
-    DUP LI@ SWAP 2+ LI@  
-    $24 EMIT . . 
+    2LI@  2H.R  
     R> BASE ! 
-    SPI_OFF 
 ; 
+
+\ list file saved on 
+\ W25Q80DV 
+: LIST 
+    SPI_CFG 
+    0 0 2DUP W25Q_OFFSET 2! 
+    BEGIN 
+        PROG_BUFF 
+        W25Q_OFFSET 2@
+        60 READ_BUFF
+        PROG_BUFF C@ 
+        32 127 WITHIN 
+        WHILE
+          FILE_INFO 
+          PROG_BUFF 12 + 
+          2LI@  
+          W25Q_SECT_ALGN 
+          W25Q_OFFSET 2@ D+
+          W25Q_OFFSET 2! 
+    REPEAT
+    SPI_OFF 
+;
 
 \ play WAV file from 
 \ W25Q80DV 
@@ -282,22 +332,21 @@ DOUBLE WAV_SIZE  \ WAV data size
     W25Q_OFFSET 2! 
     SPI_CFG 
     DAC_CFG 
-    DMA_BUFFER DMA_CFG 
+    PROG_BUFF DMA_CFG 
     0 FLAGS !
 \ get data size, 32 bits integer 
-    DMA_BUFFER 0 0 60 READ_BUFF 
-    DMA_BUFFER 56 + DUP \ little indian double 
-    LI@  \ low part of size 
-    SWAP 2+ LI@ \ high part of size  
+    PROG_BUFF 0 0 60 READ_BUFF 
+    PROG_BUFF 56 + DUP \ little indian double 
+    2LI@    
     WAV_SIZE 2!
 \ fill first half of buffer 
-    FILL_BUFFER
+    254 FILL_BUFFER
     DMA_ON
     BEGIN 
         BEGIN 
             FLAG_LOAD FLAGS FLAG_TEST 
         UNTIL 
-        FILL_BUFFER
+        127 FILL_BUFFER
     WAV_SIZE 2@ OR 
     WHILE REPEAT
     DMA_OFF 

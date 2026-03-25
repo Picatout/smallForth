@@ -163,9 +163,10 @@ NA=1 ; name field
 LLEN=3 ; line length
 SLEN=4 ; string length 
 WC=5
-VSIZE=5   
+VSIZE=6   
         SUB     SP,#VSIZE
         CLR     (WC,SP)
+        CLR     (WC+1,SP)
         LDW     Y,UCNTXT 
 0$: 
         CLR     (LLEN,SP)  
@@ -184,23 +185,19 @@ VSIZE=5
         CALL    PRINT
         LD      A,#SPC 
         CALL    putc  
-        INC     (WC,SP)
+        LDW     Y,(WC,SP)
+        INCW    Y 
+        LDW     (WC,SP),Y 
         LDW     Y,(NA,SP)
         SUBW    Y,#2
         LDW     Y,(Y)
         JRNE     1$
 ;display words count 
         CALL    CR
-        LD      A,(WC,SP)
-.IF 0
-        CLRW    Y
-        LD      YL,A  
+        LDW     Y,(WC,SP)
         CALL    DPUSH 
-.ELSE 
-        CALL    DPUSHA 
-.ENDIF 
         CALL    DOT 
-        ADDW     SP,#VSIZE 
+        ADDW    SP,#VSIZE 
         RET  
 
 ;------------------------

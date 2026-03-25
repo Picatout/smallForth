@@ -1,6 +1,16 @@
 # NOTES DE TRAVAIL
 
-### 2026-03-23
+### 2026-03-25
+
+* Ajout de __D+__ et __W25Q_SECT_ALGN__ dans [forth/w25q_prog.f](forth/w25q_prog.f). 
+* Modification de [forth/play_wav.f](forth/play_wav.f) pour utiliser le tampon **PROG_BUFF** au lieu d'en créer un nouveau.
+* Corrigé bogue dans __WORDS__ du fichier [tools.asm](tools.asm).
+* Ajout __2LI@__ et __LIST__ et modifié __FILE_INFO__ dans [forth/play_wav.f](forth/play_wav.f).
+* Modifié __.__ et __STR__ dans [ForthCore.asm](ForthCore.asm). __STR__ convertie en nombre non signé.
+* Version 1.1.5 
+   
+
+### 2026-03-24
 
 * Ajouté BIG-BEN.WAV dans la mémoire W25Q80DV. 
 * Modifié __PLAY_WAV__ maintenant requiert l'adresse du fichier à jouer.

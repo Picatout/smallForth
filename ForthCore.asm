@@ -150,7 +150,7 @@ EEP_RUN = EEP_CP+2   ; application autorun Code Addr
 ;***********************************************
 VER     =  1         ;major release version
 MINOR   =  1         ;minor revision
-REV     =  4         ;revison 
+REV     =  5         ;revison 
 
 ;; Constants
 
@@ -1752,28 +1752,14 @@ PACKS:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       STR     ( w -- b u )
-;       Convert a signed integer
+;       Convert unsigned integer
 ;       to a numeric string.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
         _HEADER STR,3,"STR"
-        LD      A,(X)
-        PUSH    A 
-        JRPL    1$ 
-        CALL    ABSS     
-1$:             
         LD      A,UBASE+1 ; base 
         LDW     Y,X 
         LDW     Y,(Y)  ; U 
         CALL    utoa 
-        TNZ     (1,SP)
-        JRPL    2$ 
-        PUSH    A   
-        LD      A,#'- 
-        DECW    Y 
-        LD      (Y),A
-        POP     A 
-        INC     A    ; slen 
-2$:     ADDW    SP,#1  
         LDW     (X),Y 
 DPUSHA: 
         CLRW    Y 
@@ -2123,11 +2109,28 @@ DOTQP:
         CALL     QBRAN
         .WORD    DOT1
         JRA      UDOT
-DOT1:   CALL     STR
-        CALL     SPACE
-        JP       TYPES
+DOT1:   
+        CALL    SPACE 
+        LD      A,(X)
+        PUSH    A 
+        JRPL    1$ 
+        CALL    ABSS     
+1$:             
+        LD      A,UBASE+1 
+        LDW     Y,X 
+        LDW     Y,(Y)
+        CALL    utoa 
+        TNZ     (1,SP)
+        JRPL    2$ 
+        PUSH    A   
+        LD      A,#'- 
+        DECW    Y 
+        LD      (Y),A
+        POP     A 
+        INC     A    ; slen 
+2$:     ADDW    SP,#1 
+        JP      PRINT 
 
-;; Parsing
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;       PARS$   ( b u c -- b u delta ; <string> )

@@ -124,6 +124,22 @@ $5204 CONST SPI1_DR \ SPI1 data register
     R> SWAP 
 ;
 
+\ addition d'entiers double
+: D+ ( ud1 ud2 -- ud3 )
+    ROT + \ ud1l ud2 ud1h+ud2h -> ud3h   
+    ROT  ROT UM+ \ ud3h ud1l+ud2l 0|1 
+    ROT + \ ud3l ud3h  
+;
+
+\ alignement de ud1 sur 
+\ le prochain secteur du W25Q80DV 
+\ un secteur est 4096 octets
+: W25Q_SECT_ALGN ( ud1 -- ud2 )
+    $FFF 0 D+ 
+    SWAP $F000 AND 
+    SWAP     
+;
+
 \ Ajoute 256 à l'adresse 
 \ pour passer à la page suivante 
 : W25Q_PAG+ ( ud -- ud+256)
