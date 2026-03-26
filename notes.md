@@ -5,8 +5,8 @@
 * Débogué [forth/play_wav.f](forth/play_wav.f).
     * Remplacé la variable __FLAGS__ par les variables __F_LOAD__ et __F_HALF__. 
     * Le bogue a été résolue en réinitialisant __F_HALF__ après le chargement initial de __PORG_BUFF__.
-    
 * Corrigé bogue dans [forth/w25q_prog.f](forth/w25q_prog.f), __SPI_WAIT__ ne faisait pas la lecture du bon registre.
+* Commit et push à 11:33, V1.1R6
 
 
 ### 2026-03-25
