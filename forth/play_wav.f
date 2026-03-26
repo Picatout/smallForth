@@ -101,14 +101,14 @@ $509A CONST DMA_C3M0ARL
     RI_IOSR3_CH15E RI_IOCMR3 SETBIT \ i/o controlled by RI_IOSR3 
     RI_IOSR3_CH15E RI_IOSR3 SETBIT \ route DAC on PB4
     4 DAC_CR2 SETBIT \ enable DMA 
-    2 DAC_CR1 SETBIT \ triggered by TIMER4 
-    0 DAC_CR1 SETBIT \ enable DAC  
+    5 DAC_CR1 C! \ enable trigger by TIMER4 
     SET_TRIGGER \ TIMER4 used as sampling trigger 
 ; 
 
 \ turn off DAC 
 : DAC_OFF ( -- )
-    0 DAC_CR1 RSTBIT 
+    0 DAC_CR1 C! 
+    0 DAC_CR2 C!  
     CLK_PCKENR1_DAC CLK_PCKENR1 RSTBIT
     CLK_PCKENR2_COMP CLK_PCKENR2 RSTBIT 
     SET_TICKER \ restore TIMER4 to its system function 
@@ -137,59 +137,30 @@ $509A CONST DMA_C3M0ARL
     $3F DMA_C3CR C!  \ set HTIF flag 
 ; 
 
+VAR F_LOAD \ il est temps de charger tampon 
+VAR F_HALF \ quel partie du tampon faut-il chargé.
+
+
 \ enable DMA 
 : DMA_ON 
+   0 F_LOAD ! 
+   $F9 DMA_C3SPR C@ 
+   AND DMA_C3SPR C! 
    0 DMA_GCSR SETBIT 
 ; 
 
 : DMA_OFF 
-   0 DMA_GCSR !  
-   0 DMA_C3CR ! 
+   0 DMA_GCSR C!  
+   0 DMA_C3CR C! 
    CLK_PCKENR2_DMA1 CLK_PCKENR2 RSTBIT \ disable DMA clock gating 
-; 
-
-
-VAR FLAGS 
-0 CONST FLAG_HALF  \ which half of buffer to fill 
-1 CONST FLAG_LOAD  \ time to reload buffer 
-
-\ get flag state 
-: FLAG_TEST ( bit a -- f )
-    @ 
-    1 ROT LSHIFT  
-    AND 
-;
-
-\ inverse flag state 
-: FLAG_TOGL ( bit a -- )
-    >R 
-    1 SWAP LSHIFT
-    R@ @ XOR
-    R> ! 
-;
-
-\ set flag 
-: FLAG_SET ( bit a -- )
-    >R 
-    1 SWAP LSHIFT 
-    R@ @ OR 
-    R> !
-; 
-
-\ reset flag 
-: FLAG_RESET ( bit a -- )
-    >R 
-    1 SWAP LSHIFT 
-    NOT R@ @ AND 
-    R> !
 ; 
 
 
 \ DMA channel 3 interrupt handler 
 3 I:
-    FLAG_LOAD FLAGS FLAG_SET 
-    2 DMA_C3SPR RSTBIT 
-    1 DMA_C3SPR RSTBIT
+    -1 F_LOAD !  
+    $F9 DMA_C3SPR C@ AND 
+    DMA_C3SPR C! 
 I;  
 
 \ Création d'une variable 
@@ -221,20 +192,21 @@ DOUBLE WAV_SIZE  \ WAV data size
 \ les données du W25Q80DV
 \ 'n' nombre d'octets à lire   
 : FILL_BUFFER ( n -- ) 
+    0 F_LOAD ! 
     >R 
     PROG_BUFF
-    FLAG_HALF FLAGS FLAG_TEST 
+    F_HALF @ 
     IF 127 + THEN \ fill upper half 
     W25Q_OFFSET 2@ \ W25Q address 
     R> READ_BUFF   \ read n bytes 
     W25Q_OFFSET 2@  \ update to 
     127 0 D+  \ next segment  
     W25Q_OFFSET 2!   
-    FLAG_HALF FLAGS FLAG_TOGL \ toggle flag 
     WAV_SIZE 2@ 127 0 D- 
     DUP 0< IF 2DROP 0 0 THEN 
     WAV_SIZE 2! 
-    FLAG_LOAD FLAGS FLAG_RESET 
+    F_HALF @ NOT 
+    F_HALF ! \ toggle flag 
 ;
 
 \ read little indian integer 
@@ -344,18 +316,23 @@ DOUBLE WAV_SIZE  \ WAV data size
     W25Q_OFFSET 2@ 60 0 D+ 
     W25Q_OFFSET 2! 
 \ rempli le tampon au complet  
+    0 F_HALF ! 
     254 FILL_BUFFER
-    0 FLAGS !
+    0 F_HALF ! 
     DMA_ON
     BEGIN 
         BEGIN 
-            FLAG_LOAD FLAGS FLAG_TEST 
+            F_LOAD @ 
         UNTIL 
         127 FILL_BUFFER
-        WAV_SIZE 2@ OR
+        WAV_SIZE 2@ OR 
     WHILE REPEAT
-    DMA_OFF 
+\ attend la fin de la dernière transaction DMA 
+    BEGIN 
+        DMA_C3SPR C@
+        $C0 AND 0= 
+    UNTIL 
     SPI_OFF
+    DMA_OFF 
     DAC_OFF 
-    SET_TICKER  
 ;         

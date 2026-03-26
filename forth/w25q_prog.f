@@ -61,14 +61,14 @@ $5204 CONST SPI1_DR \ SPI1 data register
 : SPI_OFF ( -- )
     6 SPI1_CR1 RSTBIT 
     CLK_PCKENR1_SPI1 CLK_PCKENR1 RSTBIT
-    0 PB_DDR RSTBIT \ mode entrée, avec pullup 
+    PB0 PB_DDR RSTBIT \ mode entrée, avec pullup 
 ; 
 
 \ attend que la transaction 
 \ SPI soit complétée
 : SPI_WAIT ( -- )
     BEGIN 
-        SPI1_CR1 C@ 
+        SPI1_SR C@ 
         $80 AND \ test BSY bit  
         0= 
     UNTIL \ boucle jusqu'à ce que  BSY=0
