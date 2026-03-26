@@ -8,7 +8,7 @@
 * Ajout __2LI@__ et __LIST__ et modifié __FILE_INFO__ dans [forth/play_wav.f](forth/play_wav.f).
 * Modifié __.__ et __STR__ dans [ForthCore.asm](ForthCore.asm). __STR__ convertie en nombre non signé.
 * Version 1.1.5 
-   
+* Corrigé bogue dand __.__ 
 
 ### 2026-03-24
 

@@ -126,7 +126,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
 
 \ addition d'entiers double
 : D+ ( ud1 ud2 -- ud3 )
-    ROT + \ ud1l ud2 ud1h+ud2h -> ud3h   
+    ROT + \ ud1h+ud2h -> ud3h    
     ROT  ROT UM+ \ ud3h ud1l+ud2l 0|1 
     ROT + \ ud3l ud3h  
 ;

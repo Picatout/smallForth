@@ -229,7 +229,7 @@ DOUBLE WAV_SIZE  \ WAV data size
     W25Q_OFFSET 2@ \ W25Q address 
     R> READ_BUFF   \ read n bytes 
     W25Q_OFFSET 2@  \ update to 
-    SWAP 127 UM+  ROT + \ next segment  
+    127 0 D+  \ next segment  
     W25Q_OFFSET 2!   
     FLAG_HALF FLAGS FLAG_TOGL \ toggle flag 
     WAV_SIZE 2@ 127 UM- 
@@ -316,6 +316,7 @@ DOUBLE WAV_SIZE  \ WAV data size
           W25Q_OFFSET 2@ D+
           W25Q_OFFSET 2! 
     REPEAT
+    2DROP 
     SPI_OFF 
 ;
 
@@ -327,27 +328,31 @@ DOUBLE WAV_SIZE  \ WAV data size
 \ data offset at 60
 \ ud address of wav file in W25Q  
 : PLAY_WAV ( ud -- )
+    W25Q_OFFSET 2!
 \ initialize peripherals 
-    SWAP 60 UM+ ROT + 
-    W25Q_OFFSET 2! 
     SPI_CFG 
     DAC_CFG 
     PROG_BUFF DMA_CFG 
-    0 FLAGS !
 \ get data size, 32 bits integer 
-    PROG_BUFF 0 0 60 READ_BUFF 
-    PROG_BUFF 56 + DUP \ little indian double 
-    2LI@    
-    WAV_SIZE 2!
-\ fill first half of buffer 
+    PROG_BUFF 
+    W25Q_OFFSET 2@ 60 READ_BUFF 
+    PROG_BUFF 56 + \ little indian double 
+    2LI@ 
+    WAV_SIZE 2! 
+\ position du data à partir du début
+\ du fichier 
+    W25Q_OFFSET 2@ 60 0 D+ 
+    W25Q_OFFSET 2! 
+\ rempli le tampon au complet  
     254 FILL_BUFFER
+    0 FLAGS !
     DMA_ON
     BEGIN 
         BEGIN 
             FLAG_LOAD FLAGS FLAG_TEST 
         UNTIL 
         127 FILL_BUFFER
-    WAV_SIZE 2@ OR 
+    WAV_SIZE 2@ OR
     WHILE REPEAT
     DMA_OFF 
     SPI_OFF

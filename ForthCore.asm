@@ -150,7 +150,7 @@ EEP_RUN = EEP_CP+2   ; application autorun Code Addr
 ;***********************************************
 VER     =  1         ;major release version
 MINOR   =  1         ;minor revision
-REV     =  5         ;revison 
+REV     =  6         ;revison 
 
 ;; Constants
 
@@ -2129,6 +2129,7 @@ DOT1:
         POP     A 
         INC     A    ; slen 
 2$:     ADDW    SP,#1 
+        _DROP 
         JP      PRINT 
 
 
