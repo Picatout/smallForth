@@ -115,6 +115,13 @@ $5204 CONST SPI1_DR \ SPI1 data register
     R> SWAP
 ; 
 
+\ soustraction de 2 entiers 
+\ double 
+: D- ( d1 d2 -- d3 )
+  >R UM- 
+  R> - 
+; 
+
 \ addtion non signée 
 \ retourne un double 
 : UM+ ( u1 u2 -- ud )

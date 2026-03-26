@@ -96,7 +96,6 @@ $509A CONST DMA_C3M0ARL
 \ configure DAC 
 \ output on PB4 
 : DAC_CFG ( -- )
-    SET_TRIGGER \ TIMER4 used as sampling trigger 
     CLK_PCKENR1_DAC CLK_PCKENR1 SETBIT \ DAC clock enable 
     CLK_PCKENR2_COMP CLK_PCKENR2 SETBIT \ COMP clock enable 
     RI_IOSR3_CH15E RI_IOCMR3 SETBIT \ i/o controlled by RI_IOSR3 
@@ -104,6 +103,7 @@ $509A CONST DMA_C3M0ARL
     4 DAC_CR2 SETBIT \ enable DMA 
     2 DAC_CR1 SETBIT \ triggered by TIMER4 
     0 DAC_CR1 SETBIT \ enable DAC  
+    SET_TRIGGER \ TIMER4 used as sampling trigger 
 ; 
 
 \ turn off DAC 
@@ -143,8 +143,11 @@ $509A CONST DMA_C3M0ARL
 ; 
 
 : DMA_OFF 
-   0 DMA_GCSR RSTBIT 
+   0 DMA_GCSR !  
+   0 DMA_C3CR ! 
+   CLK_PCKENR2_DMA1 CLK_PCKENR2 RSTBIT \ disable DMA clock gating 
 ; 
+
 
 VAR FLAGS 
 0 CONST FLAG_HALF  \ which half of buffer to fill 
@@ -189,7 +192,8 @@ VAR FLAGS
     1 DMA_C3SPR RSTBIT
 I;  
 
-
+\ Création d'une variable 
+\ 32 bits 
 : DOUBLE ( <name> ) 
     VAR 
     2 ALLOT 
@@ -213,14 +217,9 @@ DOUBLE W25Q_OFFSET \ where in file
 DOUBLE WAV_SIZE  \ WAV data size 
 
 
-\ write WAV data in PROG_BUFF.
-\ load a page size from 
-\ W25Q80DV
-\ while DMA is transferring 
-\ data from one half to DAC 
-\ the other half is filled 
-\ with next data page 
-\ nombre d'octets à lire   
+\ charge le PROG_BUFF avec
+\ les données du W25Q80DV
+\ 'n' nombre d'octets à lire   
 : FILL_BUFFER ( n -- ) 
     >R 
     PROG_BUFF
@@ -232,7 +231,7 @@ DOUBLE WAV_SIZE  \ WAV data size
     127 0 D+  \ next segment  
     W25Q_OFFSET 2!   
     FLAG_HALF FLAGS FLAG_TOGL \ toggle flag 
-    WAV_SIZE 2@ 127 UM- 
+    WAV_SIZE 2@ 127 0 D- 
     DUP 0< IF 2DROP 0 0 THEN 
     WAV_SIZE 2! 
     FLAG_LOAD FLAGS FLAG_RESET 
@@ -320,6 +319,7 @@ DOUBLE WAV_SIZE  \ WAV data size
     SPI_OFF 
 ;
 
+    PROG_BUFF DMA_CFG 
 \ play WAV file from 
 \ W25Q80DV 
 \ data rate 22050 hertz 
@@ -352,7 +352,7 @@ DOUBLE WAV_SIZE  \ WAV data size
             FLAG_LOAD FLAGS FLAG_TEST 
         UNTIL 
         127 FILL_BUFFER
-    WAV_SIZE 2@ OR
+        WAV_SIZE 2@ OR
     WHILE REPEAT
     DMA_OFF 
     SPI_OFF

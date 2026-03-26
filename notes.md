@@ -9,6 +9,8 @@
 * Modifié __.__ et __STR__ dans [ForthCore.asm](ForthCore.asm). __STR__ convertie en nombre non signé.
 * Version 1.1.5 
 * Corrigé bogue dand __.__ 
+* Ajout de __D-__ dans [forth/w25q_prog.f](forth/w25q_prog.f).
+* Bogue non résolue dans [forth/play_wav.f](forth/play_wav.f), Après le premier fichier joué, le système est conrompu.
 
 ### 2026-03-24
 
