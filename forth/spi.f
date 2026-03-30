@@ -65,7 +65,7 @@ $5204 CONST SPI1_DR \ SPI1 data register
 \ SPI soit complétée
 : SPI_WAIT ( -- )
     BEGIN 
-        SPI1_CR1 C@ 
+        SPI1_SR C@ 
         $80 AND \ test BSY bit  
         0= 
     UNTIL \ boucle jusqu'à ce que  BSY=0
