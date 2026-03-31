@@ -234,6 +234,21 @@ $5204 CONST SPI1_DR \ SPI1 data register
     SPI_OFF   
 ; 
 
+\ efface plusieurs secteurs 
+\ consécutifs.
+\ ud -> premier secteur 
+\ count -> nombre de secteurs 
+: W25Q_ERASE_MANY ( ud count -- )
+    >R 
+    BEGIN 
+        R@ WHILE 
+        2DUP W25Q_ERASE_SECTOR 
+        4096 0 D+ \ addr secteur suivant 
+        R> 1- >R 
+    REPEAT 
+    R> DROP 
+; 
+
 \ envoie le tampon vers le SPI 
 \ b -> adresse du tampon  
 \ ud  -> adresse destination dans W25Q80  

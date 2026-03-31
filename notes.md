@@ -1,5 +1,9 @@
 # NOTES DE TRAVAIL
 
+#### 2026-03-31
+* Ajout du mot __W25Q_ERASE_MANY__ à [forth/w25q_prog.f](forth/w25q_prog.f).
+* Ajout des fichiers __kongas.hex__ et __gong.hex__.
+
 ### 2026-03-30 
 
 * Ajout du fichier __koro.hex__  modification des autres fichier __*.hex__.
