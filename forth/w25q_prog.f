@@ -147,6 +147,14 @@ $5204 CONST SPI1_DR \ SPI1 data register
     SWAP     
 ;
 
+\ additionne 2 entiers  
+\ double et aligne 
+\ sur le secteur suivant 
+: W25Q_NEXT_SECTOR ( ud1 ud2 -- ud3 )
+    D+ 
+    W25Q_SECT_ALGN
+;
+
 \ Ajoute 256 à l'adresse 
 \ pour passer à la page suivante 
 : W25Q_PAG+ ( ud -- ud+256)

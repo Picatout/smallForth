@@ -3,6 +3,10 @@
 ### 2026-03-30 
 
 * Ajout du fichier __koro.hex__  modification des autres fichier __*.hex__.
+* Ajout d fichier __hymne_joie.hex__.
+* Ajout script [prog_wav.sh](prog_wav.sh). 
+* Modifié [bin2txt.sh](bin2txt.sh)
+
 
 ### 2026-03-26
 
