@@ -154,6 +154,15 @@ uart_init:
 	mov TIM4_CR1,#((1<<TIM4_CR1_CEN)|(1<<TIM4_CR1_URS))
 	bset TIM4_IER,#TIM4_IER_UIE 
         rim 
+; 100 msec delay to protect EEPROM update 
+; from power fluctuations
+        clr MS 
+        clr MS+1 
+1$:
+        ldw X,MS 
+        cpw X,#1000 
+        jrmi 1$
+
         jp  COLD   ;default=MN1
 
 

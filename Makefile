@@ -1,5 +1,5 @@
 ##################################
-##  tinyForth make file
+##  smallForth make file
 ##################################
 
 NAME=smallForth
@@ -19,7 +19,7 @@ FLASH=stm8flash
 
 .PHONY: all
 
-all: clean $(NAME).rel $(NAME).ihx  tinyForth clear_eevars  
+all: clean $(NAME).rel $(NAME).ihx  smallForth clear_eevars  
 
 $(NAME).rel: $(MAIN_FILE) $(INCLUDES)
 	@echo
@@ -82,7 +82,7 @@ compile: $(MAIN_FILE)  $(SRC) $(INCLUDES)
 	objcopy -Iihex -Obinary  $(BUILD)$(NAME).ihx $(BUILD)$(NAME).bin 
 	ls -l $(BUILD)$(NAME).bin
 
-tinyForth: compile flash 
+smallForth: compile flash 
 	
 
 read_eevars:

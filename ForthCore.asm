@@ -150,7 +150,7 @@ EEP_RUN = EEP_CP+2   ; application autorun Code Addr
 ;***********************************************
 VER     =  1         ;major release version
 MINOR   =  1         ;minor revision
-REV     =  6         ;revison 
+REV     =  7         ;revison 
 
 ;; Constants
 
@@ -2731,6 +2731,7 @@ NOOP:
         _HEADER DEFERAT,6,"DEFER@"
         CALL TBODY 
         JP   AT 
+.ENDIF 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; DOES>  (  --  )
@@ -2765,7 +2766,7 @@ NOOP:
         CALL COMMA  ; JP addr  
         POPW Y 
         JP (2,Y) 
-.ENDIF 
+
 
 ;; Structures
 

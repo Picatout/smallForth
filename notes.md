@@ -1,6 +1,11 @@
 # NOTES DE TRAVAIL
 
-#### 2026-03-31
+### 2026-04-07 
+
+* Ajouté un délais 100 millisecondes au démarrage, pour voir si ça corrige le bogue de corruption des variables systèmes sauvegardées dans l'EEPROM.
+* Réactivé le mot __DOES&gt;__ très utile.
+
+### 2026-03-31
 * Ajout du mot __W25Q_ERASE_MANY__ à [forth/w25q_prog.f](forth/w25q_prog.f).
 * Ajout des fichiers __kongas.hex__ et __gong.hex__.
 

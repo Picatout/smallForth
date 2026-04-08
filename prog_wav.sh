@@ -1,4 +1,4 @@
 #! /bin/bash
-./tools/SendFile -d 25 -s/dev/ttyS0 $1
+./tools/SendFile -d 30 -s/dev/ttyS0 $1
 
 
